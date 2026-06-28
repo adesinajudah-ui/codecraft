@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "hFVg58zyN6rGlOzNDmAZb"
+uri = "file://artifacts/codecraft-mobile/assets/images/icon.png"
+type = "image"
+title = "codecraft app icon"

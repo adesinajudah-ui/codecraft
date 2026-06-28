@@ -1,0 +1,3 @@
+- [Clerk version pairing](clerk-version.md) — @clerk/react must be ^6.x to share @clerk/shared@4.x with @clerk/express; never use 5.x.
+- [Expo API base URL](expo-api-url.md) — call setBaseUrl() at module level in _layout.tsx; Expo bundles bypass the shared proxy.
+- [API server auth pattern](api-auth.md) — use getAuth(req) from @clerk/express, never req.auth?.userId (types don't expose it).
