@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "CodeCraft Mobile",
-    "slug": "codecraft-mobile",
+    "name": "CodeCraft",
+    "slug": "codecraft",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "codecraft-mobile",
+    "scheme": "codecraft",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,9 +14,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.codecraft.app"
     },
-    "android": {},
+    "android": {
+      "package": "com.codecraft.app"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
