@@ -10,6 +10,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, getAuth } from "@clerk/express";
 import { eq, sql, gte, ilike, or } from "drizzle-orm";
+import { seedHtmlCompleteCourse } from "../seedHtmlComplete";
 
 const router = Router();
 
@@ -103,6 +104,15 @@ router.get("/users", requireAuth(), async (req, res) => {
     page,
     limit,
   });
+});
+
+router.post("/seed-html-complete", async (req, res) => {
+  try {
+    const result = await seedHtmlCompleteCourse();
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;

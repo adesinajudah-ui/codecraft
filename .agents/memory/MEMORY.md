@@ -3,3 +3,4 @@
 - [API server auth pattern](api-auth.md) — use getAuth(req) from @clerk/express, never req.auth?.userId (types don't expose it).
 - [Clerk Router context bug](clerk-router-context.md) — useLocation() must be called inside WouterRouter; ClerkProvider must be a child of WouterRouter, not a sibling/parent.
 - [api-client-react type declarations](api-client-react-types.md) — run tsc --declaration --emitDeclarationOnly --outDir dist in lib/api-client-react to fix "Output file not built" TS errors in web pages.
+- [Seed script backtick escaping](seed-backtick.md) — backticks inside template literal content strings must be escaped as \` or esbuild misparses them; DB push needed before first seed; partial seeds need manual psql cleanup.
