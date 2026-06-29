@@ -17,6 +17,12 @@ import MultiplayerQuiz from "./pages/MultiplayerQuiz";
 import Editor from "./pages/Editor";
 import Leaderboard from "./pages/Leaderboard";
 import Admin from "./pages/Admin";
+import Community from "./pages/Community";
+import Profile from "./pages/Profile";
+import Certificates from "./pages/Certificates";
+import Settings from "./pages/Settings";
+import Competitions from "./pages/Competitions";
+import MyCourses from "./pages/MyCourses";
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -41,14 +47,42 @@ const clerkAppearance = {
   },
   variables: {
     colorPrimary: "hsl(191 97% 77%)",
+    colorForeground: "hsl(210 40% 98%)",
+    colorMutedForeground: "hsl(215 20% 65%)",
     colorBackground: "hsl(222 47% 11%)",
-    colorText: "hsl(210 40% 98%)",
-    colorInputText: "hsl(210 40% 98%)",
-    colorInputBackground: "hsl(217 33% 17%)",
+    colorInput: "hsl(217 33% 17%)",
+    colorInputForeground: "hsl(210 40% 98%)",
+    colorNeutral: "hsl(217 33% 30%)",
+    colorDanger: "hsl(0 84% 60%)",
+    fontFamily: "inherit",
+    borderRadius: "0.5rem",
   },
   elements: {
     rootBox: "w-full flex justify-center",
     cardBox: "bg-background border border-border rounded-2xl w-[440px] max-w-full overflow-hidden",
+    card: "!shadow-none !border-0 !bg-transparent !rounded-none",
+    footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
+    headerTitle: "text-foreground",
+    headerSubtitle: "text-muted-foreground",
+    socialButtonsBlockButtonText: "text-foreground",
+    formFieldLabel: "text-foreground",
+    footerActionLink: "text-primary",
+    footerActionText: "text-muted-foreground",
+    dividerText: "text-muted-foreground",
+    identityPreviewEditButton: "text-primary",
+    formFieldSuccessText: "text-green-400",
+    alertText: "text-foreground",
+    logoBox: "mb-2",
+    logoImage: "h-10 w-auto",
+    socialButtonsBlockButton: "border border-border bg-card hover:bg-accent",
+    formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90",
+    formFieldInput: "bg-input border border-border text-foreground",
+    footerAction: "border-t border-border",
+    dividerLine: "bg-border",
+    alert: "bg-destructive/10 border border-destructive/20",
+    otpCodeFieldInput: "bg-input border border-border text-foreground",
+    formFieldRow: "gap-2",
+    main: "p-6",
   },
 };
 
@@ -81,7 +115,7 @@ function HomeRedirect() {
   );
 }
 
-function ProtectedRoute({ component: Component }: { component: any }) {
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   return (
     <>
       <Show when="signed-in">
@@ -96,10 +130,10 @@ function ProtectedRoute({ component: Component }: { component: any }) {
   );
 }
 
-function AdminRoute({ component: Component }: { component: any }) {
+function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { user } = useUser();
   const isAdmin = user?.publicMetadata?.role === "admin";
-  
+
   return (
     <>
       <Show when="signed-in">
@@ -126,7 +160,7 @@ function Router() {
       <Route path="/" component={HomeRedirect} />
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
-      
+
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/learn" component={() => <ProtectedRoute component={Learn} />} />
       <Route path="/learn/:courseId" component={() => <ProtectedRoute component={CourseDetail} />} />
@@ -135,8 +169,14 @@ function Router() {
       <Route path="/quiz/:courseId/multiplayer" component={() => <ProtectedRoute component={MultiplayerQuiz} />} />
       <Route path="/editor" component={() => <ProtectedRoute component={Editor} />} />
       <Route path="/leaderboard" component={() => <ProtectedRoute component={Leaderboard} />} />
+      <Route path="/community" component={() => <ProtectedRoute component={Community} />} />
+      <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
+      <Route path="/certificates" component={() => <ProtectedRoute component={Certificates} />} />
+      <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
+      <Route path="/competitions" component={() => <ProtectedRoute component={Competitions} />} />
+      <Route path="/my-courses" component={() => <ProtectedRoute component={MyCourses} />} />
       <Route path="/admin" component={() => <AdminRoute component={Admin} />} />
-      
+
       <Route>
         <div className="p-8 text-center">404 Not Found</div>
       </Route>
@@ -166,23 +206,45 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
-export default function App() {
+function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
 
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
       proxyUrl={clerkProxyUrl}
+      appearance={clerkAppearance}
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+      localization={{
+        signIn: {
+          start: {
+            title: "Welcome back",
+            subtitle: "Sign in to your CodeCraft account",
+          },
+        },
+        signUp: {
+          start: {
+            title: "Start learning today",
+            subtitle: "Create your free CodeCraft account",
+          },
+        },
+      }}
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
-      appearance={clerkAppearance}
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
-        <WouterRouter base={basePath}>
-          <Router />
-        </WouterRouter>
+        <Router />
       </QueryClientProvider>
     </ClerkProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <WouterRouter base={basePath}>
+      <ClerkProviderWithRoutes />
+    </WouterRouter>
   );
 }

@@ -1,11 +1,30 @@
 import { useGetProgressSummary } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useUser } from "@clerk/react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Trophy, Code2, Flame, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trophy, Code2, Flame, Loader2, BookOpen, ChevronRight } from "lucide-react";
+import { Link } from "wouter";
+
 import { motion } from "framer-motion";
 
+const langIcons: Record<string, string> = {
+  HTML: "🌐", CSS: "🎨", JavaScript: "⚡", Python: "🐍", Java: "☕", C: "⚙️",
+};
+
+const langColors: Record<string, string> = {
+  HTML: "bg-orange-500/20 text-orange-500",
+  CSS: "bg-blue-500/20 text-blue-500",
+  JavaScript: "bg-yellow-500/20 text-yellow-500",
+  Python: "bg-green-500/20 text-green-500",
+  Java: "bg-red-500/20 text-red-500",
+  C: "bg-purple-500/20 text-purple-500",
+};
+
 export default function Dashboard() {
+  const { user } = useUser();
   const { data: summaries, isLoading } = useGetProgressSummary();
+  const firstName = user?.firstName || user?.username || "Developer";
 
   if (isLoading) {
     return (
@@ -23,7 +42,7 @@ export default function Dashboard() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold font-mono tracking-tight mb-2">Welcome back, Developer</h1>
+        <h1 className="text-3xl font-bold font-mono tracking-tight mb-2">Welcome back, {firstName} 👋</h1>
         <p className="text-muted-foreground">Here's your coding journey progress so far.</p>
       </div>
 
@@ -71,17 +90,22 @@ export default function Dashboard() {
               transition={{ delay: idx * 0.1 }}
               key={summary.languageId}
             >
-              <Card>
-                <CardHeader>
+              <Card className="hover:border-primary/40 transition-colors">
+                <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between">
-                    <span>{summary.languageName}</span>
-                    <span className="text-sm text-primary">{summary.xpEarned} XP</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${langColors[summary.languageName] || "bg-primary/20 text-primary"}`}>
+                        {langIcons[summary.languageName] || "💻"}
+                      </span>
+                      <span>{summary.languageName}</span>
+                    </div>
+                    <span className="text-sm font-mono text-primary">{summary.xpEarned} XP</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between text-sm mb-2 text-muted-foreground">
                     <span>{summary.completedLessons} / {summary.totalLessons} lessons</span>
-                    <span>{summary.totalLessons > 0 ? Math.round((summary.completedLessons / summary.totalLessons) * 100) : 0}%</span>
+                    <span className="font-medium">{summary.totalLessons > 0 ? Math.round((summary.completedLessons / summary.totalLessons) * 100) : 0}%</span>
                   </div>
                   <Progress value={summary.totalLessons > 0 ? (summary.completedLessons / summary.totalLessons) * 100 : 0} className="h-2" />
                 </CardContent>
@@ -90,13 +114,20 @@ export default function Dashboard() {
           ))}
         </div>
       ) : (
-        <Card className="border-dashed">
+        <Card className="border-dashed border-primary/30 bg-primary/5">
           <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-            <Code2 className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No progress yet</h3>
-            <p className="text-muted-foreground max-w-md">
-              Start learning a programming language to see your progress track here.
+            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-4">
+              <BookOpen className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Ready to start your journey?</h3>
+            <p className="text-muted-foreground max-w-md mb-6">
+              Pick a programming language and dive in. Complete lessons to earn XP, unlock certificates, and climb the leaderboard.
             </p>
+            <Link href="/learn">
+              <Button size="lg" className="gap-2 font-mono">
+                Start Learning <ChevronRight className="w-4 h-4" />
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       )}
