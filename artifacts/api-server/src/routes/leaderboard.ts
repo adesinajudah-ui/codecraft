@@ -71,7 +71,7 @@ router.get("/", async (req, res) => {
       userId: c.userId,
       displayName: statsMap.get(c.userId)?.displayName ?? "Anonymous",
       xp: c.xp,
-      completedLessons: c.count,
+      completedCourses: c.count,
       quizzesPassed: statsMap.get(c.userId)?.quizzesPassed ?? 0,
     }));
 
@@ -90,7 +90,7 @@ router.get("/", async (req, res) => {
     userId: u.userId,
     displayName: u.displayName,
     xp: u.xp,
-    completedLessons: u.lessonsCompleted,
+    completedCourses: u.lessonsCompleted,
     quizzesPassed: u.quizzesPassed,
   }));
 

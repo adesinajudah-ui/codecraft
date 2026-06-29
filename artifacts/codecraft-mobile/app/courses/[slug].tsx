@@ -26,7 +26,7 @@ export default function CoursesScreen() {
   const router = useRouter();
   const isWeb = Platform.OS === "web";
 
-  const { data: courses, isLoading } = useListCoursesByLanguage({ slug: slug ?? "" });
+  const { data: courses, isLoading } = useListCoursesByLanguage(slug ?? "");
   const styles = makeStyles(colors);
 
   if (isLoading) {

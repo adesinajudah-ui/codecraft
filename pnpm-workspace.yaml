@@ -76,6 +76,8 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # Force a single @types/react version to avoid phantom-type TS errors
+  "@types/react": "^19.2.0"
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"

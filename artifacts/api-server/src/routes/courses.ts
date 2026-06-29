@@ -24,7 +24,7 @@ router.get("/:id", async (req, res) => {
     .where(eq(lessonsTable.courseId, id))
     .orderBy(lessonsTable.order);
 
-  res.json({ ...course[0], lessons });
+  res.json({ ...course[0], level: course[0].level?.toLowerCase(), lessons });
 });
 
 export default router;

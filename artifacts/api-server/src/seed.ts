@@ -33,7 +33,7 @@ export async function seedDatabase() {
 
   // ── HTML Courses & Lessons ─────────────────────────────────────────
   const [htmlCourse] = await db.insert(coursesTable).values({
-    languageId: html.id, title: "HTML Fundamentals", description: "Learn the building blocks of every webpage from scratch.", level: "Beginner", xpReward: 400,
+    languageId: html.id, title: "HTML Fundamentals", description: "Learn the building blocks of every webpage from scratch.", level: "beginner", xpReward: 400,
   }).returning();
 
   const htmlLessons = await db.insert(lessonsTable).values([
@@ -51,7 +51,7 @@ export async function seedDatabase() {
 
   // ── JavaScript Course & Lessons ────────────────────────────────────
   const [jsCourse] = await db.insert(coursesTable).values({
-    languageId: js.id, title: "JavaScript Essentials", description: "From variables to async programming — master modern JavaScript.", level: "Beginner", xpReward: 500,
+    languageId: js.id, title: "JavaScript Essentials", description: "From variables to async programming — master modern JavaScript.", level: "beginner", xpReward: 500,
   }).returning();
 
   await db.insert(lessonsTable).values([
@@ -69,7 +69,7 @@ export async function seedDatabase() {
 
   // ── Python Course & Lessons ────────────────────────────────────────
   const [pythonCourse] = await db.insert(coursesTable).values({
-    languageId: python.id, title: "Python for Beginners", description: "Learn Python's elegant syntax and build real programs from day one.", level: "Beginner", xpReward: 500,
+    languageId: python.id, title: "Python for Beginners", description: "Learn Python's elegant syntax and build real programs from day one.", level: "beginner", xpReward: 500,
   }).returning();
 
   await db.insert(lessonsTable).values([
@@ -87,7 +87,7 @@ export async function seedDatabase() {
 
   // ── CSS Course ─────────────────────────────────────────────────────
   const [cssCourse] = await db.insert(coursesTable).values({
-    languageId: css.id, title: "CSS Mastery", description: "Design beautiful, responsive web interfaces with modern CSS.", level: "Beginner", xpReward: 400,
+    languageId: css.id, title: "CSS Mastery", description: "Design beautiful, responsive web interfaces with modern CSS.", level: "beginner", xpReward: 400,
   }).returning();
 
   await db.insert(lessonsTable).values([
@@ -100,7 +100,7 @@ export async function seedDatabase() {
 
   // ── Java Course ────────────────────────────────────────────────────
   const [javaCourse] = await db.insert(coursesTable).values({
-    languageId: java.id, title: "Java Programming", description: "Learn Java from scratch — variables, OOP, and building real applications.", level: "Beginner", xpReward: 500,
+    languageId: java.id, title: "Java Programming", description: "Learn Java from scratch — variables, OOP, and building real applications.", level: "beginner", xpReward: 500,
   }).returning();
 
   await db.insert(lessonsTable).values([
@@ -113,7 +113,7 @@ export async function seedDatabase() {
 
   // ── C Language Course ──────────────────────────────────────────────
   const [cCourse] = await db.insert(coursesTable).values({
-    languageId: c.id, title: "C Programming", description: "Learn the C language — the foundation of modern operating systems and compilers.", level: "Intermediate", xpReward: 500,
+    languageId: c.id, title: "C Programming", description: "Learn the C language — the foundation of modern operating systems and compilers.", level: "intermediate", xpReward: 500,
   }).returning();
 
   await db.insert(lessonsTable).values([

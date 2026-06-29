@@ -32,7 +32,7 @@ router.get("/:slug/courses", async (req, res) => {
   const lessonMap = new Map(lessonCounts.map((l) => [l.courseId, l.count]));
 
   const courses = await db.select().from(coursesTable).where(eq(coursesTable.languageId, lang[0].id));
-  res.json(courses.map((c) => ({ ...c, lessonCount: lessonMap.get(c.id) ?? 0 })));
+  res.json(courses.map((c) => ({ ...c, level: c.level?.toLowerCase(), lessonCount: lessonMap.get(c.id) ?? 0 })));
 });
 
 export default router;

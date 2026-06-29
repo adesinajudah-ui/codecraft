@@ -21,7 +21,7 @@ export default function LessonScreen() {
   const isWeb = Platform.OS === "web";
   const [completed, setCompleted] = useState(false);
 
-  const { data: lesson, isLoading } = useGetLesson({ id: parseInt(id ?? "0") });
+  const { data: lesson, isLoading } = useGetLesson(parseInt(id ?? "0"));
   const styles = makeStyles(colors);
 
   if (isLoading) {

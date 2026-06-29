@@ -106,7 +106,8 @@ router.get("/users", requireAuth(), async (req, res) => {
   });
 });
 
-router.post("/seed-html-complete", async (req, res) => {
+router.post("/seed-html-complete", requireAuth(), async (req, res) => {
+  if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const result = await seedHtmlCompleteCourse();
     res.json(result);

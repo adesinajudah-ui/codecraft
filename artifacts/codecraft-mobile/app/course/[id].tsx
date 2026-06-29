@@ -20,7 +20,7 @@ export default function CourseDetailScreen() {
   const router = useRouter();
   const isWeb = Platform.OS === "web";
 
-  const { data: course, isLoading } = useGetCourse({ id: parseInt(id ?? "0") });
+  const { data: course, isLoading } = useGetCourse(parseInt(id ?? "0"));
   const styles = makeStyles(colors);
 
   if (isLoading) {

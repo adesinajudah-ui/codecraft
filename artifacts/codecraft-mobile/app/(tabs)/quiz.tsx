@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { useListLanguages, useGetQuizByCourse, useListCoursesByLanguage } from "@workspace/api-client-react";
+import { useListLanguages, useGetQuizByCourse, useListCoursesByLanguage, getListCoursesByLanguageQueryKey, getGetQuizByCourseQueryKey } from "@workspace/api-client-react";
 
 export default function QuizScreen() {
   const colors = useColors();
@@ -29,12 +29,12 @@ export default function QuizScreen() {
   const styles = makeStyles(colors);
 
   const { data: courses } = useListCoursesByLanguage(
-    { slug: selectedLang ?? "" },
-    { enabled: !!selectedLang }
+    selectedLang ?? "",
+    { query: { enabled: !!selectedLang, queryKey: getListCoursesByLanguageQueryKey(selectedLang ?? "") } }
   );
   const { data: quiz, isLoading: quizLoading } = useGetQuizByCourse(
-    { id: selectedCourseId ?? 0 },
-    { enabled: !!selectedCourseId }
+    selectedCourseId ?? 0,
+    { query: { enabled: !!selectedCourseId, queryKey: getGetQuizByCourseQueryKey(selectedCourseId ?? 0) } }
   );
 
   function handleAnswer(idx: number) {
