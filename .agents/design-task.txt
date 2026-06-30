@@ -1,0 +1,207 @@
+Build a complete interactive HTML course platform called CodeCraft — a focused learning experience for absolute beginners who want to learn HTML from scratch. The product feels like a premium coding bootcamp — structured, encouraging, and deeply interactive. Every page should feel purposeful and polished, like something a student would be excited to bookmark.
+
+Vibe: Confident and educational — like a great teacher who is also a great designer. Dense with value but never overwhelming. Dark-mode friendly, developer aesthetic without being cold.
+
+---
+
+## App Structure
+
+### Pages / Routes
+
+- "/" — Course home: shows the 5 lessons as expandable cards. Clicking a lesson reveals its subtopics. Clicking a subtopic navigates to the learning page.
+- "/lesson/:lessonId/topic/:topicId" — Full learning page for a subtopic (explanation, code examples, CodeMirror editor, exercises, quiz).
+
+---
+
+## Course Data (embed as static data in the frontend — no backend needed)
+
+### Lesson 1 – HTML Basics (6 subtopics)
+1. Introduction to HTML
+2. How the Web Works
+3. HTML Document Structure
+4. Installing VS Code
+5. HTML Editors
+6. Your First HTML Page
+
+### Lesson 2 – HTML Elements & Tags (6 subtopics)
+1. HTML Tags & Syntax
+2. Headings (h1–h6)
+3. Paragraphs & Line Breaks
+4. Text Formatting Tags
+5. Comments in HTML
+6. HTML Attributes
+
+### Lesson 3 – HTML Links, Images & Media (6 subtopics)
+1. Creating Hyperlinks
+2. Absolute vs Relative URLs
+3. Adding Images
+4. Image Attributes (alt, width, height)
+5. Audio in HTML
+6. Video in HTML
+
+### Lesson 4 – HTML Lists & Tables (6 subtopics)
+1. Unordered Lists
+2. Ordered Lists
+3. Nested Lists
+4. Creating Tables
+5. Table Headers & Borders
+6. Merging Cells (colspan & rowspan)
+
+### Lesson 5 – HTML Forms & Semantic HTML (6 subtopics)
+1. Introduction to Forms
+2. Input Types
+3. Labels & Placeholders
+4. Dropdown & Textarea
+5. Form Validation Attributes
+6. Semantic HTML Elements (header, nav, main, footer, article, section)
+
+---
+
+## Learning Page Structure (for each subtopic)
+
+Each subtopic page must contain ALL of the following sections in order:
+
+### 1. Header
+- Lesson & topic title
+- Breadcrumb: Lesson N > Topic name
+- Progress indicator (e.g., "Topic 3 of 6")
+- Previous / Next navigation buttons
+
+### 2. Explanation Section
+Write a beginner-friendly, original explanation (150-250 words) for each topic. Do not copy from external sources. Use plain language, analogies, and real-world context. Below is the content outline for each topic:
+
+LESSON 1 EXPLANATIONS:
+
+Introduction to HTML: HTML stands for HyperText Markup Language. Explain what markup means (annotating text with tags), how browsers read HTML and render it visually, that HTML is the skeleton/structure of every webpage, and that it is not a programming language but a markup language. Analogy: HTML is like the blueprint of a house.
+
+How the Web Works: Explain the request-response cycle: user types URL, DNS lookup happens, browser sends HTTP request, server returns HTML file, browser parses and renders it. Mention clients, servers, and briefly what HTTP/HTTPS means.
+
+HTML Document Structure: Explain the DOCTYPE declaration, html, head, and body tags. What goes in head (meta info, title, links) vs body (visible content). Explain charset and viewport meta tags.
+
+Installing VS Code: Walk through why we use a code editor (syntax highlighting, autocomplete), how to download VS Code from code.visualstudio.com, and recommend the Live Server extension for real-time previewing. Tips: install Prettier for formatting.
+
+HTML Editors: Compare different editors: VS Code (recommended), Sublime Text, Atom, Notepad++, and online editors like CodePen and JSFiddle. Explain that online editors are great for quick experiments but VS Code is best for real projects.
+
+Your First HTML Page: Guide through creating an index.html file, writing the boilerplate structure, adding a heading and paragraph, saving and opening in a browser. The feeling of seeing your first webpage live.
+
+LESSON 2 EXPLANATIONS:
+
+HTML Tags & Syntax: Explain opening/closing tags, self-closing tags, nesting rules, and case-insensitivity. Analogy: tags are like parentheses that must always be paired.
+
+Headings (h1-h6): Explain semantic importance of heading hierarchy, SEO impact, that h1 should appear once, accessibility implications.
+
+Paragraphs & Line Breaks: The p tag creates block-level paragraphs with automatic spacing. br forces a line break within content. When to use each.
+
+Text Formatting Tags: strong (bold, semantic importance), em (italic, emphasis), u (underline), mark (highlight), small, del, ins, sup, sub. Semantic vs presentational.
+
+Comments in HTML: How to write comments, why comments help team collaboration and future-you, that browsers ignore them, and not to put sensitive info in comments.
+
+HTML Attributes: Explain that attributes provide extra info to elements, syntax (name="value"), common attributes: class, id, style, title, lang, href, src, alt.
+
+LESSON 3 EXPLANATIONS:
+
+Creating Hyperlinks: The anchor tag with href attribute, internal vs external links, the target="_blank" attribute, linking to email with mailto:.
+
+Absolute vs Relative URLs: Absolute URLs include protocol and domain. Relative URLs are relative to the current file. When to use each.
+
+Adding Images: The img tag (self-closing), the src attribute, file paths, supported formats (JPG, PNG, GIF, SVG, WebP).
+
+Image Attributes: alt text (accessibility, SEO, shown when image fails), width/height (preventing layout shift), loading="lazy" for performance.
+
+Audio in HTML: The audio tag, controls attribute, source element, multiple formats for browser compatibility (MP3, OGG), fallback text.
+
+Video in HTML: The video tag, controls, autoplay, muted, loop attributes, poster image, the source element with type attribute.
+
+LESSON 4 EXPLANATIONS:
+
+Unordered Lists: ul with li children, bullet styling with CSS (list-style-type), nesting capability, semantic meaning (unordered/no sequence matters).
+
+Ordered Lists: ol with li, type attribute (1, a, A, i, I), start attribute to begin at any number.
+
+Nested Lists: Nesting ul inside li elements, real-world uses (navigation menus, outlines), indentation automatically applied by browsers.
+
+Creating Tables: table, tr (table row), td (table data cell), basic structure. Tables are for tabular data, not layout.
+
+Table Headers & Borders: th for header cells (bold, centered by default), thead, tbody, tfoot sections, border attribute (deprecated, use CSS instead), scope attribute for accessibility.
+
+Merging Cells: colspan merges columns, rowspan merges rows, useful for complex data tables like schedules or reports, with practical example.
+
+LESSON 5 EXPLANATIONS:
+
+Introduction to Forms: form tag with action and method attributes, how forms send data to a server, GET vs POST difference, form as the primary way users interact with web apps.
+
+Input Types: type="text", email, password, number, date, checkbox, radio, file, submit, reset, search. Each type provides browser validation and appropriate keyboard.
+
+Labels & Placeholders: label with for attribute linked to input id (accessibility), placeholder text as a hint (not a replacement for labels), why labels matter for screen readers.
+
+Dropdown & Textarea: select with option elements, multiple selection, selected attribute; textarea with rows/cols, resize behavior.
+
+Form Validation Attributes: required, minlength, maxlength, min, max, pattern (regex), type-based validation. How browsers show validation errors natively.
+
+Semantic HTML Elements: header, nav, main, article, section, aside, footer — what each means, why semantic HTML matters for SEO/accessibility/maintainability vs using generic div.
+
+### 3. Code Example Section
+For each topic, include a well-commented, runnable HTML code example (15-40 lines). Display it with syntax highlighting. The example should demonstrate the key concept.
+
+### 4. "Try It Yourself" Editor
+Use @uiw/react-codemirror with @codemirror/lang-html for an interactive code editor. The editor should:
+- Be pre-populated with the code example for that topic
+- Have a "Run" button that renders the HTML output in an iframe below
+- Show the rendered output immediately when the page loads
+- Have a "Reset" button to restore the original example
+- Editor height: ~250px, output iframe: ~300px
+
+### 5. Practice Exercises
+Include 3 practice exercises per topic with clear instructions:
+- Exercise 1: Simple (modify the given example slightly)
+- Exercise 2: Medium (write something from scratch following a spec)
+- Exercise 3: Challenging (combine this topic with a previous concept)
+
+Each exercise should have a clear task description and a collapsible hint.
+
+### 6. Quiz Section (20 Questions)
+A complete 20-question multiple-choice quiz for each subtopic. Each question has:
+- Question text
+- 4 options (A, B, C, D)
+- After answering: show whether correct/incorrect, and a 1-2 sentence explanation
+
+Quiz behavior:
+- All 20 questions shown with user selecting answers, then submitted for scoring at the end
+- Score displayed after all 20 are answered
+- Option to restart the quiz
+
+Write all 20 original quiz questions per topic covering that topic's concept deeply. Include questions about gotchas, edge cases, best practices, and real-world usage — not just definitions.
+
+---
+
+## Technical Implementation Notes
+
+1. Install and use @uiw/react-codemirror (already installed in package.json) with @codemirror/lang-html for the code editor. Import as: import CodeMirror from "@uiw/react-codemirror"; import { html } from "@codemirror/lang-html";
+2. Store all course data (lessons, topics, content, code examples, exercises, quiz questions) in a single src/data/courseData.ts file as static TypeScript objects. This file will be large — that is fine and expected.
+3. Use wouter for routing ("/" and "/lesson/:lessonId/topic/:topicId").
+4. Home page: Show 5 lesson cards. Each card is clickable to expand and show its subtopics. Clicking a subtopic opens the full learning page.
+5. Learning page: Full-width layout. Scrollable. Clear section separation.
+6. Previous/Next navigation: Navigate between subtopics across lessons (topic 6 of lesson 1 "Next" goes to topic 1 of lesson 2).
+7. No backend, no API hooks needed — all data is static.
+8. Dark mode support using next-themes (already in package.json).
+
+---
+
+## Color & Design
+
+Make CodeCraft feel like a premium developer education platform. Make a bold, deliberate color choice that someone would remember — not just blue-on-white.
+
+Use real color: a dark navy/slate background with a vibrant accent (consider teal, indigo, amber, or green — pick one and commit to it). Code blocks and editors should feel comfortable for reading code.
+
+---
+
+## Important Rules
+- Do NOT use emojis anywhere in the UI
+- Do NOT import React (Vite JSX transformer handles it automatically)
+- Rewrite ALL "red" placeholder values in src/index.css with real HSL values before writing any components — if any red values remain, the page will render broken
+- Add data-testid attributes to interactive elements
+- All content must be original, especially explanations and quiz questions
+- The courseData.ts file should contain ALL 5 lessons x 6 topics with full content: explanation text, code example, 3 exercises, and 20 quiz questions each
+- NEVER import something you do not use — TypeScript will fail the build on unused imports
+
+You are capable of extraordinary creative work. This is a real learning platform that students will use to start their coding journey. Make it feel like the best free HTML course on the internet. Every section should be polished, clear, and motivating. Don't play it safe.

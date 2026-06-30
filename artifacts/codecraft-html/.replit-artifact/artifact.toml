@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "CodeCraft – HTML Course"
+version = "1.0.0"
+id = "artifacts/codecraft-html"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26077
+
+[services.development]
+run = "pnpm --filter @workspace/codecraft-html run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/codecraft-html", "run", "build" ]
+publicDir = "artifacts/codecraft-html/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26077"
+BASE_PATH = "/"
