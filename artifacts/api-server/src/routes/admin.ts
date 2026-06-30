@@ -11,6 +11,7 @@ import {
 import { requireAuth, getAuth } from "@clerk/express";
 import { eq, sql, gte, ilike, or } from "drizzle-orm";
 import { seedHtmlCompleteCourse } from "../seedHtmlComplete";
+import { seedHtmlLessons9to16 } from "../seedHtmlLessons9to16";
 
 const router = Router();
 
@@ -110,6 +111,16 @@ router.post("/seed-html-complete", requireAuth(), async (req, res) => {
   if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const result = await seedHtmlCompleteCourse();
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/seed-html-9-16", requireAuth(), async (req, res) => {
+  if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
+  try {
+    const result = await seedHtmlLessons9to16();
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

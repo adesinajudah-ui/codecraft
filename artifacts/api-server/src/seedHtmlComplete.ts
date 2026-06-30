@@ -35,7 +35,7 @@ export async function seedHtmlCompleteCourse() {
     languageId: htmlLang.id,
     title: "HTML Lesson 1: Introduction to HTML",
     description: "Discover what HTML is, its history, and how it forms the backbone of every website on the internet.",
-    level: "Beginner",
+    level: "beginner",
     xpReward: 100,
   }).returning();
 
@@ -298,7 +298,7 @@ In this lesson you learned:
     languageId: htmlLang.id,
     title: "HTML Lesson 2: How the Web Works",
     description: "Understand the journey of a web page from server to browser — clients, servers, HTTP, DNS, and rendering explained simply.",
-    level: "Beginner",
+    level: "beginner",
     xpReward: 100,
   }).returning();
 
@@ -607,7 +607,7 @@ Try these challenges:
     languageId: htmlLang.id,
     title: "HTML Lesson 3: HTML Document Structure",
     description: "Master the essential structure every HTML document must have — DOCTYPE, html, head, and body explained for beginners.",
-    level: "Beginner",
+    level: "beginner",
     xpReward: 100,
   }).returning();
 
@@ -950,7 +950,7 @@ The code editor has a complete HTML document. Try these:
     languageId: htmlLang.id,
     title: "HTML Lesson 4: Installing and Using VS Code",
     description: "Set up your professional coding environment with Visual Studio Code — the world's most popular code editor for web development.",
-    level: "Beginner",
+    level: "beginner",
     xpReward: 100,
   }).returning();
 
@@ -1287,7 +1287,7 @@ Try these challenges:
     languageId: htmlLang.id,
     title: "HTML Lesson 5: HTML Elements",
     description: "Deep-dive into HTML elements — the building blocks of every web page. Learn the difference between block and inline elements.",
-    level: "Beginner",
+    level: "beginner",
     xpReward: 100,
   }).returning();
 
@@ -1663,7 +1663,7 @@ Try these challenges:
     languageId: htmlLang.id,
     title: "HTML Lesson 6: HTML Attributes",
     description: "Learn how HTML attributes add extra information and power to your elements — from IDs and classes to custom data attributes.",
-    level: "Beginner",
+    level: "beginner",
     xpReward: 100,
   }).returning();
 
@@ -2015,7 +2015,7 @@ Try these challenges:
     languageId: htmlLang.id,
     title: "HTML Lesson 7: HTML Headings and Paragraphs",
     description: "Master HTML headings (h1-h6), paragraphs, line breaks, and text formatting to create well-structured, readable content.",
-    level: "Beginner",
+    level: "beginner",
     xpReward: 100,
   }).returning();
 
@@ -2396,7 +2396,7 @@ Try these challenges:
     languageId: htmlLang.id,
     title: "HTML Lesson 8: HTML Comments",
     description: "Learn to write HTML comments — invisible notes in your code that help you stay organised and communicate with other developers.",
-    level: "Beginner",
+    level: "beginner",
     xpReward: 100,
   }).returning();
 
