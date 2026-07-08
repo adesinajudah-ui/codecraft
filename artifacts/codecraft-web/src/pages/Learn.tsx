@@ -92,9 +92,15 @@ export default function Learn() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Link href={`/learn/${course.id}`} className="w-full">
-                    <Button className="w-full">View Course</Button>
-                  </Link>
+                  {selectedSlug === "html" ? (
+                    <a href="/html-course/" className="w-full">
+                      <Button className="w-full">View Course</Button>
+                    </a>
+                  ) : (
+                    <Link href={`/learn/${course.id}`} className="w-full">
+                      <Button className="w-full">View Course</Button>
+                    </Link>
+                  )}
                 </CardFooter>
               </Card>
             </motion.div>
