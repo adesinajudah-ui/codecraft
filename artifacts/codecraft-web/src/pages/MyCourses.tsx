@@ -65,7 +65,6 @@ export default function MyCourses() {
               {(tab === "all" ? summaries : tab === "inprogress" ? inProgress : completed)?.map((s, i) => {
                 const prog = s.totalLessons > 0 ? Math.round((s.completedLessons / s.totalLessons) * 100) : 0;
                 const isComplete = s.completedLessons === s.totalLessons && s.totalLessons > 0;
-                const lang = languages?.find(l => l.id === s.languageId);
                 return (
                   <motion.div key={s.languageId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                     <Card className={`hover:border-primary/40 transition-colors ${isComplete ? "border-green-500/30 bg-green-500/5" : ""}`}>
