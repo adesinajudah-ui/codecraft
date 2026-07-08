@@ -1,14 +1,31 @@
 import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
+import { useTheme } from "next-themes";
 import { flatTopics, getNextTopic, getPrevTopic, courseData } from "@/data/courseData";
-import { ChevronLeft, ChevronRight, Play, RotateCcw, CheckCircle, XCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, RotateCcw, CheckCircle, XCircle, Sun, Moon } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { html } from "@codemirror/lang-html";
 import { oneDark } from "@codemirror/theme-one-dark";
 
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <button
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      aria-label="Toggle theme"
+      className="p-2 rounded-lg border border-border bg-card hover:bg-muted transition-colors"
+    >
+      {theme === "dark"
+        ? <Sun className="w-4 h-4 text-muted-foreground" />
+        : <Moon className="w-4 h-4 text-muted-foreground" />}
+    </button>
+  );
+}
+
 export default function TopicPage() {
   const [, params] = useRoute("/lesson/:lessonId/topic/:topicId");
   const [, setLocation] = useLocation();
+  const { theme } = useTheme();
   
   const currentTopicFlat = flatTopics.find(t => t.lessonId === params?.lessonId && t.topicId === params?.topicId);
   const topic = currentTopicFlat?.topic;
@@ -74,7 +91,7 @@ export default function TopicPage() {
             <h1 className="text-xl md:text-2xl font-bold">{topic.title}</h1>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-muted-foreground">
               Topic {currentIndex + 1} of {totalTopics}
             </span>
@@ -82,6 +99,7 @@ export default function TopicPage() {
               <button 
                 onClick={() => prevTopic && setLocation(`/lesson/${prevTopic.lessonId}/topic/${prevTopic.topicId}`)}
                 disabled={!prevTopic}
+                aria-label="Previous topic"
                 className="p-2 rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 data-testid="btn-prev"
               >
@@ -90,12 +108,14 @@ export default function TopicPage() {
               <button 
                 onClick={() => nextTopic && setLocation(`/lesson/${nextTopic.lessonId}/topic/${nextTopic.topicId}`)}
                 disabled={!nextTopic}
+                aria-label="Next topic"
                 className="p-2 rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 data-testid="btn-next"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -119,136 +139,163 @@ export default function TopicPage() {
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 transition-colors"
                 data-testid="btn-reset-code"
               >
-                <RotateCcw className="w-4 h-4" /> Reset
+                <RotateCcw className="w-4 h-4" />
+                Reset
               </button>
               <button 
                 onClick={runCode}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
                 data-testid="btn-run-code"
               >
-                <Play className="w-4 h-4" /> Run Code
+                <Play className="w-4 h-4" />
+                Run Code
               </button>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="border border-border rounded-lg overflow-hidden bg-[#282c34]">
-              <div className="bg-muted px-4 py-2 text-xs font-mono text-muted-foreground border-b border-border">index.html</div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="rounded-xl overflow-hidden border border-border">
+              <div className="bg-card px-4 py-2 text-sm font-medium text-muted-foreground border-b border-border">
+                HTML Editor
+              </div>
               <CodeMirror
                 value={code}
-                height="300px"
-                theme={oneDark}
+                height="400px"
                 extensions={[html()]}
-                onChange={(val) => setCode(val)}
-                className="text-base"
+                theme={theme === "dark" ? oneDark : "light"}
+                onChange={(value) => setCode(value)}
+                data-testid="code-editor"
               />
             </div>
-            <div className="border border-border rounded-lg overflow-hidden bg-white flex flex-col">
-              <div className="bg-muted px-4 py-2 text-xs font-mono text-muted-foreground border-b border-border dark:bg-slate-800">Browser Output</div>
-              <iframe 
-                srcDoc={output}
-                title="output"
-                sandbox="allow-scripts"
-                className="w-full flex-1 min-h-[300px] bg-white text-black"
-              />
-            </div>
-          </div>
-        </section>
 
-        {/* Exercises */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-bold border-b border-border pb-4">Practice Exercises</h2>
-          <div className="grid gap-4">
-            {topic.exercises.map((ex, i) => (
-              <div key={i} className="bg-card border border-border p-6 rounded-lg space-y-3">
-                <h3 className="font-bold text-lg text-primary">{ex.title}</h3>
-                <p className="text-muted-foreground">{ex.description}</p>
-                <details className="group cursor-pointer">
-                  <summary className="text-sm font-medium text-accent-foreground w-fit select-none">Show Hint</summary>
-                  <div className="mt-2 p-3 bg-accent/20 rounded text-sm text-foreground border border-accent/30">
-                    {ex.hint}
-                  </div>
-                </details>
+            <div className="rounded-xl overflow-hidden border border-border">
+              <div className="bg-card px-4 py-2 text-sm font-medium text-muted-foreground border-b border-border">
+                Preview
               </div>
-            ))}
+              <iframe
+                srcDoc={output}
+                title="HTML Preview"
+                className="w-full h-[400px] bg-white"
+                sandbox="allow-scripts"
+                data-testid="preview-iframe"
+              />
+            </div>
           </div>
         </section>
 
         {/* Quiz Section */}
         {topic.quiz && topic.quiz.length > 0 && (
-          <section className="space-y-8 bg-muted/30 p-8 rounded-xl border border-border">
-            <h2 className="text-2xl font-bold">Knowledge Check</h2>
-            <div className="space-y-8">
-              {topic.quiz.map((q, qIndex) => (
-                <div key={qIndex} className="bg-card p-6 rounded-lg border border-border shadow-sm">
-                  <p className="font-semibold text-lg mb-4">{qIndex + 1}. {q.question}</p>
-                  <div className="space-y-2">
-                    {q.options.map((opt, optIndex) => {
-                      const isSelected = quizAnswers[qIndex] === optIndex;
-                      const isCorrect = optIndex === q.correctIndex;
-                      const showResult = quizSubmitted;
-                      
-                      let btnClass = "w-full text-left p-4 rounded border transition-all ";
-                      if (showResult) {
-                        if (isCorrect) btnClass += "bg-green-500/20 border-green-500 text-green-700 dark:text-green-400 ";
-                        else if (isSelected && !isCorrect) btnClass += "bg-red-500/20 border-red-500 text-red-700 dark:text-red-400 ";
-                        else btnClass += "border-border bg-card opacity-50 ";
-                      } else {
-                        if (isSelected) btnClass += "border-primary bg-primary/10 ";
-                        else btnClass += "border-border bg-card hover:bg-muted ";
-                      }
+          <section className="space-y-6 pb-8">
+            <h2 className="text-2xl font-bold border-b border-border pb-4">Quiz</h2>
 
-                      return (
-                        <button
-                          key={optIndex}
-                          disabled={quizSubmitted}
-                          onClick={() => setQuizAnswers(prev => ({ ...prev, [qIndex]: optIndex }))}
-                          className={btnClass}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{opt}</span>
-                            {showResult && isCorrect && <CheckCircle className="w-5 h-5 text-green-500" />}
-                            {showResult && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-red-500" />}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {quizSubmitted && (
-                    <div className="mt-4 p-4 bg-muted rounded-lg text-sm">
-                      <span className="font-bold">Explanation: </span>
-                      {q.explanation}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+            {topic.quiz.map((q, qi) => (
+              <div key={qi} className="bg-card rounded-xl border border-border p-6 space-y-4">
+                <p className="font-semibold text-lg">{qi + 1}. {q.question}</p>
+                <div className="space-y-2">
+                  {q.options.map((opt, oi) => {
+                    const isSelected = quizAnswers[qi] === oi;
+                    const isCorrect = oi === q.correctIndex;
+                    let classes = "w-full text-left p-4 rounded-lg border transition-all ";
 
-            <div className="pt-6 border-t border-border flex items-center justify-between">
-              {quizSubmitted ? (
-                <div className="flex items-center gap-6">
-                  <div className="text-xl font-bold">
-                    Score: {calculateScore()} / {topic.quiz.length}
-                  </div>
-                  <button 
-                    onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); }}
-                    className="px-6 py-2 bg-secondary text-secondary-foreground font-medium rounded hover:bg-secondary/80 transition-colors"
-                  >
-                    Retake Quiz
-                  </button>
+                    if (!quizSubmitted) {
+                      classes += isSelected
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50";
+                    } else {
+                      if (isCorrect) classes += "border-green-500 bg-green-500/10 text-green-700 dark:text-green-400";
+                      else if (isSelected && !isCorrect) classes += "border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 line-through";
+                      else classes += "border-border text-muted-foreground opacity-60";
+                    }
+
+                    return (
+                      <button
+                        key={oi}
+                        onClick={() => !quizSubmitted && setQuizAnswers(prev => ({ ...prev, [qi]: oi }))}
+                        disabled={quizSubmitted}
+                        className={classes}
+                        data-testid={`quiz-${qi}-option-${oi}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span>{opt}</span>
+                          {quizSubmitted && isCorrect && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />}
+                          {quizSubmitted && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-              ) : (
-                <button 
-                  onClick={() => setQuizSubmitted(true)}
-                  disabled={Object.keys(quizAnswers).length !== topic.quiz.length}
-                  className="px-8 py-3 bg-primary text-primary-foreground font-bold rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              </div>
+            ))}
+
+            {!quizSubmitted ? (
+              <button
+                onClick={() => setQuizSubmitted(true)}
+                disabled={Object.keys(quizAnswers).length < topic.quiz.length}
+                className="w-full py-3 px-6 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                data-testid="btn-submit-quiz"
+              >
+                Submit Quiz
+              </button>
+            ) : (
+              <div className="bg-card rounded-xl border border-border p-6 text-center space-y-4">
+                <div className="text-4xl font-bold font-mono text-primary">
+                  {calculateScore()} / {topic.quiz.length}
+                </div>
+                <p className="text-muted-foreground">
+                  {calculateScore() === topic.quiz.length
+                    ? "Perfect score! 🎉"
+                    : calculateScore() >= topic.quiz.length / 2
+                    ? "Good job! Keep practicing."
+                    : "Keep studying — you'll get it!"}
+                </p>
+                <button
+                  onClick={() => { setQuizAnswers({}); setQuizSubmitted(false); }}
+                  className="px-6 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm font-medium"
+                  data-testid="btn-retake-quiz"
                 >
-                  Submit Quiz
+                  Retake Quiz
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </section>
         )}
+
+        {/* Navigation */}
+        <div className="flex justify-between gap-4 border-t border-border pt-8">
+          {prevTopic ? (
+            <Link
+              href={`/lesson/${prevTopic.lessonId}/topic/${prevTopic.topicId}`}
+              className="flex items-center gap-2 px-6 py-3 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-muted/50 transition-all group"
+            >
+              <ChevronLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <div>
+                <div className="text-xs text-muted-foreground">Previous</div>
+                <div className="font-medium text-sm">{prevTopic.topicTitle}</div>
+              </div>
+            </Link>
+          ) : <div />}
+
+          {nextTopic ? (
+            <Link
+              href={`/lesson/${nextTopic.lessonId}/topic/${nextTopic.topicId}`}
+              className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all group ml-auto"
+            >
+              <div className="text-right">
+                <div className="text-xs opacity-80">Next</div>
+                <div className="font-medium text-sm">{nextTopic.topicTitle}</div>
+              </div>
+              <ChevronRight className="w-5 h-5" />
+            </Link>
+          ) : (
+            <Link
+              href="/"
+              className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all ml-auto"
+            >
+              <span className="font-medium">Back to Course Home</span>
+              <ChevronRight className="w-5 h-5" />
+            </Link>
+          )}
+        </div>
       </main>
     </div>
   );
