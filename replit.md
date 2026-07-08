@@ -4,12 +4,21 @@ A programming education platform (like SoloLearn) with a React/Vite web app and 
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+All services are managed as Replit artifact workflows — start/stop from the Replit UI or via `WorkflowsRestart`.
+
+- API server: `artifacts/api-server: API Server` — Express on port 8080, path `/api`
+- Web app: `artifacts/codecraft-web: web` — Vite/React on port 26264, path `/`
+- HTML course: `artifacts/codecraft-html: web` — Vite/React on port 26077, path `/html-course/`
+
+One-off commands:
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/db run push` — push DB schema changes to Replit's built-in Postgres (dev only)
+
+Required env (auto-managed by Replit):
+- `DATABASE_URL` — Replit-managed Postgres (postgresql-16 module)
+- `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Replit-managed Clerk
 
 ## Stack
 
@@ -49,9 +58,11 @@ A programming education platform (like SoloLearn) with a React/Vite web app and 
 
 ## Seeded data
 
-- 6 languages: HTML, CSS, JavaScript, Java, C, Python (3 courses each = 18 courses)
-- 14 lessons: HTML Basics (5), CSS Basics (3), JS Basics (3), Python Basics (3)
-- 4 quizzes with 5 questions each (HTML, CSS, JS, Python)
+Auto-seeded on first API server start when tables are empty:
+- 6 languages: HTML, CSS, JavaScript, Java, C, Python
+- 6 courses (one per language)
+- 45 lessons: HTML(10), JS(10), Python(10), CSS(5), Java(5), C(5)
+- 6 quizzes × 20 questions = 120 questions total
 
 ## User preferences
 
