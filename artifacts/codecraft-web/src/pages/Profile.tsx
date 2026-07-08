@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useGetProgressSummary, useGetLeaderboard } from "@workspace/api-client-react";
-import { Trophy, Flame, Code2, Award, Star, Zap, BookOpen, Target, Calendar, TrendingUp, Loader2 } from "lucide-react";
+import { useGetProgressSummary } from "@workspace/api-client-react";
+import { Trophy, Code2, Award, Star, Zap, BookOpen, Target, Calendar, TrendingUp, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const badges = [
@@ -47,56 +47,59 @@ export default function Profile() {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto">
+    <div className="p-4">
+      {/* Profile card */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="mb-6 border-primary/20 overflow-hidden">
-          <div className="h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5" />
-          <CardContent className="pb-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end -mt-12 mb-4">
-              <Avatar className="w-20 h-20 border-4 border-background shadow-xl">
+        <Card className="mb-4 border-primary/20 overflow-hidden">
+          <div className="h-16 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5" />
+          <CardContent className="pb-4 px-4">
+            <div className="flex items-end gap-3 -mt-8 mb-3">
+              <Avatar className="w-16 h-16 border-4 border-background shadow-xl flex-shrink-0">
                 <AvatarImage src={user?.imageUrl} />
-                <AvatarFallback className="bg-primary/20 text-primary font-bold text-2xl">
+                <AvatarFallback className="bg-primary/20 text-primary font-bold text-xl">
                   {user?.firstName?.[0] || "U"}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-bold">{user?.fullName || "Developer"}</h1>
-                  <Badge className="bg-primary/20 text-primary border-primary/30 font-mono">
-                    Level {level}
+              <div className="flex-1 min-w-0 pb-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-base font-bold truncate">{user?.fullName || "Developer"}</h1>
+                  <Badge className="bg-primary/20 text-primary border-primary/30 font-mono text-xs">
+                    Lv.{level}
                   </Badge>
                 </div>
-                <p className="text-muted-foreground text-sm">{user?.primaryEmailAddress?.emailAddress}</p>
-                <p className="text-muted-foreground text-xs mt-1">Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "—"}</p>
-              </div>
-              <div className="flex gap-6 text-center">
-                <div>
-                  <p className="text-2xl font-bold font-mono text-primary">{totalXp.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Total XP</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold font-mono">{completedLessons}</p>
-                  <p className="text-xs text-muted-foreground">Lessons</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold font-mono">7</p>
-                  <p className="text-xs text-muted-foreground">Day Streak</p>
-                </div>
+                <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
               </div>
             </div>
 
-            <div className="mt-2">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>Level {level} Progress</span>
-                <span>{xpToNextLevel} XP to Level {level + 1}</span>
+            {/* Stats row */}
+            <div className="flex gap-4 text-center mb-3">
+              <div className="flex-1">
+                <p className="text-lg font-bold font-mono text-primary">{totalXp.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">XP</p>
               </div>
-              <Progress value={levelProgress} className="h-2" />
+              <div className="flex-1">
+                <p className="text-lg font-bold font-mono">{completedLessons}</p>
+                <p className="text-xs text-muted-foreground">Lessons</p>
+              </div>
+              <div className="flex-1">
+                <p className="text-lg font-bold font-mono">7</p>
+                <p className="text-xs text-muted-foreground">Streak</p>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Level {level}</span>
+                <span>{xpToNextLevel} XP to next</span>
+              </div>
+              <Progress value={levelProgress} className="h-1.5" />
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
         {[
           { label: "Total XP", value: totalXp.toLocaleString(), icon: Zap, color: "text-yellow-500" },
           { label: "Lessons Done", value: `${completedLessons}/${totalLessons}`, icon: BookOpen, color: "text-blue-500" },
@@ -105,41 +108,41 @@ export default function Profile() {
         ].map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <Card>
-              <CardContent className="p-4">
-                <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
-                <p className="text-2xl font-bold font-mono">{stat.value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+              <CardContent className="p-3">
+                <stat.icon className={`w-4 h-4 ${stat.color} mb-1.5`} />
+                <p className="text-lg font-bold font-mono leading-tight">{stat.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
               </CardContent>
             </Card>
           </motion.div>
         ))}
       </div>
 
-      <Tabs defaultValue="progress" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="progress" className="gap-2 text-xs">
+      <Tabs defaultValue="progress" className="space-y-3">
+        <TabsList className="w-full">
+          <TabsTrigger value="progress" className="flex-1 gap-1.5 text-xs">
             <TrendingUp className="w-3.5 h-3.5" /> Progress
           </TabsTrigger>
-          <TabsTrigger value="badges" className="gap-2 text-xs">
+          <TabsTrigger value="badges" className="flex-1 gap-1.5 text-xs">
             <Star className="w-3.5 h-3.5" /> Badges
           </TabsTrigger>
-          <TabsTrigger value="activity" className="gap-2 text-xs">
+          <TabsTrigger value="activity" className="flex-1 gap-1.5 text-xs">
             <Calendar className="w-3.5 h-3.5" /> Activity
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="progress">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
             {summaries && summaries.length > 0 ? summaries.map((s, i) => (
-              <motion.div key={s.languageId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+              <motion.div key={s.languageId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2"><Code2 className="w-4 h-4 text-primary" />{s.languageName}</span>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <Code2 className="w-4 h-4 text-primary" />{s.languageName}
+                      </span>
                       <span className="text-xs text-primary font-mono">{s.xpEarned} XP</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                    </div>
                     <div className="flex justify-between text-xs mb-1.5 text-muted-foreground">
                       <span>{s.completedLessons}/{s.totalLessons} lessons</span>
                       <span>{s.totalLessons > 0 ? Math.round((s.completedLessons / s.totalLessons) * 100) : 0}%</span>
@@ -149,23 +152,24 @@ export default function Profile() {
                 </Card>
               </motion.div>
             )) : (
-              <div className="col-span-2 text-center py-12 text-muted-foreground">
+              <div className="text-center py-10 text-muted-foreground">
                 <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p>Start learning to see your progress here!</p>
+                <p className="text-sm">Start learning to see your progress!</p>
               </div>
             )}
           </div>
         </TabsContent>
 
         <TabsContent value="badges">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {badges.map((badge, i) => (
               <motion.div key={badge.label} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
                 <Card className={`text-center p-4 transition-colors ${badge.earned ? "border-primary/30 bg-primary/5" : "opacity-50 grayscale"}`}>
-                  <div className="text-3xl mb-2">{badge.icon}</div>
-                  <p className="text-xs font-medium">{badge.label}</p>
-                  {badge.earned && <Badge className="mt-2 text-xs bg-primary/20 text-primary border-0">Earned</Badge>}
-                  {!badge.earned && <p className="text-xs text-muted-foreground mt-1">Locked</p>}
+                  <div className="text-3xl mb-1.5">{badge.icon}</div>
+                  <p className="text-xs font-medium leading-tight">{badge.label}</p>
+                  {badge.earned
+                    ? <Badge className="mt-2 text-xs bg-primary/20 text-primary border-0">Earned</Badge>
+                    : <p className="text-xs text-muted-foreground mt-1">Locked</p>}
                 </Card>
               </motion.div>
             ))}
@@ -174,14 +178,15 @@ export default function Profile() {
 
         <TabsContent value="activity">
           <Card>
-            <CardContent className="pt-4 divide-y divide-border">
+            <CardContent className="pt-3 px-3 divide-y divide-border">
               {recentActivity.map((item, i) => (
-                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
+                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-4 h-4 text-primary" />
+                    <item.icon className="w-3.5 h-3.5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{item.action}</p>
+                    <p className="text-xs font-medium">{item.action}</p>
                     <p className="text-xs text-muted-foreground truncate">{item.detail}</p>
                   </div>
                   <div className="text-right flex-shrink-0">

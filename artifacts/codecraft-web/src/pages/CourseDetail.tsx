@@ -7,11 +7,11 @@ import { Loader2, CheckCircle2, Circle, ArrowLeft, PlayCircle, Trophy } from "lu
 export default function CourseDetail() {
   const { courseId } = useParams();
   const id = parseInt(courseId || "0", 10);
-  
+
   const { data: course, isLoading: isLoadingCourse } = useGetCourse(id, {
     query: { enabled: !!id, queryKey: getGetCourseQueryKey(id) }
   });
-  
+
   const { data: progress, isLoading: isLoadingProgress } = useGetUserProgress();
 
   if (isLoadingCourse || isLoadingProgress) {
@@ -23,68 +23,68 @@ export default function CourseDetail() {
   }
 
   if (!course) {
-    return <div className="p-8 text-center text-muted-foreground">Course not found</div>;
+    return <div className="p-4 text-center text-muted-foreground">Course not found</div>;
   }
 
   const completedLessonIds = new Set(progress?.filter(p => p.completed).map(p => p.lessonId));
-  const progressPercent = course.lessons.length > 0 
-    ? (course.lessons.filter(l => completedLessonIds.has(l.id)).length / course.lessons.length) * 100 
+  const progressPercent = course.lessons.length > 0
+    ? (course.lessons.filter(l => completedLessonIds.has(l.id)).length / course.lessons.length) * 100
     : 0;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-4">
       <Link href="/learn">
-        <Button variant="ghost" size="sm" className="mb-6 -ml-3 text-muted-foreground">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to courses
+        <Button variant="ghost" size="sm" className="mb-4 -ml-2 text-muted-foreground h-8">
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Back
         </Button>
       </Link>
 
-      <div className="mb-10">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="px-3 py-1 bg-secondary text-secondary-foreground text-xs font-semibold rounded-full uppercase tracking-wider">
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="px-2 py-0.5 bg-secondary text-secondary-foreground text-xs font-semibold rounded-full uppercase tracking-wider">
             {course.level}
           </span>
-          <span className="flex items-center text-sm font-mono text-primary">
-            <Trophy className="w-4 h-4 mr-1" />
-            {course.xpReward} XP total
+          <span className="flex items-center text-xs font-mono text-primary">
+            <Trophy className="w-3.5 h-3.5 mr-1" />
+            {course.xpReward} XP
           </span>
         </div>
-        <h1 className="text-4xl font-bold font-mono tracking-tight mb-4">{course.title}</h1>
-        <p className="text-lg text-muted-foreground">{course.description}</p>
-        
-        <div className="mt-6 flex items-center gap-4">
-          <div className="flex-1 max-w-md h-2 bg-secondary rounded-full overflow-hidden">
-            <div className="h-full bg-primary" style={{ width: `${progressPercent}%` }} />
+        <h1 className="text-2xl font-bold font-mono tracking-tight mb-2">{course.title}</h1>
+        <p className="text-sm text-muted-foreground">{course.description}</p>
+
+        <div className="mt-4 flex items-center gap-3">
+          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+            <div className="h-full bg-primary transition-all" style={{ width: `${progressPercent}%` }} />
           </div>
-          <span className="text-sm font-medium text-muted-foreground">{Math.round(progressPercent)}% complete</span>
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">{Math.round(progressPercent)}% done</span>
         </div>
       </div>
 
-      <div className="space-y-4 mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Lessons</h2>
+      <h2 className="text-base font-semibold mb-3">Lessons</h2>
+      <div className="space-y-2 mb-6">
         {course.lessons.map((lesson, idx) => {
           const isCompleted = completedLessonIds.has(lesson.id);
           return (
-            <Card key={lesson.id} className={`transition-colors ${isCompleted ? 'bg-secondary/20' : ''}`}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <Card key={lesson.id} className={`transition-colors ${isCompleted ? "bg-secondary/20" : ""}`}>
+              <CardContent className="p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   {isCompleted ? (
-                    <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                   ) : (
-                    <Circle className="w-6 h-6 text-muted-foreground flex-shrink-0" />
+                    <Circle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                   )}
-                  <div>
-                    <div className="font-medium text-lg">
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm truncate">
                       {idx + 1}. {lesson.title}
                     </div>
-                    <div className="text-sm font-mono text-muted-foreground">
+                    <div className="text-xs font-mono text-muted-foreground">
                       {lesson.xpReward} XP
                     </div>
                   </div>
                 </div>
-                <Link href={`/learn/${course.id}/lesson/${lesson.id}`}>
-                  <Button variant={isCompleted ? "outline" : "default"}>
+                <Link href={`/learn/${course.id}/lesson/${lesson.id}`} className="flex-shrink-0">
+                  <Button size="sm" variant={isCompleted ? "outline" : "default"} className="h-8 text-xs px-3">
                     {isCompleted ? "Review" : "Start"}
                   </Button>
                 </Link>
@@ -94,17 +94,17 @@ export default function CourseDetail() {
         })}
       </div>
 
-      <div className="flex gap-4">
-        <Link href={`/quiz/${course.id}`}>
-          <Button variant="secondary" className="w-full sm:w-auto" size="lg">
-            <PlayCircle className="w-5 h-5 mr-2" />
-            Take Solo Quiz
+      <div className="flex gap-3">
+        <Link href={`/quiz/${course.id}`} className="flex-1">
+          <Button variant="secondary" className="w-full gap-2" size="sm">
+            <PlayCircle className="w-4 h-4" />
+            Solo Quiz
           </Button>
         </Link>
-        <Link href={`/quiz/${course.id}/multiplayer`}>
-          <Button variant="outline" className="w-full sm:w-auto" size="lg">
-            <PlayCircle className="w-5 h-5 mr-2" />
-            Multiplayer Quiz
+        <Link href={`/quiz/${course.id}/multiplayer`} className="flex-1">
+          <Button variant="outline" className="w-full gap-2" size="sm">
+            <PlayCircle className="w-4 h-4" />
+            Multiplayer
           </Button>
         </Link>
       </div>

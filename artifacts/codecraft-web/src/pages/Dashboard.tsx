@@ -5,7 +5,6 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Trophy, Code2, Flame, Loader2, BookOpen, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
-
 import { motion } from "framer-motion";
 
 const langIcons: Record<string, string> = {
@@ -40,74 +39,75 @@ export default function Dashboard() {
   const overallProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold font-mono tracking-tight mb-2">Welcome back, {firstName} 👋</h1>
-        <p className="text-muted-foreground">Here's your coding journey progress so far.</p>
+    <div className="p-4">
+      <div className="mb-5">
+        <h1 className="text-xl font-bold font-mono tracking-tight mb-1">Welcome back, {firstName} 👋</h1>
+        <p className="text-muted-foreground text-sm">Here's your coding journey so far.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <Card className="bg-gradient-to-br from-card to-card border-primary/20">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total XP</CardTitle>
-            <Trophy className="w-4 h-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-mono">{totalXp.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Overall Progress</CardTitle>
-            <Flame className="w-4 h-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-mono mb-2">{Math.round(overallProgress)}%</div>
-            <Progress value={overallProgress} className="h-2" />
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <Card className="border-primary/20">
+          <CardContent className="p-3 text-center">
+            <Trophy className="w-4 h-4 text-yellow-500 mx-auto mb-1" />
+            <div className="text-lg font-bold font-mono leading-tight">{totalXp.toLocaleString()}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Total XP</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Lessons Completed</CardTitle>
-            <Code2 className="w-4 h-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-mono">{completedLessons} / {totalLessons}</div>
+          <CardContent className="p-3 text-center">
+            <Flame className="w-4 h-4 text-orange-500 mx-auto mb-1" />
+            <div className="text-lg font-bold font-mono leading-tight">{Math.round(overallProgress)}%</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Progress</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-3 text-center">
+            <Code2 className="w-4 h-4 text-blue-500 mx-auto mb-1" />
+            <div className="text-lg font-bold font-mono leading-tight">{completedLessons}<span className="text-xs text-muted-foreground">/{totalLessons}</span></div>
+            <div className="text-xs text-muted-foreground mt-0.5">Lessons</div>
           </CardContent>
         </Card>
       </div>
 
-      <h2 className="text-xl font-semibold mb-6">Language Progress</h2>
-      
+      {totalLessons > 0 && (
+        <div className="mb-5">
+          <div className="flex justify-between text-xs text-muted-foreground mb-2">
+            <span>Overall Progress</span>
+            <span>{Math.round(overallProgress)}%</span>
+          </div>
+          <Progress value={overallProgress} className="h-2" />
+        </div>
+      )}
+
+      <h2 className="text-base font-semibold mb-3">Language Progress</h2>
+
       {summaries && summaries.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
           {summaries.map((summary, idx) => (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: idx * 0.07 }}
               key={summary.languageId}
             >
               <Card className="hover:border-primary/40 transition-colors">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${langColors[summary.languageName] || "bg-primary/20 text-primary"}`}>
+                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-base ${langColors[summary.languageName] || "bg-primary/20 text-primary"}`}>
                         {langIcons[summary.languageName] || "💻"}
                       </span>
-                      <span>{summary.languageName}</span>
+                      <span className="font-semibold text-sm">{summary.languageName}</span>
                     </div>
-                    <span className="text-sm font-mono text-primary">{summary.xpEarned} XP</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between text-sm mb-2 text-muted-foreground">
+                    <span className="text-xs font-mono text-primary">{summary.xpEarned} XP</span>
+                  </div>
+                  <div className="flex justify-between text-xs mb-1.5 text-muted-foreground">
                     <span>{summary.completedLessons} / {summary.totalLessons} lessons</span>
                     <span className="font-medium">{summary.totalLessons > 0 ? Math.round((summary.completedLessons / summary.totalLessons) * 100) : 0}%</span>
                   </div>
-                  <Progress value={summary.totalLessons > 0 ? (summary.completedLessons / summary.totalLessons) * 100 : 0} className="h-2" />
+                  <Progress value={summary.totalLessons > 0 ? (summary.completedLessons / summary.totalLessons) * 100 : 0} className="h-1.5" />
                 </CardContent>
               </Card>
             </motion.div>
@@ -115,16 +115,16 @@ export default function Dashboard() {
         </div>
       ) : (
         <Card className="border-dashed border-primary/30 bg-primary/5">
-          <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-4">
-              <BookOpen className="w-8 h-8 text-primary" />
+          <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center mb-3">
+              <BookOpen className="w-7 h-7 text-primary" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Ready to start your journey?</h3>
-            <p className="text-muted-foreground max-w-md mb-6">
-              Pick a programming language and dive in. Complete lessons to earn XP, unlock certificates, and climb the leaderboard.
+            <h3 className="text-base font-bold mb-2">Ready to start?</h3>
+            <p className="text-muted-foreground text-sm mb-5">
+              Pick a language and dive in. Earn XP, unlock certificates, and climb the leaderboard.
             </p>
             <Link href="/learn">
-              <Button size="lg" className="gap-2 font-mono">
+              <Button size="sm" className="gap-2 font-mono">
                 Start Learning <ChevronRight className="w-4 h-4" />
               </Button>
             </Link>

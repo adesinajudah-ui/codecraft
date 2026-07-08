@@ -21,17 +21,12 @@ export default function Settings() {
   const { toast } = useToast();
 
   const [notifications, setNotifications] = useState({
-    lessonReminders: true,
-    competitionAlerts: true,
-    communityReplies: true,
-    weeklyReport: false,
-    achievements: true,
+    lessonReminders: true, competitionAlerts: true,
+    communityReplies: true, weeklyReport: false, achievements: true,
   });
 
   const [privacy, setPrivacy] = useState({
-    showProfile: true,
-    showProgress: true,
-    showOnLeaderboard: true,
+    showProfile: true, showProgress: true, showOnLeaderboard: true,
   });
 
   const [language, setLanguage] = useState("en");
@@ -42,53 +37,51 @@ export default function Settings() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold font-mono tracking-tight flex items-center gap-3">
-          <SettingsIcon className="w-7 h-7 text-primary" />
+    <div className="p-4 pb-8">
+      <div className="mb-5">
+        <h1 className="text-xl font-bold font-mono tracking-tight flex items-center gap-2">
+          <SettingsIcon className="w-5 h-5 text-primary" />
           Settings
         </h1>
-        <p className="text-muted-foreground mt-1">Manage your account and preferences.</p>
+        <p className="text-muted-foreground text-xs mt-0.5">Manage your account and preferences.</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Profile */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+            <CardHeader className="pb-3 px-4 pt-4">
+              <CardTitle className="flex items-center gap-2 text-sm">
                 <User className="w-4 h-4 text-primary" /> Profile
               </CardTitle>
-              <CardDescription>Manage your public profile information.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-16 h-16 border-2 border-primary/20">
+            <CardContent className="px-4 pb-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <Avatar className="w-14 h-14 border-2 border-primary/20">
                   <AvatarImage src={user?.imageUrl} />
-                  <AvatarFallback className="bg-primary/20 text-primary font-bold text-xl">
+                  <AvatarFallback className="bg-primary/20 text-primary font-bold text-lg">
                     {user?.firstName?.[0] || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold">{user?.fullName || "Developer"}</p>
-                  <p className="text-sm text-muted-foreground">{user?.primaryEmailAddress?.emailAddress}</p>
+                  <p className="font-semibold text-sm">{user?.fullName || "Developer"}</p>
+                  <p className="text-xs text-muted-foreground">{user?.primaryEmailAddress?.emailAddress}</p>
                   <Badge variant="outline" className="mt-1 text-xs">Free Plan</Badge>
                 </div>
               </div>
               <Separator />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label className="text-sm">First Name</Label>
-                  <Input defaultValue={user?.firstName || ""} placeholder="First name" className="h-9" />
+                  <Label className="text-xs">First Name</Label>
+                  <Input defaultValue={user?.firstName || ""} placeholder="First name" className="h-9 text-sm" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Last Name</Label>
-                  <Input defaultValue={user?.lastName || ""} placeholder="Last name" className="h-9" />
+                  <Label className="text-xs">Last Name</Label>
+                  <Input defaultValue={user?.lastName || ""} placeholder="Last name" className="h-9 text-sm" />
                 </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-sm">Email</Label>
-                  <Input defaultValue={user?.primaryEmailAddress?.emailAddress || ""} disabled className="h-9 opacity-60" />
-                  <p className="text-xs text-muted-foreground">Email changes are managed through account verification.</p>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Email</Label>
+                  <Input defaultValue={user?.primaryEmailAddress?.emailAddress || ""} disabled className="h-9 text-sm opacity-60" />
                 </div>
               </div>
               <Button size="sm" onClick={handleSave}>Save Profile</Button>
@@ -99,31 +92,25 @@ export default function Settings() {
         {/* Appearance */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+            <CardHeader className="pb-3 px-4 pt-4">
+              <CardTitle className="flex items-center gap-2 text-sm">
                 <Palette className="w-4 h-4 text-primary" /> Appearance
               </CardTitle>
-              <CardDescription>Customize how CodeCraft looks for you.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Theme</p>
-                  <p className="text-xs text-muted-foreground">Switch between dark and light mode.</p>
-                </div>
-                <div className="flex items-center gap-2">
+            <CardContent className="px-4 pb-4 space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-2">Theme</p>
+                <div className="flex gap-2">
                   <Button
                     variant={theme === "light" ? "default" : "outline"}
-                    size="sm"
-                    className="gap-2 h-8"
+                    size="sm" className="flex-1 gap-2"
                     onClick={() => setTheme("light")}
                   >
                     <Sun className="w-4 h-4" /> Light
                   </Button>
                   <Button
                     variant={theme === "dark" ? "default" : "outline"}
-                    size="sm"
-                    className="gap-2 h-8"
+                    size="sm" className="flex-1 gap-2"
                     onClick={() => setTheme("dark")}
                   >
                     <Moon className="w-4 h-4" /> Dark
@@ -133,11 +120,11 @@ export default function Settings() {
               <Separator />
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Code Editor Font Size</p>
-                  <p className="text-xs text-muted-foreground">Adjust the editor text size.</p>
+                  <p className="text-sm font-medium">Editor Font Size</p>
+                  <p className="text-xs text-muted-foreground">Code editor text size</p>
                 </div>
                 <Select value={editorFontSize} onValueChange={setEditorFontSize}>
-                  <SelectTrigger className="w-24 h-8">
+                  <SelectTrigger className="w-20 h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -151,11 +138,11 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">Language</p>
-                  <p className="text-xs text-muted-foreground">Platform display language.</p>
+                  <p className="text-xs text-muted-foreground">Display language</p>
                 </div>
                 <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger className="w-36 h-8">
-                    <Globe className="w-3 h-3 mr-2" />
+                  <SelectTrigger className="w-28 h-8 text-xs">
+                    <Globe className="w-3 h-3 mr-1.5" />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -175,22 +162,21 @@ export default function Settings() {
         {/* Notifications */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+            <CardHeader className="pb-3 px-4 pt-4">
+              <CardTitle className="flex items-center gap-2 text-sm">
                 <Bell className="w-4 h-4 text-primary" /> Notifications
               </CardTitle>
-              <CardDescription>Choose what alerts you receive.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-4 pb-4 space-y-3">
               {[
-                { key: "lessonReminders", label: "Lesson Reminders", desc: "Daily reminders to continue your streak" },
-                { key: "competitionAlerts", label: "Competition Alerts", desc: "Get notified about new competitions" },
-                { key: "communityReplies", label: "Community Replies", desc: "Alerts when someone replies to your post" },
-                { key: "achievements", label: "Achievement Unlocked", desc: "Celebrate when you earn badges" },
-                { key: "weeklyReport", label: "Weekly Progress Report", desc: "A summary of your week" },
+                { key: "lessonReminders", label: "Lesson Reminders", desc: "Daily streak reminders" },
+                { key: "competitionAlerts", label: "Competition Alerts", desc: "New competition notifications" },
+                { key: "communityReplies", label: "Community Replies", desc: "Replies to your posts" },
+                { key: "achievements", label: "Achievements", desc: "Badge and milestone alerts" },
+                { key: "weeklyReport", label: "Weekly Report", desc: "Your weekly progress summary" },
               ].map((item, i) => (
                 <div key={item.key}>
-                  {i > 0 && <Separator className="mb-4" />}
+                  {i > 0 && <Separator className="mb-3" />}
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">{item.label}</p>
@@ -203,7 +189,7 @@ export default function Settings() {
                   </div>
                 </div>
               ))}
-              <Button size="sm" onClick={handleSave}>Save Notifications</Button>
+              <Button size="sm" onClick={handleSave} className="mt-2">Save</Button>
             </CardContent>
           </Card>
         </motion.div>
@@ -211,20 +197,19 @@ export default function Settings() {
         {/* Privacy */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+            <CardHeader className="pb-3 px-4 pt-4">
+              <CardTitle className="flex items-center gap-2 text-sm">
                 <Shield className="w-4 h-4 text-primary" /> Privacy
               </CardTitle>
-              <CardDescription>Control what others can see.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-4 pb-4 space-y-3">
               {[
-                { key: "showProfile", label: "Public Profile", desc: "Allow others to view your profile page" },
-                { key: "showProgress", label: "Show Progress", desc: "Display your lesson progress publicly" },
-                { key: "showOnLeaderboard", label: "Leaderboard Visibility", desc: "Appear on global leaderboards" },
+                { key: "showProfile", label: "Public Profile", desc: "Others can view your profile" },
+                { key: "showProgress", label: "Show Progress", desc: "Display lesson progress publicly" },
+                { key: "showOnLeaderboard", label: "Leaderboard", desc: "Appear on global rankings" },
               ].map((item, i) => (
                 <div key={item.key}>
-                  {i > 0 && <Separator className="mb-4" />}
+                  {i > 0 && <Separator className="mb-3" />}
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">{item.label}</p>
@@ -237,7 +222,7 @@ export default function Settings() {
                   </div>
                 </div>
               ))}
-              <Button size="sm" onClick={handleSave}>Save Privacy</Button>
+              <Button size="sm" onClick={handleSave} className="mt-2">Save</Button>
             </CardContent>
           </Card>
         </motion.div>
@@ -245,29 +230,28 @@ export default function Settings() {
         {/* Danger Zone */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card className="border-destructive/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base text-destructive">
+            <CardHeader className="pb-3 px-4 pt-4">
+              <CardTitle className="flex items-center gap-2 text-sm text-destructive">
                 <Trash2 className="w-4 h-4" /> Danger Zone
               </CardTitle>
-              <CardDescription>Irreversible account actions.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="px-4 pb-4 space-y-3">
               <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
                 <div>
                   <p className="text-sm font-medium">Sign Out</p>
-                  <p className="text-xs text-muted-foreground">Sign out of your account on this device.</p>
+                  <p className="text-xs text-muted-foreground">Sign out on this device.</p>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => signOut()}>
-                  <LogOut className="w-4 h-4" /> Sign Out
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => signOut()}>
+                  <LogOut className="w-3.5 h-3.5" /> Sign Out
                 </Button>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/30 bg-destructive/5">
                 <div>
                   <p className="text-sm font-medium">Delete Account</p>
-                  <p className="text-xs text-muted-foreground">Permanently remove all your data. Cannot be undone.</p>
+                  <p className="text-xs text-muted-foreground">Permanently removes all data.</p>
                 </div>
-                <Button variant="destructive" size="sm" className="gap-2">
-                  <Trash2 className="w-4 h-4" /> Delete
+                <Button variant="destructive" size="sm" className="gap-1.5">
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
                 </Button>
               </div>
             </CardContent>
