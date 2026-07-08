@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useTheme } from "next-themes";
 import { flatTopics, getNextTopic, getPrevTopic, courseData } from "@/data/courseData";
-import { ChevronLeft, ChevronRight, Play, RotateCcw, CheckCircle, XCircle, Sun, Moon } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Play, RotateCcw, CheckCircle, XCircle, Sun, Moon } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { html } from "@codemirror/lang-html";
 import { oneDark } from "@codemirror/theme-one-dark";
@@ -82,21 +82,28 @@ export default function TopicPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-card/80 backdrop-blur-md border-b border-border py-4 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-1">
-              <Link href="/" className="hover:text-foreground transition-colors">Courses</Link>
-              <ChevronRight className="w-3 h-3" />
-              <span>{currentTopicFlat.lessonTitle}</span>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0 group"
+              aria-label="Back to lessons"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              Back to Lessons
+            </Link>
+            <div className="w-px h-6 bg-border" />
+            <div>
+              <div className="text-xs text-muted-foreground mb-0.5">{currentTopicFlat.lessonTitle}</div>
+              <h1 className="text-base md:text-lg font-bold leading-tight">{topic.title}</h1>
             </div>
-            <h1 className="text-xl md:text-2xl font-bold">{topic.title}</h1>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-muted-foreground">
-              Topic {currentIndex + 1} of {totalTopics}
+              {currentIndex + 1} / {totalTopics}
             </span>
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={() => prevTopic && setLocation(`/lesson/${prevTopic.lessonId}/topic/${prevTopic.topicId}`)}
                 disabled={!prevTopic}
                 aria-label="Previous topic"
@@ -105,7 +112,7 @@ export default function TopicPage() {
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <button 
+              <button
                 onClick={() => nextTopic && setLocation(`/lesson/${nextTopic.lessonId}/topic/${nextTopic.topicId}`)}
                 disabled={!nextTopic}
                 aria-label="Next topic"
