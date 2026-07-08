@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/css-course/"
+title = "CodeCraft – CSS Course"
+version = "1.0.0"
+id = "artifacts/codecraft-css"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/css-course/" ]
+localPort = 25163
+
+[services.development]
+run = "pnpm --filter @workspace/codecraft-css run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/codecraft-css", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/codecraft-css/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25163"
+BASE_PATH = "/css-course/"
