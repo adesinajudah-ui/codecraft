@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useTheme } from "next-themes";
-import { ChevronDown, ChevronRight, Sparkles, Sun, Moon } from "lucide-react";
+import { ChevronDown, ChevronRight, Sun, Moon, ArrowLeft, BookOpen } from "lucide-react";
 import { courseData } from "@/data/courseData";
 
 function ThemeToggle() {
@@ -10,11 +10,11 @@ function ThemeToggle() {
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       aria-label="Toggle theme"
-      className="p-2 rounded-lg border border-border bg-card hover:bg-muted transition-colors"
+      className="p-2 rounded-full hover:bg-muted transition-colors"
     >
       {theme === "dark"
-        ? <Sun className="w-4 h-4 text-muted-foreground" />
-        : <Moon className="w-4 h-4 text-muted-foreground" />}
+        ? <Sun className="w-5 h-5 text-muted-foreground" />
+        : <Moon className="w-5 h-5 text-muted-foreground" />}
     </button>
   );
 }
@@ -29,90 +29,109 @@ export default function Home() {
   const totalTopics = courseData.reduce((sum, lesson) => sum + lesson.topics.length, 0);
 
   return (
-    <div className="min-h-[100dvh] w-full bg-background text-foreground pb-20">
-      <header className="bg-card border-b border-border py-12 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-end mb-6">
-            <ThemeToggle />
+    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col max-w-sm mx-auto">
+      {/* Status bar spacer */}
+      <div className="h-safe-top" />
+
+      {/* Top navigation bar */}
+      <header className="sticky top-0 z-10 bg-card/90 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
+        <a href="/" className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors">
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+        </a>
+        <span className="font-semibold text-sm tracking-wide">CSS Course</span>
+        <ThemeToggle />
+      </header>
+
+      {/* Hero */}
+      <div className="px-4 pt-6 pb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-6 h-6 text-primary" />
           </div>
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-4">
-              <Sparkles className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-              Welcome to <span className="text-primary">CodeCraft</span> CSS
+          <div>
+            <h1 className="text-xl font-bold leading-tight">
+              Learn <span className="text-primary">CSS</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              The complete interactive CSS bootcamp for absolute beginners. Learn to style the
-              web from scratch with deep explanations, a live HTML + CSS playground, and
-              comprehensive quizzes.
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {courseData.length} lessons &middot; {totalTopics} topics
             </p>
           </div>
         </div>
-      </header>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Master CSS from scratch — live playground, exercises, and quizzes included.
+        </p>
+      </div>
 
-      <main className="max-w-4xl mx-auto px-6 mt-12 space-y-6">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold">Course Curriculum</h2>
-          <span className="text-sm font-medium text-muted-foreground bg-secondary/20 px-3 py-1 rounded-full">
-            {courseData.length} Lessons &middot; {totalTopics} Topics
-          </span>
+      {/* Progress bar placeholder */}
+      <div className="px-4 mb-4">
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="h-full w-0 bg-primary rounded-full" />
         </div>
+        <p className="text-xs text-muted-foreground mt-1">0% complete</p>
+      </div>
 
-        <div className="space-y-4">
-          {courseData.map((lesson, index) => {
-            const isExpanded = expandedLesson === lesson.id;
-            return (
-              <div
-                key={lesson.id}
-                className="bg-card border border-border rounded-xl overflow-hidden shadow-sm transition-all duration-200"
+      {/* Course curriculum */}
+      <div className="px-4 pb-8 space-y-3 flex-1">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Curriculum
+        </h2>
+
+        {courseData.map((lesson, index) => {
+          const isExpanded = expandedLesson === lesson.id;
+          return (
+            <div
+              key={lesson.id}
+              className="bg-card border border-border rounded-2xl overflow-hidden"
+            >
+              <button
+                onClick={() => toggleLesson(lesson.id)}
+                className="w-full flex items-center justify-between px-4 py-4 active:bg-muted/50 transition-colors"
+                data-testid={`button-lesson-${lesson.id}`}
               >
-                <button
-                  onClick={() => toggleLesson(lesson.id)}
-                  className="w-full flex items-center justify-between p-6 hover:bg-muted/50 transition-colors"
-                  data-testid={`button-lesson-${lesson.id}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary font-bold">
-                      {index + 1}
-                    </div>
-                    <h3 className="text-xl font-semibold text-left">{lesson.title}</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary font-bold text-sm flex items-center justify-center flex-shrink-0">
+                    {index + 1}
                   </div>
-                  <div className="text-muted-foreground">
-                    {isExpanded ? <ChevronDown className="w-6 h-6" /> : <ChevronRight className="w-6 h-6" />}
+                  <div className="text-left">
+                    <p className="font-semibold text-sm leading-tight">{lesson.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {lesson.topics.length} topics
+                    </p>
                   </div>
-                </button>
+                </div>
+                <div className="text-muted-foreground ml-2">
+                  {isExpanded
+                    ? <ChevronDown className="w-4 h-4" />
+                    : <ChevronRight className="w-4 h-4" />}
+                </div>
+              </button>
 
-                {isExpanded && (
-                  <div className="border-t border-border bg-muted/20 p-4">
-                    <ul className="space-y-2">
-                      {lesson.topics.map((topic, topicIndex) => (
-                        <li key={topic.id}>
-                          <Link
-                            href={`/lesson/${lesson.id}/topic/${topic.id}`}
-                            className="flex items-center justify-between p-4 rounded-lg hover:bg-card hover:shadow-sm border border-transparent hover:border-border transition-all group"
-                            data-testid={`link-topic-${topic.id}`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-muted-foreground font-mono text-sm w-10">
-                                {index + 1}.{topicIndex + 1}
-                              </span>
-                              <span className="font-medium group-hover:text-primary transition-colors">
-                                {topic.title}
-                              </span>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0" />
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </main>
+              {isExpanded && (
+                <div className="border-t border-border bg-muted/20">
+                  {lesson.topics.map((topic, topicIndex) => (
+                    <Link
+                      key={topic.id}
+                      href={`/lesson/${lesson.id}/topic/${topic.id}`}
+                      className="flex items-center justify-between px-4 py-3.5 border-b border-border/50 last:border-b-0 active:bg-card transition-colors group"
+                      data-testid={`link-topic-${topic.id}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground font-mono w-8 flex-shrink-0">
+                          {index + 1}.{topicIndex + 1}
+                        </span>
+                        <span className="text-sm font-medium group-active:text-primary transition-colors">
+                          {topic.title}
+                        </span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
