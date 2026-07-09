@@ -283,6 +283,12 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinSessionInput"
       responses:
         "200":
           description: Joined session
@@ -294,6 +300,31 @@ paths:
           description: Not found
         "401":
           description: Unauthorized
+
+  /quiz/sessions/{code}/start:
+    post:
+      operationId: startQuizSession
+      tags: [quiz]
+      summary: Start a multiplayer quiz session (host only)
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizSession"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not the host
+        "404":
+          description: Not found
 
   /quiz/sessions/{code}/answer:
     post:
@@ -667,8 +698,16 @@ components:
       properties:
         quizId:
           type: integer
+        displayName:
+          type: string
       required:
         - quizId
+
+    JoinSessionInput:
+      type: object
+      properties:
+        displayName:
+          type: string
 
     QuizSession:
       type: object

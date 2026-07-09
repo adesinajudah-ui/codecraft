@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface QuizSessionInput {
-  quizId: number;
+export interface JoinSessionInput {
   displayName?: string;
 }

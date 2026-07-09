@@ -7,7 +7,7 @@ import {
   quizSessionsTable,
   userStatsTable,
 } from "@workspace/db";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, asc } from "drizzle-orm";
 import { requireAuth, getAuth } from "@clerk/express";
 import crypto from "crypto";
 
@@ -79,12 +79,13 @@ router.post("/attempts", requireAuth(), async (req, res) => {
   res.status(201).json({ ...attempt, completedAt: attempt.completedAt?.toISOString() ?? new Date().toISOString() });
 });
 
-// POST /quiz/sessions
+// POST /quiz/sessions — create a session
 router.post("/sessions", requireAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
-  const { quizId } = req.body as { quizId: number };
+  const { quizId, displayName } = req.body as { quizId: number; displayName?: string };
+  const hostName = displayName?.trim() || "Host";
   const code = crypto.randomBytes(3).toString("hex").toUpperCase();
 
   const [session] = await db
@@ -94,7 +95,8 @@ router.post("/sessions", requireAuth(), async (req, res) => {
       quizId,
       status: "waiting",
       hostUserId: userId,
-      participants: [{ userId, displayName: "Host", score: 0, answeredCount: 0 }],
+      currentQuestion: 0,
+      participants: [{ userId, displayName: hostName, score: 0, answeredCount: 0 }],
     })
     .returning();
 
@@ -115,18 +117,22 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const code = String(req.params.code);
+  const { displayName } = req.body as { displayName?: string };
+
   const session = await db.select().from(quizSessionsTable).where(eq(quizSessionsTable.code, code)).limit(1);
   if (!session[0]) { res.status(404).json({ error: "Session not found" }); return; }
+  if (session[0].status !== "waiting") { res.status(400).json({ error: "Session already started" }); return; }
 
   const existing = session[0].participants.find((p) => p.userId === userId);
   if (!existing) {
+    const playerName = displayName?.trim() || `Player ${session[0].participants.length + 1}`;
     const newParticipants = [
       ...session[0].participants,
-      { userId, displayName: `Player ${session[0].participants.length + 1}`, score: 0, answeredCount: 0 },
+      { userId, displayName: playerName, score: 0, answeredCount: 0 },
     ];
     const [updated] = await db
       .update(quizSessionsTable)
-      .set({ participants: newParticipants, status: "active" })
+      .set({ participants: newParticipants })
       .where(eq(quizSessionsTable.code, code))
       .returning();
     res.json({ ...updated, createdAt: updated.createdAt?.toISOString() ?? new Date().toISOString() });
@@ -134,6 +140,26 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
   }
 
   res.json({ ...session[0], createdAt: session[0].createdAt?.toISOString() ?? new Date().toISOString() });
+});
+
+// POST /quiz/sessions/:code/start — host only
+router.post("/sessions/:code/start", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  const code = String(req.params.code);
+  const session = await db.select().from(quizSessionsTable).where(eq(quizSessionsTable.code, code)).limit(1);
+  if (!session[0]) { res.status(404).json({ error: "Session not found" }); return; }
+  if (session[0].hostUserId !== userId) { res.status(403).json({ error: "Only the host can start the session" }); return; }
+  if (session[0].status !== "waiting") { res.status(400).json({ error: "Session already started" }); return; }
+
+  const [updated] = await db
+    .update(quizSessionsTable)
+    .set({ status: "active", currentQuestion: 0 })
+    .where(eq(quizSessionsTable.code, code))
+    .returning();
+
+  res.json({ ...updated, createdAt: updated.createdAt?.toISOString() ?? new Date().toISOString() });
 });
 
 // POST /quiz/sessions/:code/answer
@@ -144,35 +170,105 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
   const code = String(req.params.code);
   const { questionId, answerIndex } = req.body as { questionId: number; answerIndex: number };
 
-  const session = await db.select().from(quizSessionsTable).where(eq(quizSessionsTable.code, code)).limit(1);
-  if (!session[0]) { res.status(404).json({ error: "Session not found" }); return; }
+  type TxResult =
+    | { kind: "error"; status: number; message: string }
+    | { kind: "already_answered"; session: typeof quizSessionsTable.$inferSelect }
+    | { kind: "ok"; session: typeof quizSessionsTable.$inferSelect; finished: boolean; finalParticipants: Array<{ userId: string; displayName: string; score: number; answeredCount: number }> };
 
-  const question = await db.select().from(quizQuestionsTable).where(eq(quizQuestionsTable.id, questionId)).limit(1);
-  const correct = question[0]?.correctIndex === answerIndex;
+  const txResult = await db.transaction(async (tx): Promise<TxResult> => {
+    // Row-level lock prevents concurrent answer overwrites
+    const sessions = await tx
+      .select()
+      .from(quizSessionsTable)
+      .where(eq(quizSessionsTable.code, code))
+      .for("update")
+      .limit(1);
 
-  const newParticipants = session[0].participants.map((p) => {
-    if (p.userId === userId) {
-      return { ...p, score: correct ? p.score + 1 : p.score, answeredCount: p.answeredCount + 1 };
+    const session = sessions[0];
+    if (!session) return { kind: "error", status: 404, message: "Session not found" };
+    if (session.status !== "active") return { kind: "error", status: 400, message: "Session not active" };
+
+    const currentQ = session.currentQuestion ?? 0;
+
+    const participant = session.participants.find((p) => p.userId === userId);
+    if (!participant) return { kind: "error", status: 400, message: "Not a participant" };
+
+    // Idempotent: if already answered this question, return current state
+    if (participant.answeredCount > currentQ) {
+      return { kind: "already_answered", session };
     }
-    return p;
+
+    // Validate that questionId matches the actual current question
+    const questions = await tx
+      .select()
+      .from(quizQuestionsTable)
+      .where(eq(quizQuestionsTable.quizId, session.quizId))
+      .orderBy(asc(quizQuestionsTable.id));
+
+    const currentQuestion = questions[currentQ];
+    if (!currentQuestion || currentQuestion.id !== questionId) {
+      return { kind: "error", status: 400, message: "Question ID does not match current question" };
+    }
+
+    const correct = currentQuestion.correctIndex === answerIndex;
+
+    const newParticipants = session.participants.map((p) =>
+      p.userId === userId
+        ? { ...p, score: correct ? p.score + 1 : p.score, answeredCount: p.answeredCount + 1 }
+        : p
+    );
+
+    const allAnswered = newParticipants.every((p) => p.answeredCount >= currentQ + 1);
+    const nextQ = currentQ + 1;
+    const finished = allAnswered && nextQ >= questions.length;
+
+    const [updated] = await tx
+      .update(quizSessionsTable)
+      .set({
+        participants: newParticipants,
+        currentQuestion: allAnswered ? nextQ : currentQ,
+        status: finished ? "finished" : "active",
+      })
+      .where(eq(quizSessionsTable.code, code))
+      .returning();
+
+    return { kind: "ok", session: updated, finished, finalParticipants: newParticipants };
   });
 
-  const allAnswered = newParticipants.every((p) => p.answeredCount >= (session[0].currentQuestion ?? 0) + 1);
-  const questions = await db.select().from(quizQuestionsTable).where(eq(quizQuestionsTable.quizId, session[0].quizId));
-  const nextQ = (session[0].currentQuestion ?? 0) + 1;
-  const finished = allAnswered && nextQ >= questions.length;
+  if (txResult.kind === "error") {
+    res.status(txResult.status).json({ error: txResult.message });
+    return;
+  }
 
-  const [updated] = await db
-    .update(quizSessionsTable)
-    .set({
-      participants: newParticipants,
-      currentQuestion: allAnswered ? nextQ : session[0].currentQuestion,
-      status: finished ? "finished" : "active",
-    })
-    .where(eq(quizSessionsTable.code, code))
-    .returning();
+  if (txResult.kind === "already_answered") {
+    res.json({ ...txResult.session, createdAt: txResult.session.createdAt?.toISOString() ?? new Date().toISOString() });
+    return;
+  }
 
-  res.json({ ...updated, createdAt: updated.createdAt?.toISOString() ?? new Date().toISOString() });
+  // Award XP exactly once: only when this request caused the status transition to "finished"
+  if (txResult.finished) {
+    const sorted = [...txResult.finalParticipants].sort((a, b) => b.score - a.score);
+    const xpTiers = [100, 60, 30, 10]; // 1st, 2nd, 3rd, rest
+    await Promise.all(
+      sorted.map((p, idx) => {
+        const xp = xpTiers[Math.min(idx, xpTiers.length - 1)];
+        return db
+          .insert(userStatsTable)
+          .values({ userId: p.userId, displayName: p.displayName, email: "", xp, lessonsCompleted: 0, quizzesPassed: 1 })
+          .onConflictDoUpdate({
+            target: userStatsTable.userId,
+            set: {
+              xp: sql`${userStatsTable.xp} + ${xp}`,
+              quizzesPassed: sql`${userStatsTable.quizzesPassed} + 1`,
+              displayName: p.displayName,
+              lastActive: new Date(),
+            },
+          });
+      })
+    );
+  }
+
+  res.json({ ...txResult.session, createdAt: txResult.session.createdAt?.toISOString() ?? new Date().toISOString() });
 });
 
 export default router;

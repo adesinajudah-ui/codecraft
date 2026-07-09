@@ -197,7 +197,8 @@ export const GetMyQuizAttemptsResponse = zod.array(GetMyQuizAttemptsResponseItem
  * @summary Create a multiplayer quiz session
  */
 export const CreateQuizSessionBody = zod.object({
-  "quizId": zod.number()
+  "quizId": zod.number(),
+  "displayName": zod.string().optional()
 })
 
 export const CreateQuizSessionResponse = zod.object({
@@ -248,7 +249,35 @@ export const JoinQuizSessionParams = zod.object({
   "code": zod.coerce.string()
 })
 
+export const JoinQuizSessionBody = zod.object({
+  "displayName": zod.string().optional()
+})
+
 export const JoinQuizSessionResponse = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "quizId": zod.number(),
+  "status": zod.enum(['waiting', 'active', 'finished']),
+  "hostUserId": zod.string(),
+  "participants": zod.array(zod.object({
+  "userId": zod.string(),
+  "displayName": zod.string(),
+  "score": zod.number(),
+  "answeredCount": zod.number()
+})),
+  "currentQuestion": zod.number().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Start a multiplayer quiz session (host only)
+ */
+export const StartQuizSessionParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const StartQuizSessionResponse = zod.object({
   "id": zod.number(),
   "code": zod.string(),
   "quizId": zod.number(),

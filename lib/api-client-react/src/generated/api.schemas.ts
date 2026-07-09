@@ -122,6 +122,11 @@ export interface QuizAttempt {
 
 export interface QuizSessionInput {
   quizId: number;
+  displayName?: string;
+}
+
+export interface JoinSessionInput {
+  displayName?: string;
 }
 
 export type QuizSessionStatus = typeof QuizSessionStatus[keyof typeof QuizSessionStatus];

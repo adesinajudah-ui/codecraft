@@ -28,6 +28,7 @@ import type {
   CourseDetail,
   GetLeaderboardParams,
   HealthStatus,
+  JoinSessionInput,
   Language,
   LeaderboardEntry,
   Lesson,
@@ -1061,14 +1062,15 @@ export const getJoinQuizSessionUrl = (code: string,) => {
 /**
  * @summary Join a multiplayer quiz session
  */
-export const joinQuizSession = async (code: string, options?: RequestInit): Promise<QuizSession> => {
+export const joinQuizSession = async (code: string,
+    joinSessionInput?: JoinSessionInput, options?: RequestInit): Promise<QuizSession> => {
 
   return customFetch<QuizSession>(getJoinQuizSessionUrl(code),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(joinSessionInput)
   }
 );}
 
@@ -1076,8 +1078,8 @@ export const joinQuizSession = async (code: string, options?: RequestInit): Prom
 
 
 export const getJoinQuizSessionMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinQuizSession>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof joinQuizSession>>, TError,{code: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinQuizSession>>, TError,{code: string;data?: BodyType<JoinSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinQuizSession>>, TError,{code: string;data?: BodyType<JoinSessionInput>}, TContext> => {
 
 const mutationKey = ['joinQuizSession'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1089,10 +1091,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinQuizSession>>, {code: string}> = (props) => {
-          const {code} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinQuizSession>>, {code: string;data?: BodyType<JoinSessionInput>}> = (props) => {
+          const {code,data} = props ?? {};
 
-          return  joinQuizSession(code,requestOptions)
+          return  joinQuizSession(code,data,requestOptions)
         }
 
 
@@ -1103,21 +1105,91 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type JoinQuizSessionMutationResult = NonNullable<Awaited<ReturnType<typeof joinQuizSession>>>
-
+    export type JoinQuizSessionMutationBody = BodyType<JoinSessionInput> | undefined
     export type JoinQuizSessionMutationError = ErrorType<void>
 
     /**
  * @summary Join a multiplayer quiz session
  */
 export const useJoinQuizSession = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinQuizSession>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinQuizSession>>, TError,{code: string;data?: BodyType<JoinSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof joinQuizSession>>,
+        TError,
+        {code: string;data?: BodyType<JoinSessionInput>},
+        TContext
+      > => {
+      return useMutation(getJoinQuizSessionMutationOptions(options));
+    }
+
+export const getStartQuizSessionUrl = (code: string,) => {
+
+
+
+
+  return `/api/quiz/sessions/${code}/start`
+}
+
+/**
+ * @summary Start a multiplayer quiz session (host only)
+ */
+export const startQuizSession = async (code: string, options?: RequestInit): Promise<QuizSession> => {
+
+  return customFetch<QuizSession>(getStartQuizSessionUrl(code),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartQuizSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startQuizSession>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startQuizSession>>, TError,{code: string}, TContext> => {
+
+const mutationKey = ['startQuizSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startQuizSession>>, {code: string}> = (props) => {
+          const {code} = props ?? {};
+
+          return  startQuizSession(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartQuizSessionMutationResult = NonNullable<Awaited<ReturnType<typeof startQuizSession>>>
+
+    export type StartQuizSessionMutationError = ErrorType<void>
+
+    /**
+ * @summary Start a multiplayer quiz session (host only)
+ */
+export const useStartQuizSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startQuizSession>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startQuizSession>>,
         TError,
         {code: string},
         TContext
       > => {
-      return useMutation(getJoinQuizSessionMutationOptions(options));
+      return useMutation(getStartQuizSessionMutationOptions(options));
     }
 
 export const getSubmitSessionAnswerUrl = (code: string,) => {

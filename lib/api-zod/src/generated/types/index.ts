@@ -18,6 +18,7 @@ export * from './courseDetailLevel';
 export * from './courseLevel';
 export * from './getLeaderboardParams';
 export * from './healthStatus';
+export * from './joinSessionInput';
 export * from './language';
 export * from './languageStat';
 export * from './leaderboardEntry';
