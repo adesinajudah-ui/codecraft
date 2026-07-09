@@ -7,7 +7,7 @@ import {
   languagesTable,
   coursesTable,
 } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { requireAuth, getAuth } from "@clerk/express";
 
 const router = Router();
@@ -84,7 +84,7 @@ router.get("/summary", requireAuth(), async (req, res) => {
     const allLessons = await db
       .select()
       .from(lessonsTable)
-      .where(sql`${lessonsTable.courseId} = ANY(${courseIds})`);
+      .where(inArray(lessonsTable.courseId, courseIds));
 
     const lessonIds = allLessons.map((l) => l.id);
     const completed = lessonIds.length > 0
@@ -93,7 +93,7 @@ router.get("/summary", requireAuth(), async (req, res) => {
           .from(userProgressTable)
           .where(and(
             eq(userProgressTable.userId, userId),
-            sql`${userProgressTable.lessonId} = ANY(${lessonIds})`,
+            inArray(userProgressTable.lessonId, lessonIds),
           ))
       : [];
 
