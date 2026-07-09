@@ -147,9 +147,17 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
       ...session.participants,
       { userId, displayName: playerName, score: 0, answeredCount: 0 },
     ];
+
+    // Auto-start the moment a 2nd player joins
+    const autoStart = newParticipants.length >= 2;
+
     const [updated] = await tx
       .update(quizSessionsTable)
-      .set({ participants: newParticipants })
+      .set({
+        participants: newParticipants,
+        status: autoStart ? "active" : "waiting",
+        currentQuestion: autoStart ? 0 : session.currentQuestion,
+      })
       .where(eq(quizSessionsTable.code, code))
       .returning();
     return { kind: "ok", session: updated };
