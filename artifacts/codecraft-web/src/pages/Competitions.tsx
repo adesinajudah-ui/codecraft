@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useUser } from "@clerk/react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Swords, Plus, Users, Trophy, Zap, Star, Copy, Check, Crown, Play } from "lucide-react";
+import { Swords, Plus, Users, Trophy, Zap, Star, Copy, Check, Crown, Play, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useListCoursesByLanguage } from "@workspace/api-client-react";
 
 const activeRooms = [
   { id: "R1", code: "JS-4829", host: "Alex C.", language: "JavaScript", difficulty: "Medium", players: 3, maxPlayers: 8, status: "waiting" },
@@ -73,20 +75,29 @@ function RoomCard({ room }: { room: typeof activeRooms[0] }) {
   );
 }
 
+const LANGUAGE_SLUGS: Record<string, string> = {
+  HTML: "html",
+  CSS: "css",
+  JavaScript: "javascript",
+  Python: "python",
+  Java: "java",
+  C: "c",
+};
+
 function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [language, setLanguage] = useState("JavaScript");
-  const [difficulty, setDifficulty] = useState("Medium");
-  const [maxPlayers, setMaxPlayers] = useState("8");
-  const [created, setCreated] = useState(false);
-  const [roomCode] = useState(() => `${language.substring(0, 2).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`);
-  const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
+  const [, navigate] = useLocation();
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(roomCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast({ title: "Code copied!" });
+  const slug = LANGUAGE_SLUGS[language] ?? "javascript";
+  const { data: courses, isLoading: coursesLoading } = useListCoursesByLanguage(slug, {
+    query: { enabled: open },
+  });
+  const courseId = courses?.[0]?.id;
+
+  const handleStart = () => {
+    if (!courseId) return;
+    onClose();
+    navigate(`/quiz/${courseId}/multiplayer`);
   };
 
   return (
@@ -95,52 +106,41 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Swords className="w-5 h-5 text-primary" />
-            {created ? "Room Created!" : "Create Room"}
+            Start a Competition
           </DialogTitle>
           <DialogDescription className="text-xs">
-            {created ? "Share the code with friends." : "Set up a multiplayer quiz."}
+            Pick a language — you'll get a room code to share with your opponent.
           </DialogDescription>
         </DialogHeader>
-        {!created ? (
-          <div className="space-y-3 pt-1">
-            {[
-              { label: "Language", value: language, onChange: setLanguage, options: ["HTML", "CSS", "JavaScript", "Python", "Java", "C"] },
-              { label: "Difficulty", value: difficulty, onChange: setDifficulty, options: ["Easy", "Medium", "Hard"] },
-              { label: "Max Players", value: maxPlayers, onChange: setMaxPlayers, options: ["2", "4", "6", "8", "12", "16"] },
-            ].map(field => (
-              <div key={field.label} className="space-y-1">
-                <label className="text-xs font-medium">{field.label}</label>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {field.options.map(o => <SelectItem key={o} value={o}>{o}{field.label === "Max Players" ? " players" : ""}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" className="flex-1" size="sm" onClick={onClose}>Cancel</Button>
-              <Button className="flex-1" size="sm" onClick={() => setCreated(true)}>
-                <Plus className="w-4 h-4 mr-1" /> Create
-              </Button>
-            </div>
+        <div className="space-y-4 pt-1">
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Language</label>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.keys(LANGUAGE_SLUGS).map(o => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        ) : (
-          <div className="space-y-4 pt-1 text-center">
-            <div className="text-4xl">🎉</div>
-            <div className="p-4 rounded-xl bg-primary/10 border border-primary/30">
-              <p className="text-xs text-muted-foreground mb-1">Room Code</p>
-              <p className="text-3xl font-bold font-mono text-primary tracking-widest">{roomCode}</p>
-            </div>
-            <Button variant="outline" className="gap-2 w-full" size="sm" onClick={handleCopy}>
-              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-              {copied ? "Copied!" : "Copy Code"}
-            </Button>
-            <Button className="w-full gap-2" size="sm">
-              <Play className="w-4 h-4" /> Start Competition
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" className="flex-1" size="sm" onClick={onClose}>Cancel</Button>
+            <Button
+              className="flex-1 gap-2"
+              size="sm"
+              disabled={!courseId || coursesLoading}
+              onClick={handleStart}
+            >
+              {coursesLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+              Start Competition
             </Button>
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -148,7 +148,33 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
 function JoinRoomDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [, navigate] = useLocation();
   const { toast } = useToast();
+
+  const handleJoin = async () => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) return;
+    setLoading(true);
+    setError("");
+    try {
+      const basePath = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+      const res = await fetch(`${basePath}/api/quiz/sessions/${trimmed}/meta`);
+      if (!res.ok) {
+        setError("Room not found. Check the code and try again.");
+        return;
+      }
+      const { courseId } = await res.json() as { courseId: number; quizId: number };
+      onClose();
+      navigate(`/quiz/${courseId}/multiplayer?join=${trimmed}`);
+    } catch {
+      setError("Connection error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-[90vw] rounded-2xl">
@@ -160,16 +186,18 @@ function JoinRoomDialog({ open, onClose }: { open: boolean; onClose: () => void 
         </DialogHeader>
         <div className="space-y-4 pt-1">
           <Input
-            placeholder="e.g. JS-4829"
+            placeholder="e.g. ABC123"
             value={code}
-            onChange={e => setCode(e.target.value.toUpperCase())}
+            onChange={e => { setCode(e.target.value.toUpperCase()); setError(""); }}
             className="font-mono text-center text-lg h-12 tracking-widest"
-            maxLength={7}
+            maxLength={8}
+            onKeyDown={e => e.key === "Enter" && code.length >= 5 && handleJoin()}
           />
+          {error && <p className="text-xs text-destructive text-center">{error}</p>}
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" size="sm" onClick={onClose}>Cancel</Button>
-            <Button className="flex-1" size="sm" disabled={code.length < 5}
-              onClick={() => { toast({ title: "Joining...", description: `Connecting to ${code}` }); onClose(); }}>
+            <Button className="flex-1 gap-2" size="sm" disabled={code.length < 5 || loading} onClick={handleJoin}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
               Join
             </Button>
           </div>

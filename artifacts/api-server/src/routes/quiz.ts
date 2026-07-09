@@ -199,6 +199,19 @@ router.get("/sessions/:code", async (req, res) => {
   res.json(serializeSession(session[0]));
 });
 
+// GET /quiz/sessions/:code/meta — lightweight: returns courseId so clients can redirect before joining
+router.get("/sessions/:code/meta", async (req, res) => {
+  const code = String(req.params.code).toUpperCase();
+  const rows = await db
+    .select({ quizId: quizSessionsTable.quizId, courseId: quizzesTable.courseId })
+    .from(quizSessionsTable)
+    .innerJoin(quizzesTable, eq(quizSessionsTable.quizId, quizzesTable.id))
+    .where(eq(quizSessionsTable.code, code))
+    .limit(1);
+  if (!rows[0]) { res.status(404).json({ error: "Session not found" }); return; }
+  res.json({ quizId: rows[0].quizId, courseId: rows[0].courseId });
+});
+
 // POST /quiz/sessions/:code/join
 router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
   const { userId } = getAuth(req);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useSearch, useLocation } from "wouter";
 import {
   useGetQuizSession,
   useCreateQuizSession,
@@ -125,11 +125,16 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 export default function MultiplayerQuiz() {
   const { courseId } = useParams();
   const id = parseInt(courseId || "0", 10);
+  const search = useSearch();
+  const [, navigate] = useLocation();
   const { user } = useUser();
   const queryClient = useQueryClient();
 
+  // Pre-fill join code from ?join=CODE param (set by JoinRoomDialog)
+  const pendingJoin = new URLSearchParams(search).get("join") ?? "";
+
   const [sessionCode, setSessionCode] = useState<string>("");
-  const [joinCode, setJoinCode] = useState("");
+  const [joinCode, setJoinCode] = useState(pendingJoin);
   const [answeredUpTo, setAnsweredUpTo] = useState(-1);
   const [copied, setCopied] = useState(false);
 
@@ -160,6 +165,28 @@ export default function MultiplayerQuiz() {
       },
     }
   );
+
+  // ── Auto-join when navigated from Competitions page with ?join=CODE ──────────
+  const autoJoinFiredRef = useRef(false);
+  useEffect(() => {
+    if (!pendingJoin || autoJoinFiredRef.current || sessionCode || !user) return;
+    autoJoinFiredRef.current = true;
+    joinSession.mutate(
+      { code: pendingJoin, data: { displayName } },
+      {
+        onSuccess: (data) => {
+          queryClient.setQueryData(getGetQuizSessionQueryKey(pendingJoin), data);
+          setSessionCode(pendingJoin);
+          setAnsweredUpTo(-1);
+          // Strip the ?join param from the URL so refresh doesn't re-join
+          navigate(`/quiz/${courseId}/multiplayer`, { replace: true });
+        },
+        onError: () => {
+          autoJoinFiredRef.current = false; // allow retry
+        },
+      }
+    );
+  }, [pendingJoin, user]);
 
   // ── SSE connection ──────────────────────────────────────────────────────────
   const esRef = useRef<EventSource | null>(null);
