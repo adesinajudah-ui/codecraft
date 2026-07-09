@@ -1,0 +1,112 @@
+ Real-Time Competition Dashboard
+
+During the competition, every player and the host should see a live dashboard that updates instantly.
+
+Display:
+
+- Total Players Joined
+- Players Currently Online
+- Players Finished
+- Players Still Answering
+- Players Disconnected
+- Competition Status (Waiting, Starting, Live, Finished)
+
+Example:
+
+Players Joined: 48
+Online: 46
+Finished: 12
+Still Answering: 34
+
+------------------------------------
+
+# Player Information
+
+When a player joins, display:
+
+- Profile Picture (optional)
+- Display Name
+- Current Learning Level
+  - Beginner
+  - Intermediate
+  - Advanced
+  - Expert
+- Current Rank
+- Total XP
+- Country (optional)
+
+Example:
+
+🟢 Victor
+Level: Intermediate
+XP: 1,250
+Rank: #18
+
+------------------------------------
+
+# Live Join Notifications
+
+Whenever someone joins, instantly display a notification to everyone in the room.
+
+Examples:
+
+🟢 Victor joined the competition.
+🟢 Grace joined the competition.
+🟢 John joined the competition.
+
+The player count should update immediately without refreshing the page.
+
+------------------------------------
+
+# Live Progress Tracker
+
+During the quiz, show:
+
+Players Joined: 50
+Finished: 15
+Still Answering: 35
+
+Update these numbers in real time after every submission.
+
+------------------------------------
+
+# Live Leaderboard
+
+After every question, automatically update the leaderboard without refreshing.
+
+Display:
+
+🥇 1st - Victor (1,250 pts)
+🥈 2nd - Grace (1,210 pts)
+🥉 3rd - David (1,180 pts)
+
+Also display:
+
+- Current Level
+- XP
+- Accuracy Percentage
+- Correct Answers
+- Wrong Answers
+- Average Answer Speed
+
+------------------------------------
+
+# Experience (XP) System
+
+Award XP after every competition.
+
+Correct Answer: +10 XP
+Fast Answer Bonus: +5 XP
+Winning a Competition: +100 XP
+Perfect Score: +50 XP
+
+XP should increase the player's level automatically.
+
+Levels:
+
+Level 1–10: Beginner
+Level 11–25: Intermediate
+Level 26–50: Advanced
+Level 51+: Expert
+
+Show the player's level badge beside their name throughout the competition.

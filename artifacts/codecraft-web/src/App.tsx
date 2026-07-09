@@ -5,6 +5,7 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wo
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 
+import { Toaster } from "sonner";
 import Home from "./pages/Home";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -239,6 +240,7 @@ export default function App() {
   return (
     <WouterRouter base={basePath}>
       <ClerkProviderWithRoutes />
+      <Toaster position="top-center" richColors />
     </WouterRouter>
   );
 }

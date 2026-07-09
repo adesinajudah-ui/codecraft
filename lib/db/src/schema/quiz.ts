@@ -2,6 +2,20 @@ import { pgTable, text, serial, integer, timestamp, jsonb } from "drizzle-orm/pg
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
+export type SessionParticipant = {
+  userId: string;
+  displayName: string;
+  score: number;
+  answeredCount: number;
+  correctCount: number;
+  wrongCount: number;
+  answerTimes: number[]; // ms per answer
+  fastAnswerCount: number; // answers under 10 s
+  isFinished: boolean;
+  joinedAt: number; // unix ms
+  totalXp: number; // XP at join time
+};
+
 export const quizzesTable = pgTable("quizzes", {
   id: serial("id").primaryKey(),
   courseId: integer("course_id").notNull(),
@@ -32,7 +46,7 @@ export const quizSessionsTable = pgTable("quiz_sessions", {
   quizId: integer("quiz_id").notNull(),
   status: text("status").notNull().default("waiting"),
   hostUserId: text("host_user_id").notNull(),
-  participants: jsonb("participants").notNull().$type<Array<{ userId: string; displayName: string; score: number; answeredCount: number }>>().default([]),
+  participants: jsonb("participants").notNull().$type<SessionParticipant[]>().default([]),
   currentQuestion: integer("current_question"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });

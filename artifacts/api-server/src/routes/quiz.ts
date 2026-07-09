@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { db } from "@workspace/db";
 import {
   quizzesTable,
@@ -6,12 +6,90 @@ import {
   quizAttemptsTable,
   quizSessionsTable,
   userStatsTable,
+  type SessionParticipant,
 } from "@workspace/db";
 import { eq, sql, desc, asc } from "drizzle-orm";
 import { requireAuth, getAuth } from "@clerk/express";
 import crypto from "crypto";
 
 const router = Router();
+
+// ── SSE infrastructure ────────────────────────────────────────────────────────
+
+/** Map of sessionCode → Set of open SSE response objects */
+const sseClients = new Map<string, Set<Response>>();
+
+/** Tracks when the current question started (in-memory, resets on restart) */
+const questionStartTimes = new Map<string, number>();
+
+function broadcastToSession(code: string, event: string, data: unknown) {
+  const clients = sseClients.get(code);
+  if (!clients || clients.size === 0) return;
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const res of clients) {
+    try {
+      res.write(payload);
+    } catch {
+      clients.delete(res);
+    }
+  }
+}
+
+function serializeSession(session: typeof quizSessionsTable.$inferSelect) {
+  return { ...session, createdAt: session.createdAt?.toISOString() ?? new Date().toISOString() };
+}
+
+function makeParticipant(
+  userId: string,
+  displayName: string,
+  totalXp: number
+): SessionParticipant {
+  return {
+    userId,
+    displayName,
+    score: 0,
+    answeredCount: 0,
+    correctCount: 0,
+    wrongCount: 0,
+    answerTimes: [],
+    fastAnswerCount: 0,
+    isFinished: false,
+    joinedAt: Date.now(),
+    totalXp,
+  };
+}
+
+// ── SSE endpoint ──────────────────────────────────────────────────────────────
+
+// GET /quiz/sessions/:code/events
+router.get("/sessions/:code/events", (req, res) => {
+  const code = String(req.params.code).toUpperCase();
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no"); // prevent nginx buffering
+  res.flushHeaders();
+
+  // Send a heartbeat comment every 20 s to keep the connection alive
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(": heartbeat\n\n");
+    } catch {
+      clearInterval(heartbeat);
+    }
+  }, 20_000);
+
+  if (!sseClients.has(code)) sseClients.set(code, new Set());
+  sseClients.get(code)!.add(res);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    sseClients.get(code)?.delete(res);
+  });
+});
+
+// ── Solo quiz ─────────────────────────────────────────────────────────────────
 
 // GET /quiz/course/:courseId
 router.get("/course/:courseId", async (req, res) => {
@@ -83,6 +161,8 @@ router.post("/attempts", requireAuth(), async (req, res) => {
   res.status(201).json({ ...attempt, completedAt: attempt.completedAt?.toISOString() ?? new Date().toISOString() });
 });
 
+// ── Multiplayer sessions ──────────────────────────────────────────────────────
+
 // POST /quiz/sessions — create a session
 router.post("/sessions", requireAuth(), async (req, res) => {
   const { userId } = getAuth(req);
@@ -92,6 +172,10 @@ router.post("/sessions", requireAuth(), async (req, res) => {
   const hostName = displayName?.trim() || "Host";
   const code = crypto.randomBytes(3).toString("hex").toUpperCase();
 
+  // Look up host's existing XP
+  const stats = await db.select().from(userStatsTable).where(eq(userStatsTable.userId, userId)).limit(1);
+  const totalXp = stats[0]?.xp ?? 0;
+
   const [session] = await db
     .insert(quizSessionsTable)
     .values({
@@ -100,19 +184,19 @@ router.post("/sessions", requireAuth(), async (req, res) => {
       status: "waiting",
       hostUserId: userId,
       currentQuestion: 0,
-      participants: [{ userId, displayName: hostName, score: 0, answeredCount: 0 }],
+      participants: [makeParticipant(userId, hostName, totalXp)],
     })
     .returning();
 
-  res.status(201).json({ ...session, createdAt: session.createdAt?.toISOString() ?? new Date().toISOString() });
+  res.status(201).json(serializeSession(session));
 });
 
 // GET /quiz/sessions/:code
 router.get("/sessions/:code", async (req, res) => {
-  const code = String(req.params.code);
+  const code = String(req.params.code).toUpperCase();
   const session = await db.select().from(quizSessionsTable).where(eq(quizSessionsTable.code, code)).limit(1);
   if (!session[0]) { res.status(404).json({ error: "Session not found" }); return; }
-  res.json({ ...session[0], createdAt: session[0].createdAt?.toISOString() ?? new Date().toISOString() });
+  res.json(serializeSession(session[0]));
 });
 
 // POST /quiz/sessions/:code/join
@@ -120,12 +204,16 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
-  const code = String(req.params.code);
+  const code = String(req.params.code).toUpperCase();
   const { displayName } = req.body as { displayName?: string };
+
+  // Look up joiner's existing XP (outside transaction is fine — read-only)
+  const stats = await db.select().from(userStatsTable).where(eq(userStatsTable.userId, userId)).limit(1);
+  const totalXp = stats[0]?.xp ?? 0;
 
   type JoinResult =
     | { kind: "error"; status: number; message: string }
-    | { kind: "ok"; session: typeof quizSessionsTable.$inferSelect };
+    | { kind: "ok"; session: typeof quizSessionsTable.$inferSelect; justJoined: boolean; joinedName: string };
 
   const result = await db.transaction(async (tx): Promise<JoinResult> => {
     const sessions = await tx
@@ -140,15 +228,14 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
     if (session.status !== "waiting") return { kind: "error", status: 400, message: "Session already started" };
 
     const existing = session.participants.find((p) => p.userId === userId);
-    if (existing) return { kind: "ok", session };
+    if (existing) return { kind: "ok", session, justJoined: false, joinedName: existing.displayName };
 
     const playerName = displayName?.trim() || `Player ${session.participants.length + 1}`;
-    const newParticipants = [
+    const newParticipants: SessionParticipant[] = [
       ...session.participants,
-      { userId, displayName: playerName, score: 0, answeredCount: 0 },
+      makeParticipant(userId, playerName, totalXp),
     ];
 
-    // Auto-start the moment a 2nd player joins
     const autoStart = newParticipants.length >= 2;
 
     const [updated] = await tx
@@ -160,14 +247,27 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
       })
       .where(eq(quizSessionsTable.code, code))
       .returning();
-    return { kind: "ok", session: updated };
+
+    return { kind: "ok", session: updated, justJoined: true, joinedName: playerName };
   });
 
   if (result.kind === "error") {
     res.status(result.status).json({ error: result.message });
     return;
   }
-  res.json({ ...result.session, createdAt: result.session.createdAt?.toISOString() ?? new Date().toISOString() });
+
+  // When a new player joins, broadcast join notification + updated session
+  if (result.justJoined) {
+    broadcastToSession(code, "player_joined", { displayName: result.joinedName });
+    broadcastToSession(code, "session_update", serializeSession(result.session));
+
+    // If the session just became active, record question start time
+    if (result.session.status === "active") {
+      questionStartTimes.set(code, Date.now());
+    }
+  }
+
+  res.json(serializeSession(result.session));
 });
 
 // POST /quiz/sessions/:code/start — host only
@@ -175,7 +275,7 @@ router.post("/sessions/:code/start", requireAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
-  const code = String(req.params.code);
+  const code = String(req.params.code).toUpperCase();
   const session = await db.select().from(quizSessionsTable).where(eq(quizSessionsTable.code, code)).limit(1);
   if (!session[0]) { res.status(404).json({ error: "Session not found" }); return; }
   if (session[0].hostUserId !== userId) { res.status(403).json({ error: "Only the host can start the session" }); return; }
@@ -187,7 +287,10 @@ router.post("/sessions/:code/start", requireAuth(), async (req, res) => {
     .where(eq(quizSessionsTable.code, code))
     .returning();
 
-  res.json({ ...updated, createdAt: updated.createdAt?.toISOString() ?? new Date().toISOString() });
+  questionStartTimes.set(code, Date.now());
+  broadcastToSession(code, "session_update", serializeSession(updated));
+
+  res.json(serializeSession(updated));
 });
 
 // POST /quiz/sessions/:code/answer
@@ -195,16 +298,20 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
-  const code = String(req.params.code);
+  const code = String(req.params.code).toUpperCase();
   const { questionId, answerIndex } = req.body as { questionId: number; answerIndex: number };
+
+  // Compute answer speed before entering the transaction
+  const questionStartedAt = questionStartTimes.get(code) ?? Date.now();
+  const answerTimeMs = Date.now() - questionStartedAt;
+  const isFastAnswer = answerTimeMs < 10_000; // under 10 seconds
 
   type TxResult =
     | { kind: "error"; status: number; message: string }
     | { kind: "already_answered"; session: typeof quizSessionsTable.$inferSelect }
-    | { kind: "ok"; session: typeof quizSessionsTable.$inferSelect; finished: boolean; finalParticipants: Array<{ userId: string; displayName: string; score: number; answeredCount: number }> };
+    | { kind: "ok"; session: typeof quizSessionsTable.$inferSelect; advancedQuestion: boolean };
 
   const txResult = await db.transaction(async (tx): Promise<TxResult> => {
-    // Row-level lock prevents concurrent answer overwrites
     const sessions = await tx
       .select()
       .from(quizSessionsTable)
@@ -217,16 +324,13 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
     if (session.status !== "active") return { kind: "error", status: 400, message: "Session not active" };
 
     const currentQ = session.currentQuestion ?? 0;
-
     const participant = session.participants.find((p) => p.userId === userId);
     if (!participant) return { kind: "error", status: 400, message: "Not a participant" };
 
-    // Idempotent: if already answered this question, return current state
     if (participant.answeredCount > currentQ) {
       return { kind: "already_answered", session };
     }
 
-    // Validate that questionId matches the actual current question
     const questions = await tx
       .select()
       .from(quizQuestionsTable)
@@ -240,36 +344,63 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
 
     const correct = currentQuestion.correctIndex === answerIndex;
 
-    const newParticipants = session.participants.map((p) =>
-      p.userId === userId
-        ? { ...p, score: correct ? p.score + 1 : p.score, answeredCount: p.answeredCount + 1 }
-        : p
-    );
+    const newParticipants: SessionParticipant[] = session.participants.map((p) => {
+      if (p.userId !== userId) return p;
+      return {
+        ...p,
+        score: correct ? p.score + 1 : p.score,
+        answeredCount: p.answeredCount + 1,
+        correctCount: correct ? p.correctCount + 1 : p.correctCount,
+        wrongCount: correct ? p.wrongCount : p.wrongCount + 1,
+        answerTimes: [...p.answerTimes, answerTimeMs],
+        fastAnswerCount: isFastAnswer ? p.fastAnswerCount + 1 : p.fastAnswerCount,
+      };
+    });
 
     const allAnswered = newParticipants.every((p) => p.answeredCount >= currentQ + 1);
     const nextQ = currentQ + 1;
     const finished = allAnswered && nextQ >= questions.length;
 
+    const finalParticipants: SessionParticipant[] = finished
+      ? newParticipants.map((p) => ({ ...p, isFinished: true }))
+      : newParticipants;
+
     const [updated] = await tx
       .update(quizSessionsTable)
       .set({
-        participants: newParticipants,
+        participants: finalParticipants,
         currentQuestion: allAnswered ? nextQ : currentQ,
         status: finished ? "finished" : "active",
       })
       .where(eq(quizSessionsTable.code, code))
       .returning();
 
-    // Award XP atomically in the same transaction that flips status to "finished"
+    // Award XP when the competition ends
     if (finished) {
-      const sorted = [...newParticipants].sort((a, b) => b.score - a.score);
-      const xpTiers = [100, 60, 30, 10]; // 1st, 2nd, 3rd, rest
+      const sorted = [...finalParticipants].sort((a, b) => b.score - a.score);
+      const totalQuestions = questions.length;
+      const winnerId = sorted[0]?.userId;
+
       await Promise.all(
-        sorted.map((p, idx) => {
-          const xp = xpTiers[Math.min(idx, xpTiers.length - 1)];
+        finalParticipants.map((p) => {
+          // XP breakdown per spec:
+          // +10 per correct answer, +5 per fast answer, +100 win bonus, +50 perfect score
+          const correctXp = p.correctCount * 10;
+          const fastXp = p.fastAnswerCount * 5;
+          const winBonus = p.userId === winnerId ? 100 : 0;
+          const perfectBonus = p.correctCount === totalQuestions ? 50 : 0;
+          const xp = correctXp + fastXp + winBonus + perfectBonus;
+
           return tx
             .insert(userStatsTable)
-            .values({ userId: p.userId, displayName: p.displayName, email: "", xp, lessonsCompleted: 0, quizzesPassed: 1 })
+            .values({
+              userId: p.userId,
+              displayName: p.displayName,
+              email: "",
+              xp,
+              lessonsCompleted: 0,
+              quizzesPassed: 1,
+            })
             .onConflictDoUpdate({
               target: userStatsTable.userId,
               set: {
@@ -283,7 +414,7 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
       );
     }
 
-    return { kind: "ok", session: updated, finished, finalParticipants: newParticipants };
+    return { kind: "ok", session: updated, advancedQuestion: allAnswered && !finished };
   });
 
   if (txResult.kind === "error") {
@@ -292,11 +423,23 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
   }
 
   if (txResult.kind === "already_answered") {
-    res.json({ ...txResult.session, createdAt: txResult.session.createdAt?.toISOString() ?? new Date().toISOString() });
+    res.json(serializeSession(txResult.session));
     return;
   }
 
-  res.json({ ...txResult.session, createdAt: txResult.session.createdAt?.toISOString() ?? new Date().toISOString() });
+  // If question advanced, record new question start time
+  if (txResult.advancedQuestion) {
+    questionStartTimes.set(code, Date.now());
+  }
+  // Clean up start time when session finishes
+  if (txResult.session.status === "finished") {
+    questionStartTimes.delete(code);
+  }
+
+  // Broadcast updated session state to all connected clients
+  broadcastToSession(code, "session_update", serializeSession(txResult.session));
+
+  res.json(serializeSession(txResult.session));
 });
 
 export default router;

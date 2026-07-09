@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "wouter";
 import {
   useGetQuizSession,
@@ -24,8 +24,103 @@ import {
   Swords,
   Copy,
   Check,
+  Wifi,
+  WifiOff,
+  Zap,
+  Target,
+  Timer,
+  Medal,
 } from "lucide-react";
 import { useUser } from "@clerk/react";
+import { toast } from "sonner";
+
+// ── Extended participant type ─────────────────────────────────────────────────
+
+type Participant = {
+  userId: string;
+  displayName: string;
+  score: number;
+  answeredCount: number;
+  correctCount: number;
+  wrongCount: number;
+  answerTimes: number[];
+  fastAnswerCount: number;
+  isFinished: boolean;
+  joinedAt: number;
+  totalXp: number;
+};
+
+// Cast session participants to the extended type (JSONB carries the fields)
+function asParticipants(raw: unknown[]): Participant[] {
+  return (raw as Participant[]).map((p) => ({
+    userId: p.userId ?? "",
+    displayName: p.displayName ?? "Player",
+    score: p.score ?? 0,
+    answeredCount: p.answeredCount ?? 0,
+    correctCount: p.correctCount ?? 0,
+    wrongCount: p.wrongCount ?? 0,
+    answerTimes: p.answerTimes ?? [],
+    fastAnswerCount: p.fastAnswerCount ?? 0,
+    isFinished: p.isFinished ?? false,
+    joinedAt: p.joinedAt ?? 0,
+    totalXp: p.totalXp ?? 0,
+  }));
+}
+
+// ── Level helpers ─────────────────────────────────────────────────────────────
+
+function getPlayerLevel(xp: number) {
+  const level = Math.floor(xp / 100) + 1;
+  if (level <= 10) return { level, tier: "Beginner", color: "bg-green-500/20 text-green-400 border-green-500/30" };
+  if (level <= 25) return { level, tier: "Intermediate", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" };
+  if (level <= 50) return { level, tier: "Advanced", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" };
+  return { level, tier: "Expert", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" };
+}
+
+function LevelBadge({ xp }: { xp: number }) {
+  const { tier, color } = getPlayerLevel(xp);
+  return (
+    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${color}`}>
+      {tier}
+    </span>
+  );
+}
+
+function avgMs(times: number[]): number {
+  if (!times.length) return 0;
+  return Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+}
+
+function accuracy(p: Participant): number {
+  const total = p.correctCount + p.wrongCount;
+  if (total === 0) return 0;
+  return Math.round((p.correctCount / total) * 100);
+}
+
+// ── Stat box ─────────────────────────────────────────────────────────────────
+
+function StatBox({ label, value, icon: Icon, accent }: {
+  label: string;
+  value: number | string;
+  icon?: React.ComponentType<{ className?: string }>;
+  accent?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1 bg-secondary/40 border border-border rounded-xl px-4 py-3">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        {Icon && <Icon className={`w-3 h-3 ${accent ?? ""}`} />}
+        {label}
+      </div>
+      <div className={`text-2xl font-bold font-mono ${accent ?? "text-foreground"}`}>{value}</div>
+    </div>
+  );
+}
+
+// ── Rank medals ───────────────────────────────────────────────────────────────
+
+const MEDALS = ["🥇", "🥈", "🥉"];
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function MultiplayerQuiz() {
   const { courseId } = useParams();
@@ -59,13 +154,61 @@ export default function MultiplayerQuiz() {
       query: {
         enabled: !!sessionCode,
         queryKey: sessionQueryKey,
-        refetchInterval: (q) => {
-          if (q.state.data?.status === "finished") return false;
-          return 1500;
-        },
+        // SSE drives updates; only refetch if tab regains focus (safety net)
+        refetchInterval: false,
+        refetchOnWindowFocus: true,
       },
     }
   );
+
+  // ── SSE connection ──────────────────────────────────────────────────────────
+  const esRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    if (!sessionCode) return;
+    if (session?.status === "finished") return; // no need for SSE when done
+
+    const basePath = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+    const url = `${basePath}/api/quiz/sessions/${sessionCode}/events`;
+    const es = new EventSource(url);
+    esRef.current = es;
+
+    es.addEventListener("session_update", (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        queryClient.setQueryData(sessionQueryKey, data);
+      } catch { /* ignore parse errors */ }
+    });
+
+    es.addEventListener("player_joined", (e) => {
+      try {
+        const { displayName: who } = JSON.parse(e.data);
+        toast(`🟢 ${who} joined the competition`, {
+          duration: 3000,
+          position: "top-center",
+        });
+      } catch { /* ignore */ }
+    });
+
+    es.onerror = () => {
+      // EventSource will auto-reconnect; no action needed
+    };
+
+    return () => {
+      es.close();
+      esRef.current = null;
+    };
+  }, [sessionCode, session?.status]);
+
+  // Close SSE when session finishes
+  useEffect(() => {
+    if (session?.status === "finished") {
+      esRef.current?.close();
+      esRef.current = null;
+    }
+  }, [session?.status]);
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleCreate = () => {
     if (!quiz) return;
@@ -123,7 +266,7 @@ export default function MultiplayerQuiz() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // ── Entry screen ──────────────────────────────────────────────────────────
+  // ── Entry screen ─────────────────────────────────────────────────────────────
   if (!sessionCode) {
     return (
       <div className="p-8 max-w-md mx-auto mt-16">
@@ -172,11 +315,7 @@ export default function MultiplayerQuiz() {
               disabled={joinSession.isPending || !joinCode}
               className="shrink-0"
             >
-              {joinSession.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Join"
-              )}
+              {joinSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join"}
             </Button>
           </div>
         </div>
@@ -193,19 +332,28 @@ export default function MultiplayerQuiz() {
     );
   }
 
+  const participants = asParticipants(session.participants as unknown[]);
   const isHost = session.hostUserId === user?.id;
   const currentQIndex = session.currentQuestion ?? 0;
   const hasAnsweredCurrentQ = answeredUpTo >= currentQIndex;
+  const finishedCount = participants.filter((p) => p.isFinished).length;
+  const stillAnswering = participants.filter((p) => !p.isFinished && p.answeredCount <= currentQIndex).length;
 
-  // ── Waiting room (host waits for opponent) ────────────────────────────────
+  // ── Waiting room ────────────────────────────────────────────────────────
   if (session.status === "waiting") {
     return (
       <div className="p-8 max-w-md mx-auto mt-12 text-center">
         <div className="text-4xl mb-4">⚔️</div>
         <h1 className="text-2xl font-bold font-mono mb-1">Room Ready!</h1>
-        <p className="text-muted-foreground text-sm mb-8">
+        <p className="text-muted-foreground text-sm mb-6">
           Share this code — the quiz starts automatically when your opponent joins
         </p>
+
+        {/* Live dashboard – waiting state */}
+        <div className="grid grid-cols-2 gap-3 mb-6 text-left">
+          <StatBox label="Players Joined" value={participants.length} icon={Users} />
+          <StatBox label="Status" value="Waiting" icon={Loader2} accent="text-yellow-400" />
+        </div>
 
         {/* Copyable room code */}
         <div
@@ -216,45 +364,39 @@ export default function MultiplayerQuiz() {
             {session.code}
           </div>
           <div className="absolute top-3 right-3 text-muted-foreground group-hover:text-primary transition-colors">
-            {copied ? (
-              <Check className="w-4 h-4 text-green-400" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
+            {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            {copied ? "Copied!" : "Tap to copy"}
-          </p>
+          <p className="text-xs text-muted-foreground mt-2">{copied ? "Copied!" : "Tap to copy"}</p>
         </div>
 
         {/* Player list */}
         <div className="bg-card border rounded-xl p-4 mb-6 text-left">
           <div className="flex items-center gap-2 mb-3 text-sm font-medium text-muted-foreground">
             <Users className="w-4 h-4" />
-            Players ({session.participants.length} / 2)
+            Players ({participants.length} / 2)
           </div>
           <div className="space-y-2">
-            {session.participants.map((p) => (
-              <div
-                key={p.userId}
-                className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2"
-              >
-                <span className="font-medium text-sm">
-                  {p.displayName}
-                  {p.userId === user?.id && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      (you)
-                    </span>
-                  )}
-                </span>
-                {p.userId === session.hostUserId && (
-                  <Badge variant="secondary" className="text-xs">
-                    Host
-                  </Badge>
-                )}
-              </div>
-            ))}
-            {session.participants.length < 2 && (
+            {participants.map((p) => {
+              const lvl = getPlayerLevel(p.totalXp);
+              return (
+                <div key={p.userId} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Wifi className="w-3 h-3 text-green-400 shrink-0" />
+                    <span className="font-medium text-sm truncate">{p.displayName}</span>
+                    {p.userId === user?.id && (
+                      <span className="text-xs text-muted-foreground">(you)</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <LevelBadge xp={p.totalXp} />
+                    {p.userId === session.hostUserId && (
+                      <Badge variant="secondary" className="text-xs">Host</Badge>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {participants.length < 2 && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-2 border border-dashed rounded-lg">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 Waiting for opponent…
@@ -276,74 +418,113 @@ export default function MultiplayerQuiz() {
     );
   }
 
-  // ── Finished screen ───────────────────────────────────────────────────────
+  // ── Finished screen ────────────────────────────────────────────────────────
   if (session.status === "finished") {
-    const sorted = [...session.participants].sort((a, b) => b.score - a.score);
-    const winner = sorted[0];
-    const myRank = sorted.findIndex((p) => p.userId === user?.id) + 1;
-    const xpTiers = [100, 60, 30, 10];
-    const myXp = xpTiers[Math.min(myRank - 1, xpTiers.length - 1)];
-    const iWon = winner?.userId === user?.id;
+    const sorted = [...participants].sort((a, b) => b.score - a.score);
+    const me = participants.find((p) => p.userId === user?.id);
+    const iWon = sorted[0]?.userId === user?.id;
+    const isPerfect = me ? me.correctCount === quiz.questions.length : false;
+    const correctXp = (me?.correctCount ?? 0) * 10;
+    const fastXp = (me?.fastAnswerCount ?? 0) * 5;
+    const winBonus = iWon ? 100 : 0;
+    const perfectBonus = isPerfect ? 50 : 0;
+    const totalXpEarned = correctXp + fastXp + winBonus + perfectBonus;
 
     return (
-      <div className="p-8 max-w-lg mx-auto mt-8 text-center">
-        <div className="mb-8">
+      <div className="p-6 max-w-2xl mx-auto mt-6">
+        <div className="text-center mb-8">
           <div className="text-7xl mb-4">{iWon ? "🏆" : "😤"}</div>
           <h1 className="text-3xl font-bold font-mono mb-2">
-            {iWon ? "You Won!" : `${winner?.displayName} Wins!`}
+            {iWon ? "You Won!" : `${sorted[0]?.displayName} Wins!`}
           </h1>
           <p className="text-muted-foreground text-sm">
-            {iWon
-              ? "Incredible — you outscored your opponent!"
-              : "Better luck next time. Challenge them again?"}
+            {iWon ? "Incredible — you outscored your opponent!" : "Better luck next time!"}
           </p>
         </div>
 
-        {/* XP banner */}
-        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 mb-6 flex items-center justify-center gap-3">
-          <Star className="w-5 h-5 text-primary" />
-          <span className="font-semibold">
-            You earned{" "}
-            <span className="text-primary font-mono text-lg">{myXp} XP</span> —
-            posted to the leaderboard!
-          </span>
+        {/* XP breakdown */}
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Star className="w-4 h-4 text-primary" />
+            <span className="font-semibold">XP Earned This Match</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {correctXp > 0 && (
+              <div className="flex justify-between bg-secondary/50 rounded-lg px-3 py-2">
+                <span className="text-muted-foreground">Correct answers</span>
+                <span className="font-mono font-bold text-primary">+{correctXp}</span>
+              </div>
+            )}
+            {fastXp > 0 && (
+              <div className="flex justify-between bg-secondary/50 rounded-lg px-3 py-2">
+                <span className="text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3" />Fast bonus</span>
+                <span className="font-mono font-bold text-yellow-400">+{fastXp}</span>
+              </div>
+            )}
+            {winBonus > 0 && (
+              <div className="flex justify-between bg-secondary/50 rounded-lg px-3 py-2">
+                <span className="text-muted-foreground flex items-center gap-1"><Trophy className="w-3 h-3" />Win bonus</span>
+                <span className="font-mono font-bold text-yellow-400">+{winBonus}</span>
+              </div>
+            )}
+            {perfectBonus > 0 && (
+              <div className="flex justify-between bg-secondary/50 rounded-lg px-3 py-2">
+                <span className="text-muted-foreground flex items-center gap-1"><Star className="w-3 h-3" />Perfect score</span>
+                <span className="font-mono font-bold text-yellow-400">+{perfectBonus}</span>
+              </div>
+            )}
+          </div>
+          <div className="mt-3 pt-3 border-t border-primary/20 text-center">
+            <span className="text-2xl font-bold font-mono text-primary">+{totalXpEarned} XP</span>
+            <span className="text-muted-foreground text-sm ml-2">posted to leaderboard</span>
+          </div>
         </div>
 
-        {/* Head-to-head result cards */}
-        <div className="bg-card border rounded-xl p-6 mb-6">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-            Final Score
+        {/* Live leaderboard */}
+        <div className="bg-card border rounded-xl p-5 mb-6">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4 flex items-center gap-2">
+            <Trophy className="w-4 h-4" /> Final Leaderboard
           </h2>
-          <div className="flex items-stretch gap-4">
+          <div className="space-y-3">
             {sorted.map((p, idx) => {
-              const medals = ["🥇", "🥈", "🥉"];
               const isMe = p.userId === user?.id;
-              const earnedXp = xpTiers[Math.min(idx, xpTiers.length - 1)];
+              const acc = accuracy(p);
+              const avg = avgMs(p.answerTimes);
               return (
                 <div
                   key={p.userId}
-                  className={`flex-1 rounded-xl p-4 text-center ${
-                    isMe
-                      ? "bg-primary/10 border border-primary/30"
-                      : "bg-secondary/50"
-                  }`}
+                  className={`rounded-xl p-4 ${isMe ? "bg-primary/10 border border-primary/30" : "bg-secondary/50"}`}
                 >
-                  <div className="text-3xl mb-1">{medals[idx] ?? `${idx + 1}`}</div>
-                  <div className="font-semibold text-sm truncate">
-                    {p.displayName}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{MEDALS[idx] ?? `${idx + 1}`}</span>
+                      <div>
+                        <div className="font-semibold text-sm flex items-center gap-2">
+                          {p.displayName}
+                          {isMe && <span className="text-xs text-muted-foreground">(you)</span>}
+                        </div>
+                        <LevelBadge xp={p.totalXp} />
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-2xl font-bold text-primary">{p.score}</div>
+                      <div className="text-xs text-muted-foreground">/{quiz.questions.length}</div>
+                    </div>
                   </div>
-                  {isMe && (
-                    <div className="text-xs text-muted-foreground">(you)</div>
-                  )}
-                  <div className="font-mono text-3xl font-bold text-primary mt-2">
-                    {p.score}
-                    <span className="text-base text-muted-foreground font-normal">
-                      /{quiz.questions.length}
-                    </span>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Target className="w-3 h-3 text-green-400" />
+                      <span>{acc}% accuracy</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <CheckCircle2 className="w-3 h-3 text-green-400" />
+                      <span>{p.correctCount}✓ {p.wrongCount}✗</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Timer className="w-3 h-3 text-blue-400" />
+                      <span>{avg > 0 ? `${(avg / 1000).toFixed(1)}s avg` : "—"}</span>
+                    </div>
                   </div>
-                  <Badge variant="secondary" className="mt-2 text-xs font-mono">
-                    +{earnedXp} XP
-                  </Badge>
                 </div>
               );
             })}
@@ -372,39 +553,73 @@ export default function MultiplayerQuiz() {
     );
   }
 
-  // ── Active quiz ───────────────────────────────────────────────────────────
+  // ── Active quiz ────────────────────────────────────────────────────────────
   const currentQ = quiz.questions[currentQIndex];
   const totalQ = quiz.questions.length;
+  const sortedParticipants = [...participants].sort((a, b) => b.score - a.score);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-sm font-mono text-muted-foreground">
-          Question {currentQIndex + 1} / {totalQ}
+    <div className="p-4 max-w-5xl mx-auto">
+
+      {/* Competition Dashboard */}
+      <div className="mb-5 bg-card border rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+            <Swords className="w-3.5 h-3.5 text-primary animate-pulse" />
+            Live Competition Dashboard
+          </h2>
+          <Badge variant="outline" className="text-xs text-green-400 border-green-500/30 bg-green-500/10">
+            ● LIVE
+          </Badge>
         </div>
-        <div className="flex items-center gap-2">
-          <Swords className="w-4 h-4 text-primary animate-pulse" />
-          <span className="text-xs font-semibold text-primary">LIVE</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatBox
+            label="Players Joined"
+            value={participants.length}
+            icon={Users}
+          />
+          <StatBox
+            label="Question"
+            value={`${currentQIndex + 1} / ${totalQ}`}
+            icon={Medal}
+            accent="text-primary"
+          />
+          <StatBox
+            label="Finished"
+            value={finishedCount}
+            icon={CheckCircle2}
+            accent={finishedCount > 0 ? "text-green-400" : undefined}
+          />
+          <StatBox
+            label="Still Answering"
+            value={stillAnswering}
+            icon={Timer}
+            accent={stillAnswering > 0 ? "text-yellow-400" : undefined}
+          />
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="w-full bg-secondary rounded-full h-1.5 mb-6">
+      <div className="w-full bg-secondary rounded-full h-1.5 mb-5">
         <div
           className="bg-primary h-1.5 rounded-full transition-all duration-500"
           style={{ width: `${((currentQIndex + 1) / totalQ) * 100}%` }}
         />
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex flex-col md:flex-row gap-5">
+
         {/* Question panel */}
         <div className="flex-1">
           <Card className="mb-4">
             <CardHeader>
-              <CardTitle className="text-lg leading-snug">
-                {currentQ?.question}
-              </CardTitle>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-mono text-muted-foreground">
+                  Q{currentQIndex + 1} of {totalQ}
+                </span>
+                <Swords className="w-4 h-4 text-primary animate-pulse" />
+              </div>
+              <CardTitle className="text-lg leading-snug">{currentQ?.question}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {currentQ?.options.map((opt, idx) => (
@@ -437,56 +652,85 @@ export default function MultiplayerQuiz() {
         </div>
 
         {/* Live scoreboard */}
-        <div className="w-full md:w-56 shrink-0">
+        <div className="w-full md:w-64 shrink-0 space-y-3">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Swords className="w-4 h-4 text-primary" /> Live Battle
+                <Trophy className="w-4 h-4 text-primary" /> Live Leaderboard
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {[...session.participants]
-                .sort((a, b) => b.score - a.score)
-                .map((p) => {
-                  const isMe = p.userId === user?.id;
-                  const hasAnswered = p.answeredCount > currentQIndex;
-                  return (
-                    <div
-                      key={p.userId}
-                      className={`rounded-lg p-3 ${
-                        isMe
-                          ? "bg-primary/10 border border-primary/20"
-                          : "bg-secondary/50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span
-                          className={`font-semibold text-sm truncate ${
-                            isMe ? "text-primary" : ""
-                          }`}
-                        >
-                          {isMe ? "You" : p.displayName}
-                        </span>
-                        <span className="font-mono font-bold text-primary text-lg">
-                          {p.score}
-                        </span>
+              {sortedParticipants.map((p, idx) => {
+                const isMe = p.userId === user?.id;
+                const hasAnswered = p.answeredCount > currentQIndex;
+                const acc = accuracy(p);
+                const avg = avgMs(p.answerTimes);
+                return (
+                  <div
+                    key={p.userId}
+                    className={`rounded-xl p-3 ${isMe ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}
+                  >
+                    {/* Name row */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-base">{MEDALS[idx] ?? `${idx + 1}`}</span>
+                        <div className="min-w-0">
+                          <div className={`font-semibold text-sm truncate ${isMe ? "text-primary" : ""}`}>
+                            {isMe ? "You" : p.displayName}
+                          </div>
+                          <LevelBadge xp={p.totalXp} />
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        {hasAnswered ? (
-                          <>
-                            <CheckCircle2 className="w-3 h-3 text-green-400 shrink-0" />
-                            Answered
-                          </>
-                        ) : (
-                          <>
-                            <Loader2 className="w-3 h-3 animate-spin shrink-0" />
-                            Thinking…
-                          </>
-                        )}
+                      <span className="font-mono font-bold text-primary text-lg shrink-0">{p.score}</span>
+                    </div>
+
+                    {/* Status */}
+                    <div className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                      {hasAnswered ? (
+                        <><CheckCircle2 className="w-3 h-3 text-green-400 shrink-0" />Answered</>
+                      ) : (
+                        <><Loader2 className="w-3 h-3 animate-spin shrink-0" />Thinking…</>
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-1 text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-0.5">
+                        <Target className="w-2.5 h-2.5 text-green-400" />
+                        {acc}%
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <CheckCircle2 className="w-2.5 h-2.5 text-green-400" />
+                        {p.correctCount}✓ {p.wrongCount}✗
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <Timer className="w-2.5 h-2.5 text-blue-400" />
+                        {avg > 0 ? `${(avg / 1000).toFixed(1)}s` : "—"}
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          {/* XP preview */}
+          <Card className="bg-secondary/30">
+            <CardContent className="pt-4 pb-3 space-y-1.5">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <Zap className="w-3 h-3 text-yellow-400" /> XP System
+              </div>
+              {[
+                { label: "Correct answer", value: "+10 XP" },
+                { label: "Fast answer (<10s)", value: "+5 XP" },
+                { label: "Win bonus", value: "+100 XP" },
+                { label: "Perfect score", value: "+50 XP" },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="font-mono text-primary font-semibold">{value}</span>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
