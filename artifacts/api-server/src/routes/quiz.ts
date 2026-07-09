@@ -21,7 +21,11 @@ router.get("/course/:courseId", async (req, res) => {
   const quiz = await db.select().from(quizzesTable).where(eq(quizzesTable.courseId, courseId)).limit(1);
   if (!quiz[0]) { res.status(404).json({ error: "Quiz not found" }); return; }
 
-  const questions = await db.select().from(quizQuestionsTable).where(eq(quizQuestionsTable.quizId, quiz[0].id));
+  const questions = await db
+    .select()
+    .from(quizQuestionsTable)
+    .where(eq(quizQuestionsTable.quizId, quiz[0].id))
+    .orderBy(asc(quizQuestionsTable.id));
   res.json({ ...quiz[0], questions });
 });
 
@@ -119,27 +123,43 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
   const code = String(req.params.code);
   const { displayName } = req.body as { displayName?: string };
 
-  const session = await db.select().from(quizSessionsTable).where(eq(quizSessionsTable.code, code)).limit(1);
-  if (!session[0]) { res.status(404).json({ error: "Session not found" }); return; }
-  if (session[0].status !== "waiting") { res.status(400).json({ error: "Session already started" }); return; }
+  type JoinResult =
+    | { kind: "error"; status: number; message: string }
+    | { kind: "ok"; session: typeof quizSessionsTable.$inferSelect };
 
-  const existing = session[0].participants.find((p) => p.userId === userId);
-  if (!existing) {
-    const playerName = displayName?.trim() || `Player ${session[0].participants.length + 1}`;
+  const result = await db.transaction(async (tx): Promise<JoinResult> => {
+    const sessions = await tx
+      .select()
+      .from(quizSessionsTable)
+      .where(eq(quizSessionsTable.code, code))
+      .for("update")
+      .limit(1);
+
+    if (!sessions[0]) return { kind: "error", status: 404, message: "Session not found" };
+    const session = sessions[0];
+    if (session.status !== "waiting") return { kind: "error", status: 400, message: "Session already started" };
+
+    const existing = session.participants.find((p) => p.userId === userId);
+    if (existing) return { kind: "ok", session };
+
+    const playerName = displayName?.trim() || `Player ${session.participants.length + 1}`;
     const newParticipants = [
-      ...session[0].participants,
+      ...session.participants,
       { userId, displayName: playerName, score: 0, answeredCount: 0 },
     ];
-    const [updated] = await db
+    const [updated] = await tx
       .update(quizSessionsTable)
       .set({ participants: newParticipants })
       .where(eq(quizSessionsTable.code, code))
       .returning();
-    res.json({ ...updated, createdAt: updated.createdAt?.toISOString() ?? new Date().toISOString() });
+    return { kind: "ok", session: updated };
+  });
+
+  if (result.kind === "error") {
+    res.status(result.status).json({ error: result.message });
     return;
   }
-
-  res.json({ ...session[0], createdAt: session[0].createdAt?.toISOString() ?? new Date().toISOString() });
+  res.json({ ...result.session, createdAt: result.session.createdAt?.toISOString() ?? new Date().toISOString() });
 });
 
 // POST /quiz/sessions/:code/start — host only
@@ -232,6 +252,29 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
       .where(eq(quizSessionsTable.code, code))
       .returning();
 
+    // Award XP atomically in the same transaction that flips status to "finished"
+    if (finished) {
+      const sorted = [...newParticipants].sort((a, b) => b.score - a.score);
+      const xpTiers = [100, 60, 30, 10]; // 1st, 2nd, 3rd, rest
+      await Promise.all(
+        sorted.map((p, idx) => {
+          const xp = xpTiers[Math.min(idx, xpTiers.length - 1)];
+          return tx
+            .insert(userStatsTable)
+            .values({ userId: p.userId, displayName: p.displayName, email: "", xp, lessonsCompleted: 0, quizzesPassed: 1 })
+            .onConflictDoUpdate({
+              target: userStatsTable.userId,
+              set: {
+                xp: sql`${userStatsTable.xp} + ${xp}`,
+                quizzesPassed: sql`${userStatsTable.quizzesPassed} + 1`,
+                displayName: p.displayName,
+                lastActive: new Date(),
+              },
+            });
+        })
+      );
+    }
+
     return { kind: "ok", session: updated, finished, finalParticipants: newParticipants };
   });
 
@@ -243,29 +286,6 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
   if (txResult.kind === "already_answered") {
     res.json({ ...txResult.session, createdAt: txResult.session.createdAt?.toISOString() ?? new Date().toISOString() });
     return;
-  }
-
-  // Award XP exactly once: only when this request caused the status transition to "finished"
-  if (txResult.finished) {
-    const sorted = [...txResult.finalParticipants].sort((a, b) => b.score - a.score);
-    const xpTiers = [100, 60, 30, 10]; // 1st, 2nd, 3rd, rest
-    await Promise.all(
-      sorted.map((p, idx) => {
-        const xp = xpTiers[Math.min(idx, xpTiers.length - 1)];
-        return db
-          .insert(userStatsTable)
-          .values({ userId: p.userId, displayName: p.displayName, email: "", xp, lessonsCompleted: 0, quizzesPassed: 1 })
-          .onConflictDoUpdate({
-            target: userStatsTable.userId,
-            set: {
-              xp: sql`${userStatsTable.xp} + ${xp}`,
-              quizzesPassed: sql`${userStatsTable.quizzesPassed} + 1`,
-              displayName: p.displayName,
-              lastActive: new Date(),
-            },
-          });
-      })
-    );
   }
 
   res.json({ ...txResult.session, createdAt: txResult.session.createdAt?.toISOString() ?? new Date().toISOString() });

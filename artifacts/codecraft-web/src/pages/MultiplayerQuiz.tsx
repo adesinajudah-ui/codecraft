@@ -57,14 +57,8 @@ export default function MultiplayerQuiz() {
     },
   });
 
-  // Reset answered tracking when the question advances
-  useEffect(() => {
-    if (session && session.status === "active") {
-      const currentQ = session.currentQuestion ?? 0;
-      // If the question advanced past what we've answered, allow answering again
-      // (answeredUpTo tracks the last question index the user answered)
-    }
-  }, [session?.currentQuestion]);
+  // answeredUpTo resets naturally: hasAnsweredCurrentQ = (answeredUpTo >= currentQIndex)
+  // so when currentQIndex advances the flag becomes false without any extra state reset.
 
   const handleCreate = () => {
     if (!quiz) return;
