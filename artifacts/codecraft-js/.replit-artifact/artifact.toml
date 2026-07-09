@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/js-course/"
+title = "CodeCraft – JavaScript Course"
+version = "1.0.0"
+id = "artifacts/codecraft-js"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/js-course/" ]
+localPort = 24297
+
+[services.development]
+run = "pnpm --filter @workspace/codecraft-js run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/codecraft-js", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/codecraft-js/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24297"
+BASE_PATH = "/js-course/"

@@ -1,0 +1,102 @@
+
+Adesina Judah <adesinajudah@gmail.com>
+5:13 AM (0 minutes ago)
+to Movie
+
+JavaScript Course for CodeCraft
+Create the JavaScript course for CodeCraft with 5 main lessons. Each lesson should contain several subtopics. When a student clicks a lesson, display all its subtopics. When they click a subtopic, open a complete learning page.
+For every subtopic, generate:
+A beginner-friendly explanation
+Original content (do not copy from other websites)
+Code examples
+A "Try It Yourself" CodeMirror editor
+Practice exercises
+A 20-question multiple-choice quiz with explanations
+Previous and Next navigation
+Lesson 1 – JavaScript Basics
+Introduction to JavaScript
+History of JavaScript
+How JavaScript Works
+Installing VS Code
+Setting Up JavaScript
+Writing Your First JavaScript Program
+Lesson 2 – JavaScript Fundamentals
+Variables (var, let, const)
+Data Types
+Operators
+User Input and Output
+Comments
+Type Conversion
+Strings
+Numbers
+Booleans
+Lesson 3 – JavaScript Control Flow
+Comparison Operators
+Conditional Statements (if, else, else if)
+Switch Statement
+Loops (for, while, do...while)
+Break and Continue
+Functions
+Arrow Functions
+Scope
+Hoisting
+Lesson 4 – JavaScript Advanced
+Arrays
+Array Methods
+Objects
+Object Methods
+Events
+DOM Manipulation
+Selecting HTML Elements
+Changing HTML Content
+Changing CSS with JavaScript
+Event Listeners
+Timers (setTimeout & setInterval)
+Error Handling (try...catch)
+ES6 Features
+Modules
+Lesson 5 – JavaScript Professional
+Promises
+Async and Await
+Fetch API
+JSON
+Local Storage
+Session Storage
+Cookies
+Object-Oriented Programming (Classes)
+APIs
+Regular Expressions
+Debugging JavaScript
+Performance Optimization
+Best Practices
+Mini Project (Interactive To-Do App)
+Final Project (Complete Weather App or Quiz App)
+Final Quiz
+Additional Requirements
+For every subtopic, generate:
+A detailed beginner-friendly lesson
+Easy-to-understand explanations
+Multiple real-world examples
+Syntax explanations
+Well-commented code examples
+A live CodeMirror "Try It Yourself" editor
+Practice exercises
+Common mistakes to avoid
+Key takeaways
+A 20-question multiple-choice quiz with explanations for every answer
+Previous and Next navigation buttons
+Progress tracking support
+Final Project
+Build a complete JavaScript application that combines everything learned, including:
+Variables
+Functions
+Arrays
+Objects
+Loops
+Conditions
+DOM Manipulation
+Events
+Fetch API
+Local Storage
+Responsive Design
+The final project should be fully interactive, mobile-friendly, and demonstrate practical JavaScript development skills suitable for beginners transitioning to intermediate programming.

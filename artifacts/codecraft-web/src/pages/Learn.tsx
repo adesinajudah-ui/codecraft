@@ -98,6 +98,10 @@ export default function Learn() {
                     <a href="/css-course/" className="w-full">
                       <Button className="w-full" size="sm">View Course</Button>
                     </a>
+                  ) : selectedSlug === "javascript" ? (
+                    <a href="/js-course/" className="w-full">
+                      <Button className="w-full" size="sm">View Course</Button>
+                    </a>
                   ) : (
                     <Link href={`/learn/${course.id}`} className="w-full">
                       <Button className="w-full" size="sm">View Course</Button>
