@@ -1,0 +1,119 @@
+
+Movie Recap
+3:16 AM (0 minutes ago)
+to me
+
+Add "Study Groups" to the Existing Left Sidebar Navigation
+
+Do not create a new navigation bar or a new TV tab.
+
+Instead, add a new menu item called Study Groups to the existing left sidebar navigation menu, alongside the existing menu items such as Dashboard, Leaderboard, Courses, Profile, and the other navigation links.
+
+When the user clicks Study Groups, open a dedicated Study Groups page.
+
+Study Groups Features
+
+Users should be able to:
+
+- Create a new study group.
+- Give the group a name.
+- Add an optional description.
+- Upload a group profile picture.
+- Become the group owner.
+
+Invite Members
+
+Every CodeCraft user has a unique username.
+
+The group owner or an admin can:
+
+- Click Add Members.
+- Search for users by their CodeCraft username.
+- Select one or more users.
+- Send a group invitation.
+
+The invited user receives a notification and can:
+
+- Accept the invitation.
+- Decline the invitation.
+
+Only accepted users become group members.
+
+Groups should support at least 100 members and be scalable for larger communities.
+
+Group Chat
+
+Each study group includes a real-time chat where members can:
+
+- Send text messages.
+- Send emojis.
+- Reply to messages.
+- React with emojis.
+- Mention members using @username.
+- Copy message text.
+- Delete their own messages.
+- Share formatted code snippets with syntax highlighting.
+- Share images, PDF files, ZIP files, and code files.
+
+Member Information
+
+Display for each member:
+
+- Profile picture
+- Display name
+- Username
+- Learning Level (Beginner, Intermediate, Advanced, Expert)
+- XP Badge
+- Online/Offline status
+
+Real-Time Features
+
+Update instantly without page refresh:
+
+- New messages
+- Member joins
+- Member leaves
+- Typing indicators
+- Online status
+- Notifications
+
+Roles
+
+Owner
+
+- Edit group details
+- Add or remove members
+- Promote members to admin
+- Delete the group
+
+Admin
+
+- Add members
+- Remove members
+- Moderate messages
+
+Member
+
+- Chat
+- Share code
+- Reply to messages
+- React to messages
+- Leave the group
+
+Technology
+
+Use:
+
+- React
+- Next.js
+- TypeScript
+- Tailwind CSS
+- Clerk Authentication
+- Supabase Database
+- Supabase Realtime
+- Framer Motion
+
+The Study Groups feature must be fully responsive, secure, production-ready, and integrate seamlessly with the existing CodeCraft sidebar navigation without changing the current design or layout.
+
+
+
