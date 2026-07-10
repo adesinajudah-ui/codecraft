@@ -4,11 +4,16 @@ A programming education platform (like SoloLearn) with a React/Vite web app and 
 
 ## Run & Operate
 
-All services are managed as Replit artifact workflows — start/stop from the Replit UI or via `WorkflowsRestart`.
+All registered artifacts are managed as Replit artifact workflows — start/stop from the Replit UI or via `WorkflowsRestart`.
 
 - API server: `artifacts/api-server: API Server` — Express on port 8080, path `/api`
 - Web app: `artifacts/codecraft-web: web` — Vite/React on port 26264, path `/`
 - HTML course: `artifacts/codecraft-html: web` — Vite/React on port 26077, path `/html-course/`
+- CSS course: `artifacts/codecraft-css: web` — Vite/React on port 25163, path `/css-course/`
+- JS course: `artifacts/codecraft-js: web` — Vite/React on port 24297, path `/js-course/`
+- Canvas/mockup sandbox: `artifacts/mockup-sandbox: Component Preview Server` — port 8081, path `/__mockup`
+
+**Not registered as an artifact:** `artifacts/codecraft-mobile` (Expo app) has source files but no `.replit-artifact/artifact.toml`, so it has no workflow and does not run in this environment. Register it as an `expo` artifact if/when mobile needs to run on Replit.
 
 One-off commands:
 - `pnpm run typecheck` — full typecheck across all packages
