@@ -709,6 +709,104 @@ paths:
         "403":
           description: Owner only
 
+  /study-groups/join/{code}:
+    get:
+      operationId: previewGroupByCode
+      tags: [studyGroups]
+      summary: Preview a study group by its join code before joining
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Group preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinCodePreview"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Invalid or expired group code
+    post:
+      operationId: joinGroupByCode
+      tags: [studyGroups]
+      summary: Join a study group immediately using a join code
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Joined study group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupSummary"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Invalid or expired group code
+        "409":
+          description: Already a member
+
+  /study-groups/{groupId}/join-code/regenerate:
+    patch:
+      operationId: regenerateJoinCode
+      tags: [studyGroups]
+      summary: Generate a new join code, invalidating the previous one (owner only)
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated study group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupSummary"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Owner only
+
+  /study-groups/{groupId}/join-code/toggle:
+    patch:
+      operationId: toggleJoinCode
+      tags: [studyGroups]
+      summary: Enable or disable joining this group by code (owner only)
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToggleJoinCodeInput"
+      responses:
+        "200":
+          description: Updated study group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupSummary"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Owner only
+
   /study-groups/{groupId}/invites:
     post:
       operationId: inviteStudyGroupMembers
@@ -810,7 +908,7 @@ paths:
         - in: query
           name: before
           schema:
-            type: ["integer", "null"]
+            type: integer
           description: Return messages with id less than this (pagination cursor)
         - in: query
           name: limit
@@ -1486,6 +1584,15 @@ components:
         myRole:
           type: string
           enum: [owner, admin, member]
+        joinCode:
+          description: Only present for the owner/admin
+          type: ["string", "null"]
+        joinCodeEnabled:
+          description: Only present for the owner/admin
+          type: ["boolean", "null"]
+        joinCodeUses:
+          description: Only present for the owner/admin
+          type: ["integer", "null"]
         createdAt:
           type: string
       required:
@@ -1495,6 +1602,40 @@ components:
         - memberCount
         - myRole
         - createdAt
+
+    JoinCodePreview:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        avatarObjectPath:
+          type: ["string", "null"]
+        ownerId:
+          type: string
+        ownerUsername:
+          type: ["string", "null"]
+        memberCount:
+          type: integer
+        alreadyMember:
+          type: boolean
+      required:
+        - id
+        - name
+        - ownerId
+        - memberCount
+        - alreadyMember
+
+    ToggleJoinCodeInput:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+      required:
+        - enabled
 
     StudyGroupDetail:
       allOf:

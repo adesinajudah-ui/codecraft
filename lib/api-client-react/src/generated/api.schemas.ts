@@ -315,7 +315,40 @@ export interface StudyGroupSummary {
   ownerId: string;
   memberCount: number;
   myRole: StudyGroupSummaryMyRole;
+  /**
+     * Only present for the owner/admin
+     * @nullable
+     */
+  joinCode?: string | null;
+  /**
+     * Only present for the owner/admin
+     * @nullable
+     */
+  joinCodeEnabled?: boolean | null;
+  /**
+     * Only present for the owner/admin
+     * @nullable
+     */
+  joinCodeUses?: number | null;
   createdAt: string;
+}
+
+export interface JoinCodePreview {
+  id: number;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  avatarObjectPath?: string | null;
+  ownerId: string;
+  /** @nullable */
+  ownerUsername?: string | null;
+  memberCount: number;
+  alreadyMember: boolean;
+}
+
+export interface ToggleJoinCodeInput {
+  enabled: boolean;
 }
 
 export type StudyGroupDetail = StudyGroupSummary & {
@@ -507,9 +540,8 @@ q: string;
 export type ListStudyGroupMessagesParams = {
 /**
  * Return messages with id less than this (pagination cursor)
- * @nullable
  */
-before?: number | null;
+before?: number;
 limit?: number;
 };
 

@@ -17,6 +17,8 @@ import {
   useUpdateStudyGroup,
   useDeleteStudyGroup,
   useSearchUsers,
+  useRegenerateJoinCode,
+  useToggleJoinCode,
   type StudyGroupMessageOut,
   type MemberOut,
 } from "@workspace/api-client-react";
@@ -51,6 +53,11 @@ import {
   Circle,
   Loader2,
   LogOut,
+  KeyRound,
+  Copy,
+  Share2,
+  RefreshCw,
+  Check as CheckIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -214,7 +221,101 @@ function MemberRow({ groupId, member, myRole, isMe }: { groupId: number; member:
   );
 }
 
-function GroupSettingsDialog({ groupId, name, description }: { groupId: number; name: string; description: string | null }) {
+function JoinCodeSection({
+  groupId,
+  joinCode,
+  joinCodeEnabled,
+  joinCodeUses,
+  canManage = true,
+}: {
+  groupId: number;
+  joinCode: string | null;
+  joinCodeEnabled: boolean | null;
+  joinCodeUses: number | null;
+  canManage?: boolean;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [copied, setCopied] = useState(false);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetStudyGroupQueryKey(groupId) });
+
+  const { mutate: regenerate, isPending: regenerating } = useRegenerateJoinCode({
+    mutation: { onSuccess: () => { invalidate(); toast({ title: "New join code generated" }); } },
+  });
+  const { mutate: toggleEnabled, isPending: toggling } = useToggleJoinCode({
+    mutation: { onSuccess: invalidate },
+  });
+
+  if (!joinCode) return null;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(joinCode);
+    setCopied(true);
+    toast({ title: "Join code copied" });
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleShare = async () => {
+    const text = `Join my CodeCraft study group with code ${joinCode}`;
+    if (navigator.share) {
+      try { await navigator.share({ text }); } catch { /* user cancelled */ }
+    } else {
+      navigator.clipboard.writeText(text);
+      toast({ title: "Share text copied to clipboard" });
+    }
+  };
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+          <KeyRound className="w-3.5 h-3.5" /> Join Code
+        </p>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">{joinCodeEnabled ? "Enabled" : "Disabled"}</span>
+          <button
+            role="switch"
+            aria-checked={!!joinCodeEnabled}
+            disabled={toggling}
+            onClick={() => toggleEnabled({ groupId, data: { enabled: !joinCodeEnabled } })}
+            className={`relative h-5 w-9 rounded-full transition-colors ${joinCodeEnabled ? "bg-primary" : "bg-secondary"}`}
+          >
+            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-background transition-transform ${joinCodeEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+      </div>
+      <p className="text-center text-lg font-mono font-bold tracking-widest py-1.5 bg-secondary/60 rounded-md">{joinCode}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <Button size="sm" variant="outline" onClick={handleCopy}>
+          {copied ? <CheckIcon className="w-3.5 h-3.5 mr-1.5" /> : <Copy className="w-3.5 h-3.5 mr-1.5" />} Copy Code
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleShare}>
+          <Share2 className="w-3.5 h-3.5 mr-1.5" /> Share Code
+        </Button>
+      </div>
+      <Button size="sm" variant="ghost" className="w-full" disabled={regenerating} onClick={() => regenerate({ groupId })}>
+        {regenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />} Regenerate Code
+      </Button>
+      <p className="text-xs text-muted-foreground text-center">{joinCodeUses ?? 0} {joinCodeUses === 1 ? "member" : "members"} joined via code</p>
+    </div>
+  );
+}
+
+function GroupSettingsDialog({
+  groupId,
+  name,
+  description,
+  joinCode,
+  joinCodeEnabled,
+  joinCodeUses,
+}: {
+  groupId: number;
+  name: string;
+  description: string | null;
+  joinCode: string | null;
+  joinCodeEnabled: boolean | null;
+  joinCodeUses: number | null;
+}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -246,7 +347,7 @@ function GroupSettingsDialog({ groupId, name, description }: { groupId: number; 
           <Settings2 className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[380px]">
+      <DialogContent className="max-w-[380px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Group Settings</DialogTitle>
         </DialogHeader>
@@ -254,6 +355,9 @@ function GroupSettingsDialog({ groupId, name, description }: { groupId: number; 
           <Input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} />
           <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="resize-none" placeholder="Description" />
         </div>
+
+        <JoinCodeSection groupId={groupId} joinCode={joinCode} joinCodeEnabled={joinCodeEnabled} joinCodeUses={joinCodeUses} />
+
         <DialogFooter className="flex-col gap-2 sm:flex-col">
           <Button
             className="w-full"

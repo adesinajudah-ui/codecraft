@@ -31,6 +31,7 @@ import type {
   GetLeaderboardParams,
   HealthStatus,
   InviteMembersInput,
+  JoinCodePreview,
   JoinSessionInput,
   Language,
   LeaderboardEntry,
@@ -56,6 +57,7 @@ import type {
   StudyGroupMessageReaction,
   StudyGroupNotification,
   StudyGroupSummary,
+  ToggleJoinCodeInput,
   ToggleReactionInput,
   UpdateMemberRoleInput,
   UpdateStudyGroupInput,
@@ -2556,6 +2558,294 @@ export const useDeleteStudyGroup = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteStudyGroupMutationOptions(options));
+    }
+
+export const getPreviewGroupByCodeUrl = (code: string,) => {
+
+
+
+
+  return `/api/study-groups/join/${code}`
+}
+
+/**
+ * @summary Preview a study group by its join code before joining
+ */
+export const previewGroupByCode = async (code: string, options?: RequestInit): Promise<JoinCodePreview> => {
+
+  return customFetch<JoinCodePreview>(getPreviewGroupByCodeUrl(code),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPreviewGroupByCodeQueryKey = (code: string,) => {
+    return [
+    `/api/study-groups/join/${code}`
+    ] as const;
+    }
+
+
+export const getPreviewGroupByCodeQueryOptions = <TData = Awaited<ReturnType<typeof previewGroupByCode>>, TError = ErrorType<void>>(code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof previewGroupByCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPreviewGroupByCodeQueryKey(code);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof previewGroupByCode>>> = ({ signal }) => previewGroupByCode(code, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: code !== null && code !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof previewGroupByCode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type PreviewGroupByCodeQueryResult = NonNullable<Awaited<ReturnType<typeof previewGroupByCode>>>
+export type PreviewGroupByCodeQueryError = ErrorType<void>
+
+
+/**
+ * @summary Preview a study group by its join code before joining
+ */
+
+export function usePreviewGroupByCode<TData = Awaited<ReturnType<typeof previewGroupByCode>>, TError = ErrorType<void>>(
+ code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof previewGroupByCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getPreviewGroupByCodeQueryOptions(code,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getJoinGroupByCodeUrl = (code: string,) => {
+
+
+
+
+  return `/api/study-groups/join/${code}`
+}
+
+/**
+ * @summary Join a study group immediately using a join code
+ */
+export const joinGroupByCode = async (code: string, options?: RequestInit): Promise<StudyGroupSummary> => {
+
+  return customFetch<StudyGroupSummary>(getJoinGroupByCodeUrl(code),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getJoinGroupByCodeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinGroupByCode>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinGroupByCode>>, TError,{code: string}, TContext> => {
+
+const mutationKey = ['joinGroupByCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinGroupByCode>>, {code: string}> = (props) => {
+          const {code} = props ?? {};
+
+          return  joinGroupByCode(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JoinGroupByCodeMutationResult = NonNullable<Awaited<ReturnType<typeof joinGroupByCode>>>
+
+    export type JoinGroupByCodeMutationError = ErrorType<void>
+
+    /**
+ * @summary Join a study group immediately using a join code
+ */
+export const useJoinGroupByCode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinGroupByCode>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof joinGroupByCode>>,
+        TError,
+        {code: string},
+        TContext
+      > => {
+      return useMutation(getJoinGroupByCodeMutationOptions(options));
+    }
+
+export const getRegenerateJoinCodeUrl = (groupId: number,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}/join-code/regenerate`
+}
+
+/**
+ * @summary Generate a new join code, invalidating the previous one (owner only)
+ */
+export const regenerateJoinCode = async (groupId: number, options?: RequestInit): Promise<StudyGroupSummary> => {
+
+  return customFetch<StudyGroupSummary>(getRegenerateJoinCodeUrl(groupId),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getRegenerateJoinCodeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof regenerateJoinCode>>, TError,{groupId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof regenerateJoinCode>>, TError,{groupId: number}, TContext> => {
+
+const mutationKey = ['regenerateJoinCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof regenerateJoinCode>>, {groupId: number}> = (props) => {
+          const {groupId} = props ?? {};
+
+          return  regenerateJoinCode(groupId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegenerateJoinCodeMutationResult = NonNullable<Awaited<ReturnType<typeof regenerateJoinCode>>>
+
+    export type RegenerateJoinCodeMutationError = ErrorType<void>
+
+    /**
+ * @summary Generate a new join code, invalidating the previous one (owner only)
+ */
+export const useRegenerateJoinCode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof regenerateJoinCode>>, TError,{groupId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof regenerateJoinCode>>,
+        TError,
+        {groupId: number},
+        TContext
+      > => {
+      return useMutation(getRegenerateJoinCodeMutationOptions(options));
+    }
+
+export const getToggleJoinCodeUrl = (groupId: number,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}/join-code/toggle`
+}
+
+/**
+ * @summary Enable or disable joining this group by code (owner only)
+ */
+export const toggleJoinCode = async (groupId: number,
+    toggleJoinCodeInput: ToggleJoinCodeInput, options?: RequestInit): Promise<StudyGroupSummary> => {
+
+  return customFetch<StudyGroupSummary>(getToggleJoinCodeUrl(groupId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(toggleJoinCodeInput)
+  }
+);}
+
+
+
+
+export const getToggleJoinCodeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleJoinCode>>, TError,{groupId: number;data: BodyType<ToggleJoinCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleJoinCode>>, TError,{groupId: number;data: BodyType<ToggleJoinCodeInput>}, TContext> => {
+
+const mutationKey = ['toggleJoinCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleJoinCode>>, {groupId: number;data: BodyType<ToggleJoinCodeInput>}> = (props) => {
+          const {groupId,data} = props ?? {};
+
+          return  toggleJoinCode(groupId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleJoinCodeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleJoinCode>>>
+    export type ToggleJoinCodeMutationBody = BodyType<ToggleJoinCodeInput>
+    export type ToggleJoinCodeMutationError = ErrorType<void>
+
+    /**
+ * @summary Enable or disable joining this group by code (owner only)
+ */
+export const useToggleJoinCode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleJoinCode>>, TError,{groupId: number;data: BodyType<ToggleJoinCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleJoinCode>>,
+        TError,
+        {groupId: number;data: BodyType<ToggleJoinCodeInput>},
+        TContext
+      > => {
+      return useMutation(getToggleJoinCodeMutationOptions(options));
     }
 
 export const getInviteStudyGroupMembersUrl = (groupId: number,) => {

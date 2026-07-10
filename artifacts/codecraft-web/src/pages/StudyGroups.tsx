@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListStudyGroups,
@@ -7,8 +7,11 @@ import {
   useListPendingInvites,
   useAcceptStudyGroupInvite,
   useDeclineStudyGroupInvite,
+  usePreviewGroupByCode,
+  useJoinGroupByCode,
   getListStudyGroupsQueryKey,
   getListPendingInvitesQueryKey,
+  getPreviewGroupByCodeQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { UsersRound, Plus, Check, X, Crown, ShieldCheck, Loader2 } from "lucide-react";
+import { UsersRound, Plus, Check, X, Crown, ShieldCheck, Loader2, KeyRound } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 
@@ -75,6 +78,113 @@ function CreateGroupDialog() {
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function JoinByCodeDialog() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [submittedCode, setSubmittedCode] = useState("");
+
+  const {
+    data: preview,
+    isFetching: isChecking,
+    isError,
+  } = usePreviewGroupByCode(submittedCode, {
+    query: { enabled: submittedCode.length > 0, queryKey: getPreviewGroupByCodeQueryKey(submittedCode), retry: false },
+  });
+
+  const joinMutation = useJoinGroupByCode({
+    mutation: {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: getListStudyGroupsQueryKey() });
+        setOpen(false);
+        reset();
+        toast({ title: `Welcome to ${data.name}!` });
+        navigate(`/study-groups/${data.id}`);
+      },
+      onError: () => toast({ title: "Couldn't join group", variant: "destructive" }),
+    },
+  });
+
+  const reset = () => {
+    setCode("");
+    setSubmittedCode("");
+  };
+
+  const handleCheck = () => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    setSubmittedCode(trimmed.toUpperCase());
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="gap-1.5">
+          <KeyRound className="w-4 h-4" /> Join Group by Code
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-[380px]">
+        <DialogHeader>
+          <DialogTitle>Join a Study Group</DialogTitle>
+        </DialogHeader>
+
+        {!preview ? (
+          <div className="space-y-3">
+            <Input
+              placeholder="Enter Group Code"
+              value={code}
+              onChange={(e) => { setCode(e.target.value.toUpperCase()); setSubmittedCode(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleCheck(); }}
+              className="font-mono tracking-wider text-center"
+              autoFocus
+            />
+            {isError && <p className="text-xs text-destructive">Invalid or expired group code. Please check the code and try again.</p>}
+            <Button className="w-full" disabled={!code.trim() || isChecking} onClick={handleCheck}>
+              {isChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join Group"}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-12 h-12 border border-border flex-shrink-0">
+                <AvatarImage src={ObjectAvatarUrl(preview.avatarObjectPath)} />
+                <AvatarFallback className="bg-primary/20 text-primary font-bold">
+                  {preview.name.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate">{preview.name}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {preview.memberCount} {preview.memberCount === 1 ? "member" : "members"}
+                  {preview.ownerUsername ? ` · owned by @${preview.ownerUsername}` : ""}
+                </p>
+              </div>
+            </div>
+            {preview.description && <p className="text-sm text-muted-foreground">{preview.description}</p>}
+            {preview.alreadyMember ? (
+              <p className="text-xs text-muted-foreground">You're already a member of this group.</p>
+            ) : null}
+            <DialogFooter className="flex-col gap-2 sm:flex-col">
+              {preview.alreadyMember ? (
+                <Button className="w-full" onClick={() => { setOpen(false); reset(); navigate(`/study-groups/${preview.id}`); }}>
+                  Go to group
+                </Button>
+              ) : (
+                <Button className="w-full" disabled={joinMutation.isPending} onClick={() => joinMutation.mutate({ code: submittedCode })}>
+                  {joinMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join Group"}
+                </Button>
+              )}
+              <Button variant="outline" className="w-full" onClick={reset}>Cancel</Button>
+            </DialogFooter>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -142,7 +252,10 @@ export default function StudyGroups() {
           </h1>
           <p className="text-muted-foreground text-xs mt-0.5">Learn together, chat, and share code.</p>
         </div>
-        <CreateGroupDialog />
+        <div className="flex flex-col items-end gap-1.5">
+          <CreateGroupDialog />
+          <JoinByCodeDialog />
+        </div>
       </div>
 
       <PendingInvites />

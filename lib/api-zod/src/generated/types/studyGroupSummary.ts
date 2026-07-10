@@ -17,5 +17,20 @@ export interface StudyGroupSummary {
   ownerId: string;
   memberCount: number;
   myRole: StudyGroupSummaryMyRole;
+  /**
+     * Only present for the owner/admin
+     * @nullable
+     */
+  joinCode?: string | null;
+  /**
+     * Only present for the owner/admin
+     * @nullable
+     */
+  joinCodeEnabled?: boolean | null;
+  /**
+     * Only present for the owner/admin
+     * @nullable
+     */
+  joinCodeUses?: number | null;
   createdAt: string;
 }

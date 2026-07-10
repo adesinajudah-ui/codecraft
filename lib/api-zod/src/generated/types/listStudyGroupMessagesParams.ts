@@ -9,8 +9,7 @@
 export type ListStudyGroupMessagesParams = {
 /**
  * Return messages with id less than this (pagination cursor)
- * @nullable
  */
-before?: number | null;
+before?: number;
 limit?: number;
 };
