@@ -1,0 +1,120 @@
+
+Movie Recap
+4:15 AM (0 minutes ago)
+to me
+
+Add Email Invitation Support to CodeCraft Study Groups
+
+Enhance the existing Study Groups feature by allowing users to invite people via email.
+
+Invite by Email
+
+Inside every study group, add an Invite Members button.
+
+When clicked, display two options:
+
+1. Invite by CodeCraft Username
+2. Invite by Email
+
+If Invite by Email is selected:
+
+- Display an email input field.
+- Allow entering one or multiple email addresses.
+- Validate that each email address is correctly formatted.
+- Include a Send Invitation button.
+
+Email Invitation
+
+When the invitation is sent:
+
+- Generate a secure, unique invitation link for that specific study group.
+- Send a professional invitation email to the recipient.
+
+Example email:
+
+Subject: You're Invited to Join a CodeCraft Study Group
+
+Hello,
+
+You have been invited to join a Study Group on CodeCraft.
+
+Click the button below to join the group:
+
+Join Study Group
+
+If you don't already have a CodeCraft account, you will be asked to create one first. After signing in, you'll automatically be taken to the invitation page where you can accept or decline the invitation.
+
+This invitation was sent by a CodeCraft user.
+
+See you in the group!
+
+— The CodeCraft Team
+
+Invitation Flow
+
+When the recipient clicks the invitation link:
+
+- If they are not logged in:
+  
+  - Redirect them to the CodeCraft Sign In / Sign Up page.
+  - After authentication, automatically redirect them back to the invitation.
+
+- If they are already logged in:
+  
+  - Open the Study Group invitation page immediately.
+
+Display:
+
+- Group Name
+- Group Description
+- Group Profile Picture
+- Group Owner
+- Number of Members
+
+Provide two buttons:
+
+- Accept Invitation
+- Decline Invitation
+
+If accepted:
+
+- Add the user to the study group.
+- Redirect them directly into the group chat.
+- Display a welcome message.
+
+If declined:
+
+- Return the user to the dashboard.
+
+Security
+
+- Every invitation link must contain a secure unique token.
+- Links should expire after a configurable period (for example, 7 days).
+- Prevent the same invitation from being accepted multiple times.
+- Only the invited email address can use the invitation.
+
+Notifications
+
+Notify the group owner when:
+
+- The invitation email is sent.
+- The invitation is accepted.
+- The invitation is declined.
+
+Technology
+
+Implement this using:
+
+- Clerk Authentication
+- Supabase Database
+- Supabase Edge Functions (or another secure backend) for sending emails
+- Resend (or another email provider) for email delivery
+- React
+- Next.js
+- TypeScript
+- Tailwind CSS
+
+The invitation flow should be secure, seamless, and mobile-friendly, providing a smooth experience from email invitation to joining the study group.
+
+
+
