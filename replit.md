@@ -25,6 +25,8 @@ Required env (auto-managed by Replit):
 - `DATABASE_URL` — Replit-managed Postgres (postgresql-16 module)
 - `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Replit-managed Clerk
 
+**Setup status (2026-07-10):** Reinstalled dependencies, pushed the Drizzle schema to the Replit-managed Postgres DB, provisioned Replit-managed Clerk (dev keys), and started/verified all 6 artifact workflows. The API server auto-seeded the DB on first boot (6 languages, 6 courses, 45 lessons, 120 quiz questions). Fixed a pre-existing typecheck error in `codecraft-web/src/pages/Competitions.tsx` (missing `queryKey` on a react-query call). Full `pnpm run typecheck` now passes across the workspace. `codecraft-mobile` (Expo) is still unregistered as an artifact and does not run in this environment.
+
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9

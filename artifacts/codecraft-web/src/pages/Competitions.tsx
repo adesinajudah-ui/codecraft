@@ -90,7 +90,7 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
   const slug = LANGUAGE_SLUGS[language] ?? "javascript";
   const { data: courses, isLoading: coursesLoading } = useListCoursesByLanguage(slug, {
-    query: { enabled: open },
+    query: { enabled: open, queryKey: ["courses-by-language", slug] },
   });
   const courseId = courses?.[0]?.id;
 
