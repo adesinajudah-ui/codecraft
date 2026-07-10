@@ -23,6 +23,8 @@ import Certificates from "./pages/Certificates";
 import Settings from "./pages/Settings";
 import Competitions from "./pages/Competitions";
 import MyCourses from "./pages/MyCourses";
+import StudyGroups from "./pages/StudyGroups";
+import StudyGroupDetail from "./pages/StudyGroupDetail";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -171,6 +173,8 @@ function Router() {
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
       <Route path="/competitions" component={() => <ProtectedRoute component={Competitions} />} />
       <Route path="/my-courses" component={() => <ProtectedRoute component={MyCourses} />} />
+      <Route path="/study-groups" component={() => <ProtectedRoute component={StudyGroups} />} />
+      <Route path="/study-groups/:groupId" component={() => <ProtectedRoute component={StudyGroupDetail} />} />
       <Route path="/admin" component={() => <AdminRoute component={Admin} />} />
 
       <Route>

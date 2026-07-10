@@ -20,16 +20,19 @@ import {
   Moon,
   GraduationCap,
   Menu,
+  UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useListPendingInvites } from "@workspace/api-client-react";
 
 const drawerNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/learn", label: "Learn", icon: BookOpen },
   { href: "/my-courses", label: "My Courses", icon: BookMarked },
   { href: "/editor", label: "Practice", icon: TerminalSquare },
+  { href: "/study-groups", label: "Study Groups", icon: UsersRound },
   { href: "/competitions", label: "Competitions", icon: Swords },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/certificates", label: "Certificates", icon: Award },
@@ -69,6 +72,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const allNavItems = isAdmin
     ? [...drawerNavItems, { href: "/admin", label: "Admin", icon: ShieldAlert }]
     : drawerNavItems;
+
+  const { data: pendingInvites } = useListPendingInvites();
+  const pendingCount = pendingInvites?.length ?? 0;
 
   return (
     <div className="min-h-screen bg-muted/30 flex items-start justify-center py-0 sm:py-6">
@@ -138,6 +144,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
                         >
                           <Icon className="w-5 h-5 flex-shrink-0" />
                           <span className="text-sm flex-1">{item.label}</span>
+                          {item.href === "/study-groups" && pendingCount > 0 && (
+                            <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                              {pendingCount}
+                            </span>
+                          )}
                           {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
                         </div>
                       </Link>

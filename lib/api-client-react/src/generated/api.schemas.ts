@@ -231,6 +231,258 @@ export interface AdminUserList {
   limit: number;
 }
 
+export interface UsernameResponse {
+  /** @nullable */
+  username: string | null;
+}
+
+export interface SetUsernameInput {
+  /**
+     * @minLength 3
+     * @maxLength 24
+     * @pattern ^[a-zA-Z0-9_]+$
+     */
+  username: string;
+}
+
+export interface UserSearchResult {
+  userId: string;
+  username: string;
+  displayName: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  xp: number;
+}
+
+export type MemberOutLearningLevel = typeof MemberOutLearningLevel[keyof typeof MemberOutLearningLevel];
+
+
+export const MemberOutLearningLevel = {
+  Beginner: 'Beginner',
+  Intermediate: 'Intermediate',
+  Advanced: 'Advanced',
+  Expert: 'Expert',
+} as const;
+
+export type MemberOutRole = typeof MemberOutRole[keyof typeof MemberOutRole];
+
+
+export const MemberOutRole = {
+  owner: 'owner',
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export type MemberOutStatus = typeof MemberOutStatus[keyof typeof MemberOutStatus];
+
+
+export const MemberOutStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  declined: 'declined',
+} as const;
+
+export interface MemberOut {
+  userId: string;
+  /** @nullable */
+  username?: string | null;
+  displayName: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  xp: number;
+  learningLevel: MemberOutLearningLevel;
+  role: MemberOutRole;
+  status: MemberOutStatus;
+  online: boolean;
+}
+
+export type StudyGroupSummaryMyRole = typeof StudyGroupSummaryMyRole[keyof typeof StudyGroupSummaryMyRole];
+
+
+export const StudyGroupSummaryMyRole = {
+  owner: 'owner',
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export interface StudyGroupSummary {
+  id: number;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  avatarObjectPath?: string | null;
+  ownerId: string;
+  memberCount: number;
+  myRole: StudyGroupSummaryMyRole;
+  createdAt: string;
+}
+
+export type StudyGroupDetail = StudyGroupSummary & {
+  members: MemberOut[];
+};
+
+export interface CreateStudyGroupInput {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  avatarObjectPath?: string | null;
+}
+
+export interface UpdateStudyGroupInput {
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  avatarObjectPath?: string | null;
+}
+
+export interface InviteMembersInput {
+  /** @minItems 1 */
+  usernames: string[];
+}
+
+export type UpdateMemberRoleInputRole = typeof UpdateMemberRoleInputRole[keyof typeof UpdateMemberRoleInputRole];
+
+
+export const UpdateMemberRoleInputRole = {
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export interface UpdateMemberRoleInput {
+  role: UpdateMemberRoleInputRole;
+}
+
+export type StudyGroupMemberRole = typeof StudyGroupMemberRole[keyof typeof StudyGroupMemberRole];
+
+
+export const StudyGroupMemberRole = {
+  owner: 'owner',
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export type StudyGroupMemberStatus = typeof StudyGroupMemberStatus[keyof typeof StudyGroupMemberStatus];
+
+
+export const StudyGroupMemberStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  declined: 'declined',
+} as const;
+
+export interface StudyGroupMember {
+  id: number;
+  groupId: number;
+  userId: string;
+  role: StudyGroupMemberRole;
+  status: StudyGroupMemberStatus;
+  invitedBy: string;
+  createdAt: string;
+}
+
+export interface PendingInvite {
+  membershipId: number;
+  groupId: number;
+  groupName: string;
+  /** @nullable */
+  groupAvatarObjectPath?: string | null;
+  invitedBy: string;
+  /** @nullable */
+  invitedByUsername?: string | null;
+  createdAt: string;
+}
+
+export interface MessageAttachmentOut {
+  objectPath: string;
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface StudyGroupMessageReaction {
+  messageId: number;
+  userId: string;
+  emoji: string;
+}
+
+export interface StudyGroupMessageOut {
+  id: number;
+  groupId: number;
+  userId: string;
+  /** @nullable */
+  username?: string | null;
+  displayName: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  content: string;
+  /** @nullable */
+  replyToId?: number | null;
+  mentions: string[];
+  attachments: MessageAttachmentOut[];
+  reactions: StudyGroupMessageReaction[];
+  deleted: boolean;
+  createdAt: string;
+}
+
+export interface CreateStudyGroupMessageInput {
+  content: string;
+  /** @nullable */
+  replyToId?: number | null;
+  mentions?: string[];
+  attachments?: MessageAttachmentOut[];
+}
+
+export interface ToggleReactionInput {
+  emoji: string;
+}
+
+export type StudyGroupNotificationType = typeof StudyGroupNotificationType[keyof typeof StudyGroupNotificationType];
+
+
+export const StudyGroupNotificationType = {
+  group_invite: 'group_invite',
+  invite_accepted: 'invite_accepted',
+  invite_declined: 'invite_declined',
+  mention: 'mention',
+  member_removed: 'member_removed',
+  role_changed: 'role_changed',
+} as const;
+
+export type StudyGroupNotificationPayload = { [key: string]: unknown };
+
+export interface StudyGroupNotification {
+  id: number;
+  type: StudyGroupNotificationType;
+  groupId: number;
+  /** @nullable */
+  groupName?: string | null;
+  actorId: string;
+  /** @nullable */
+  actorUsername?: string | null;
+  payload: StudyGroupNotificationPayload;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface RequestUploadUrlBody {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface RequestUploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
 export type GetLeaderboardParams = {
 limit?: number;
 /**
@@ -246,5 +498,18 @@ limit?: number;
  * @nullable
  */
 search?: string | null;
+};
+
+export type SearchUsersParams = {
+q: string;
+};
+
+export type ListStudyGroupMessagesParams = {
+/**
+ * Return messages with id less than this (pagination cursor)
+ * @nullable
+ */
+before?: number | null;
+limit?: number;
 };
 

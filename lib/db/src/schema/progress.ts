@@ -17,6 +17,8 @@ export const userStatsTable = pgTable("user_stats", {
   userId: text("user_id").notNull().unique(),
   displayName: text("display_name").notNull(),
   email: text("email").notNull(),
+  username: text("username").unique(),
+  avatarUrl: text("avatar_url"),
   xp: integer("xp").notNull().default(0),
   lessonsCompleted: integer("lessons_completed").notNull().default(0),
   quizzesPassed: integer("quizzes_passed").notNull().default(0),

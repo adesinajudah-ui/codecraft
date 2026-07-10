@@ -406,3 +406,424 @@ export const ListAdminUsersResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the current user's username (null if not set yet)
+ */
+export const GetMyUsernameResponse = zod.object({
+  "username": zod.string().nullable()
+})
+
+
+/**
+ * @summary Set or change the current user's unique username
+ */
+export const setMyUsernameBodyUsernameMin = 3;
+export const setMyUsernameBodyUsernameMax = 24;
+
+
+export const setMyUsernameBodyUsernameRegExp = new RegExp('^[a-zA-Z0-9_]+$');
+
+
+export const SetMyUsernameBody = zod.object({
+  "username": zod.string().min(setMyUsernameBodyUsernameMin).max(setMyUsernameBodyUsernameMax).regex(setMyUsernameBodyUsernameRegExp)
+})
+
+export const SetMyUsernameResponse = zod.object({
+  "username": zod.string().nullable()
+})
+
+
+/**
+ * @summary Search users by username, for adding study group members
+ */
+export const SearchUsersQueryParams = zod.object({
+  "q": zod.coerce.string()
+})
+
+export const SearchUsersResponseItem = zod.object({
+  "userId": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "xp": zod.number()
+})
+export const SearchUsersResponse = zod.array(SearchUsersResponseItem)
+
+
+/**
+ * @summary List study groups the current user belongs to
+ */
+export const ListStudyGroupsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "avatarObjectPath": zod.string().nullish(),
+  "ownerId": zod.string(),
+  "memberCount": zod.number(),
+  "myRole": zod.enum(['owner', 'admin', 'member']),
+  "createdAt": zod.string()
+})
+export const ListStudyGroupsResponse = zod.array(ListStudyGroupsResponseItem)
+
+
+/**
+ * @summary Create a new study group (creator becomes owner)
+ */
+export const createStudyGroupBodyNameMax = 60;
+
+
+
+export const CreateStudyGroupBody = zod.object({
+  "name": zod.string().min(1).max(createStudyGroupBodyNameMax),
+  "description": zod.string().nullish(),
+  "avatarObjectPath": zod.string().nullish()
+})
+
+export const CreateStudyGroupResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "avatarObjectPath": zod.string().nullish(),
+  "ownerId": zod.string(),
+  "memberCount": zod.number(),
+  "myRole": zod.enum(['owner', 'admin', 'member']),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List the current user's pending group invitations
+ */
+export const ListPendingInvitesResponseItem = zod.object({
+  "membershipId": zod.number(),
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "groupAvatarObjectPath": zod.string().nullish(),
+  "invitedBy": zod.string(),
+  "invitedByUsername": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListPendingInvitesResponse = zod.array(ListPendingInvitesResponseItem)
+
+
+/**
+ * @summary Accept a pending group invitation
+ */
+export const AcceptStudyGroupInviteParams = zod.object({
+  "membershipId": zod.coerce.number()
+})
+
+export const AcceptStudyGroupInviteResponse = zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "userId": zod.string(),
+  "role": zod.enum(['owner', 'admin', 'member']),
+  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "invitedBy": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Decline a pending group invitation
+ */
+export const DeclineStudyGroupInviteParams = zod.object({
+  "membershipId": zod.coerce.number()
+})
+
+export const DeclineStudyGroupInviteResponse = zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "userId": zod.string(),
+  "role": zod.enum(['owner', 'admin', 'member']),
+  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "invitedBy": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List the current user's recent notifications
+ */
+export const ListNotificationsResponseItem = zod.object({
+  "id": zod.number(),
+  "type": zod.enum(['group_invite', 'invite_accepted', 'invite_declined', 'mention', 'member_removed', 'role_changed']),
+  "groupId": zod.number(),
+  "groupName": zod.string().nullish(),
+  "actorId": zod.string(),
+  "actorUsername": zod.string().nullish(),
+  "payload": zod.record(zod.string(), zod.unknown()),
+  "read": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const ListNotificationsResponse = zod.array(ListNotificationsResponseItem)
+
+
+/**
+ * @summary Mark a notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  "notificationId": zod.coerce.number()
+})
+
+export const MarkNotificationReadResponse = zod.unknown()
+
+
+/**
+ * @summary Get study group details, members, and my role
+ */
+export const GetStudyGroupParams = zod.object({
+  "groupId": zod.coerce.number()
+})
+
+export const GetStudyGroupResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "avatarObjectPath": zod.string().nullish(),
+  "ownerId": zod.string(),
+  "memberCount": zod.number(),
+  "myRole": zod.enum(['owner', 'admin', 'member']),
+  "createdAt": zod.string()
+}).and(zod.object({
+  "members": zod.array(zod.object({
+  "userId": zod.string(),
+  "username": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "xp": zod.number(),
+  "learningLevel": zod.enum(['Beginner', 'Intermediate', 'Advanced', 'Expert']),
+  "role": zod.enum(['owner', 'admin', 'member']),
+  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "online": zod.boolean()
+}))
+}))
+
+
+/**
+ * @summary Update study group name, description, or avatar (owner only)
+ */
+export const UpdateStudyGroupParams = zod.object({
+  "groupId": zod.coerce.number()
+})
+
+export const UpdateStudyGroupBody = zod.object({
+  "name": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "avatarObjectPath": zod.string().nullish()
+})
+
+export const UpdateStudyGroupResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "avatarObjectPath": zod.string().nullish(),
+  "ownerId": zod.string(),
+  "memberCount": zod.number(),
+  "myRole": zod.enum(['owner', 'admin', 'member']),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a study group (owner only)
+ */
+export const DeleteStudyGroupParams = zod.object({
+  "groupId": zod.coerce.number()
+})
+
+export const DeleteStudyGroupResponse = zod.unknown()
+
+
+/**
+ * @summary Invite one or more users by username (owner/admin only)
+ */
+export const InviteStudyGroupMembersParams = zod.object({
+  "groupId": zod.coerce.number()
+})
+
+
+
+
+export const InviteStudyGroupMembersBody = zod.object({
+  "usernames": zod.array(zod.string()).min(1)
+})
+
+export const InviteStudyGroupMembersResponseItem = zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "userId": zod.string(),
+  "role": zod.enum(['owner', 'admin', 'member']),
+  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "invitedBy": zod.string(),
+  "createdAt": zod.string()
+})
+export const InviteStudyGroupMembersResponse = zod.array(InviteStudyGroupMembersResponseItem)
+
+
+/**
+ * @summary Promote/demote a member's role (owner only)
+ */
+export const UpdateStudyGroupMemberRoleParams = zod.object({
+  "groupId": zod.coerce.number(),
+  "userId": zod.coerce.string()
+})
+
+export const UpdateStudyGroupMemberRoleBody = zod.object({
+  "role": zod.enum(['admin', 'member'])
+})
+
+export const UpdateStudyGroupMemberRoleResponse = zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "userId": zod.string(),
+  "role": zod.enum(['owner', 'admin', 'member']),
+  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "invitedBy": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Remove a member (owner/admin), or leave the group yourself
+ */
+export const RemoveStudyGroupMemberParams = zod.object({
+  "groupId": zod.coerce.number(),
+  "userId": zod.coerce.string()
+})
+
+export const RemoveStudyGroupMemberResponse = zod.unknown()
+
+
+/**
+ * @summary List messages in a study group (paginated, newest last)
+ */
+export const ListStudyGroupMessagesParams = zod.object({
+  "groupId": zod.coerce.number()
+})
+
+export const listStudyGroupMessagesQueryLimitDefault = 50;
+
+export const ListStudyGroupMessagesQueryParams = zod.object({
+  "before": zod.coerce.number().nullish().describe('Return messages with id less than this (pagination cursor)'),
+  "limit": zod.coerce.number().default(listStudyGroupMessagesQueryLimitDefault)
+})
+
+export const ListStudyGroupMessagesResponseItem = zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "userId": zod.string(),
+  "username": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "content": zod.string(),
+  "replyToId": zod.number().nullish(),
+  "mentions": zod.array(zod.string()),
+  "attachments": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})),
+  "reactions": zod.array(zod.object({
+  "messageId": zod.number(),
+  "userId": zod.string(),
+  "emoji": zod.string()
+})),
+  "deleted": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const ListStudyGroupMessagesResponse = zod.array(ListStudyGroupMessagesResponseItem)
+
+
+/**
+ * @summary Send a message to a study group
+ */
+export const CreateStudyGroupMessageParams = zod.object({
+  "groupId": zod.coerce.number()
+})
+
+export const CreateStudyGroupMessageBody = zod.object({
+  "content": zod.string(),
+  "replyToId": zod.number().nullish(),
+  "mentions": zod.array(zod.string()).optional(),
+  "attachments": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})).optional()
+})
+
+export const CreateStudyGroupMessageResponse = zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "userId": zod.string(),
+  "username": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "content": zod.string(),
+  "replyToId": zod.number().nullish(),
+  "mentions": zod.array(zod.string()),
+  "attachments": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})),
+  "reactions": zod.array(zod.object({
+  "messageId": zod.number(),
+  "userId": zod.string(),
+  "emoji": zod.string()
+})),
+  "deleted": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete your own message
+ */
+export const DeleteStudyGroupMessageParams = zod.object({
+  "groupId": zod.coerce.number(),
+  "messageId": zod.coerce.number()
+})
+
+export const DeleteStudyGroupMessageResponse = zod.unknown()
+
+
+/**
+ * @summary Toggle an emoji reaction on a message (adds if absent, removes if present)
+ */
+export const ToggleStudyGroupMessageReactionParams = zod.object({
+  "groupId": zod.coerce.number(),
+  "messageId": zod.coerce.number()
+})
+
+export const ToggleStudyGroupMessageReactionBody = zod.object({
+  "emoji": zod.string()
+})
+
+export const ToggleStudyGroupMessageReactionResponseItem = zod.object({
+  "messageId": zod.number(),
+  "userId": zod.string(),
+  "emoji": zod.string()
+})
+export const ToggleStudyGroupMessageReactionResponse = zod.array(ToggleStudyGroupMessageReactionResponseItem)
+
+
+/**
+ * @summary Request a presigned upload URL for a study group avatar or chat attachment
+ */
+export const RequestStudyGroupUploadUrlBody = zod.object({
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})
+
+export const RequestStudyGroupUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string()
+})
+
+

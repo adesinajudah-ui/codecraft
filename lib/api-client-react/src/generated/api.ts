@@ -26,13 +26,18 @@ import type {
   CodeRunResult,
   Course,
   CourseDetail,
+  CreateStudyGroupInput,
+  CreateStudyGroupMessageInput,
   GetLeaderboardParams,
   HealthStatus,
+  InviteMembersInput,
   JoinSessionInput,
   Language,
   LeaderboardEntry,
   Lesson,
   ListAdminUsersParams,
+  ListStudyGroupMessagesParams,
+  PendingInvite,
   ProgressInput,
   ProgressSummary,
   Quiz,
@@ -40,8 +45,23 @@ import type {
   QuizAttemptInput,
   QuizSession,
   QuizSessionInput,
+  RequestUploadUrlBody,
+  RequestUploadUrlResponse,
+  SearchUsersParams,
   SessionAnswerInput,
-  UserProgress
+  SetUsernameInput,
+  StudyGroupDetail,
+  StudyGroupMember,
+  StudyGroupMessageOut,
+  StudyGroupMessageReaction,
+  StudyGroupNotification,
+  StudyGroupSummary,
+  ToggleReactionInput,
+  UpdateMemberRoleInput,
+  UpdateStudyGroupInput,
+  UserProgress,
+  UserSearchResult,
+  UsernameResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1577,4 +1597,1555 @@ export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUse
 
 
 
+
+export const getGetMyUsernameUrl = () => {
+
+
+
+
+  return `/api/users/me/username`
+}
+
+/**
+ * @summary Get the current user's username (null if not set yet)
+ */
+export const getMyUsername = async ( options?: RequestInit): Promise<UsernameResponse> => {
+
+  return customFetch<UsernameResponse>(getGetMyUsernameUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyUsernameQueryKey = () => {
+    return [
+    `/api/users/me/username`
+    ] as const;
+    }
+
+
+export const getGetMyUsernameQueryOptions = <TData = Awaited<ReturnType<typeof getMyUsername>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyUsername>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyUsernameQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyUsername>>> = ({ signal }) => getMyUsername({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyUsername>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyUsernameQueryResult = NonNullable<Awaited<ReturnType<typeof getMyUsername>>>
+export type GetMyUsernameQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the current user's username (null if not set yet)
+ */
+
+export function useGetMyUsername<TData = Awaited<ReturnType<typeof getMyUsername>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyUsername>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyUsernameQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetMyUsernameUrl = () => {
+
+
+
+
+  return `/api/users/me/username`
+}
+
+/**
+ * @summary Set or change the current user's unique username
+ */
+export const setMyUsername = async (setUsernameInput: SetUsernameInput, options?: RequestInit): Promise<UsernameResponse> => {
+
+  return customFetch<UsernameResponse>(getSetMyUsernameUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setUsernameInput)
+  }
+);}
+
+
+
+
+export const getSetMyUsernameMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setMyUsername>>, TError,{data: BodyType<SetUsernameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setMyUsername>>, TError,{data: BodyType<SetUsernameInput>}, TContext> => {
+
+const mutationKey = ['setMyUsername'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setMyUsername>>, {data: BodyType<SetUsernameInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setMyUsername(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetMyUsernameMutationResult = NonNullable<Awaited<ReturnType<typeof setMyUsername>>>
+    export type SetMyUsernameMutationBody = BodyType<SetUsernameInput>
+    export type SetMyUsernameMutationError = ErrorType<void>
+
+    /**
+ * @summary Set or change the current user's unique username
+ */
+export const useSetMyUsername = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setMyUsername>>, TError,{data: BodyType<SetUsernameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setMyUsername>>,
+        TError,
+        {data: BodyType<SetUsernameInput>},
+        TContext
+      > => {
+      return useMutation(getSetMyUsernameMutationOptions(options));
+    }
+
+export const getSearchUsersUrl = (params: SearchUsersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/users/search?${stringifiedParams}` : `/api/users/search`
+}
+
+/**
+ * @summary Search users by username, for adding study group members
+ */
+export const searchUsers = async (params: SearchUsersParams, options?: RequestInit): Promise<UserSearchResult[]> => {
+
+  return customFetch<UserSearchResult[]>(getSearchUsersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchUsersQueryKey = (params?: SearchUsersParams,) => {
+    return [
+    `/api/users/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchUsersQueryOptions = <TData = Awaited<ReturnType<typeof searchUsers>>, TError = ErrorType<void>>(params: SearchUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchUsersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchUsers>>> = ({ signal }) => searchUsers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchUsersQueryResult = NonNullable<Awaited<ReturnType<typeof searchUsers>>>
+export type SearchUsersQueryError = ErrorType<void>
+
+
+/**
+ * @summary Search users by username, for adding study group members
+ */
+
+export function useSearchUsers<TData = Awaited<ReturnType<typeof searchUsers>>, TError = ErrorType<void>>(
+ params: SearchUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchUsersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListStudyGroupsUrl = () => {
+
+
+
+
+  return `/api/study-groups`
+}
+
+/**
+ * @summary List study groups the current user belongs to
+ */
+export const listStudyGroups = async ( options?: RequestInit): Promise<StudyGroupSummary[]> => {
+
+  return customFetch<StudyGroupSummary[]>(getListStudyGroupsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStudyGroupsQueryKey = () => {
+    return [
+    `/api/study-groups`
+    ] as const;
+    }
+
+
+export const getListStudyGroupsQueryOptions = <TData = Awaited<ReturnType<typeof listStudyGroups>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStudyGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStudyGroupsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStudyGroups>>> = ({ signal }) => listStudyGroups({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStudyGroups>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStudyGroupsQueryResult = NonNullable<Awaited<ReturnType<typeof listStudyGroups>>>
+export type ListStudyGroupsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List study groups the current user belongs to
+ */
+
+export function useListStudyGroups<TData = Awaited<ReturnType<typeof listStudyGroups>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStudyGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStudyGroupsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStudyGroupUrl = () => {
+
+
+
+
+  return `/api/study-groups`
+}
+
+/**
+ * @summary Create a new study group (creator becomes owner)
+ */
+export const createStudyGroup = async (createStudyGroupInput: CreateStudyGroupInput, options?: RequestInit): Promise<StudyGroupSummary> => {
+
+  return customFetch<StudyGroupSummary>(getCreateStudyGroupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createStudyGroupInput)
+  }
+);}
+
+
+
+
+export const getCreateStudyGroupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStudyGroup>>, TError,{data: BodyType<CreateStudyGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStudyGroup>>, TError,{data: BodyType<CreateStudyGroupInput>}, TContext> => {
+
+const mutationKey = ['createStudyGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStudyGroup>>, {data: BodyType<CreateStudyGroupInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStudyGroup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStudyGroupMutationResult = NonNullable<Awaited<ReturnType<typeof createStudyGroup>>>
+    export type CreateStudyGroupMutationBody = BodyType<CreateStudyGroupInput>
+    export type CreateStudyGroupMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a new study group (creator becomes owner)
+ */
+export const useCreateStudyGroup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStudyGroup>>, TError,{data: BodyType<CreateStudyGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStudyGroup>>,
+        TError,
+        {data: BodyType<CreateStudyGroupInput>},
+        TContext
+      > => {
+      return useMutation(getCreateStudyGroupMutationOptions(options));
+    }
+
+export const getListPendingInvitesUrl = () => {
+
+
+
+
+  return `/api/study-groups/invites/pending`
+}
+
+/**
+ * @summary List the current user's pending group invitations
+ */
+export const listPendingInvites = async ( options?: RequestInit): Promise<PendingInvite[]> => {
+
+  return customFetch<PendingInvite[]>(getListPendingInvitesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPendingInvitesQueryKey = () => {
+    return [
+    `/api/study-groups/invites/pending`
+    ] as const;
+    }
+
+
+export const getListPendingInvitesQueryOptions = <TData = Awaited<ReturnType<typeof listPendingInvites>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPendingInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPendingInvitesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPendingInvites>>> = ({ signal }) => listPendingInvites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPendingInvites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPendingInvitesQueryResult = NonNullable<Awaited<ReturnType<typeof listPendingInvites>>>
+export type ListPendingInvitesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List the current user's pending group invitations
+ */
+
+export function useListPendingInvites<TData = Awaited<ReturnType<typeof listPendingInvites>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPendingInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPendingInvitesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAcceptStudyGroupInviteUrl = (membershipId: number,) => {
+
+
+
+
+  return `/api/study-groups/invites/${membershipId}/accept`
+}
+
+/**
+ * @summary Accept a pending group invitation
+ */
+export const acceptStudyGroupInvite = async (membershipId: number, options?: RequestInit): Promise<StudyGroupMember> => {
+
+  return customFetch<StudyGroupMember>(getAcceptStudyGroupInviteUrl(membershipId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAcceptStudyGroupInviteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptStudyGroupInvite>>, TError,{membershipId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptStudyGroupInvite>>, TError,{membershipId: number}, TContext> => {
+
+const mutationKey = ['acceptStudyGroupInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptStudyGroupInvite>>, {membershipId: number}> = (props) => {
+          const {membershipId} = props ?? {};
+
+          return  acceptStudyGroupInvite(membershipId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptStudyGroupInviteMutationResult = NonNullable<Awaited<ReturnType<typeof acceptStudyGroupInvite>>>
+
+    export type AcceptStudyGroupInviteMutationError = ErrorType<void>
+
+    /**
+ * @summary Accept a pending group invitation
+ */
+export const useAcceptStudyGroupInvite = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptStudyGroupInvite>>, TError,{membershipId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptStudyGroupInvite>>,
+        TError,
+        {membershipId: number},
+        TContext
+      > => {
+      return useMutation(getAcceptStudyGroupInviteMutationOptions(options));
+    }
+
+export const getDeclineStudyGroupInviteUrl = (membershipId: number,) => {
+
+
+
+
+  return `/api/study-groups/invites/${membershipId}/decline`
+}
+
+/**
+ * @summary Decline a pending group invitation
+ */
+export const declineStudyGroupInvite = async (membershipId: number, options?: RequestInit): Promise<StudyGroupMember> => {
+
+  return customFetch<StudyGroupMember>(getDeclineStudyGroupInviteUrl(membershipId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDeclineStudyGroupInviteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineStudyGroupInvite>>, TError,{membershipId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof declineStudyGroupInvite>>, TError,{membershipId: number}, TContext> => {
+
+const mutationKey = ['declineStudyGroupInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof declineStudyGroupInvite>>, {membershipId: number}> = (props) => {
+          const {membershipId} = props ?? {};
+
+          return  declineStudyGroupInvite(membershipId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeclineStudyGroupInviteMutationResult = NonNullable<Awaited<ReturnType<typeof declineStudyGroupInvite>>>
+
+    export type DeclineStudyGroupInviteMutationError = ErrorType<void>
+
+    /**
+ * @summary Decline a pending group invitation
+ */
+export const useDeclineStudyGroupInvite = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineStudyGroupInvite>>, TError,{membershipId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof declineStudyGroupInvite>>,
+        TError,
+        {membershipId: number},
+        TContext
+      > => {
+      return useMutation(getDeclineStudyGroupInviteMutationOptions(options));
+    }
+
+export const getListNotificationsUrl = () => {
+
+
+
+
+  return `/api/study-groups/notifications`
+}
+
+/**
+ * @summary List the current user's recent notifications
+ */
+export const listNotifications = async ( options?: RequestInit): Promise<StudyGroupNotification[]> => {
+
+  return customFetch<StudyGroupNotification[]>(getListNotificationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNotificationsQueryKey = () => {
+    return [
+    `/api/study-groups/notifications`
+    ] as const;
+    }
+
+
+export const getListNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotifications>>> = ({ signal }) => listNotifications({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof listNotifications>>>
+export type ListNotificationsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List the current user's recent notifications
+ */
+
+export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNotificationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkNotificationReadUrl = (notificationId: number,) => {
+
+
+
+
+  return `/api/study-groups/notifications/${notificationId}/read`
+}
+
+/**
+ * @summary Mark a notification as read
+ */
+export const markNotificationRead = async (notificationId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getMarkNotificationReadUrl(notificationId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getMarkNotificationReadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,{notificationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,{notificationId: number}, TContext> => {
+
+const mutationKey = ['markNotificationRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markNotificationRead>>, {notificationId: number}> = (props) => {
+          const {notificationId} = props ?? {};
+
+          return  markNotificationRead(notificationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkNotificationReadMutationResult = NonNullable<Awaited<ReturnType<typeof markNotificationRead>>>
+
+    export type MarkNotificationReadMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark a notification as read
+ */
+export const useMarkNotificationRead = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,{notificationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markNotificationRead>>,
+        TError,
+        {notificationId: number},
+        TContext
+      > => {
+      return useMutation(getMarkNotificationReadMutationOptions(options));
+    }
+
+export const getGetStudyGroupUrl = (groupId: number,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}`
+}
+
+/**
+ * @summary Get study group details, members, and my role
+ */
+export const getStudyGroup = async (groupId: number, options?: RequestInit): Promise<StudyGroupDetail> => {
+
+  return customFetch<StudyGroupDetail>(getGetStudyGroupUrl(groupId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudyGroupQueryKey = (groupId: number,) => {
+    return [
+    `/api/study-groups/${groupId}`
+    ] as const;
+    }
+
+
+export const getGetStudyGroupQueryOptions = <TData = Awaited<ReturnType<typeof getStudyGroup>>, TError = ErrorType<void>>(groupId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudyGroup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudyGroupQueryKey(groupId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudyGroup>>> = ({ signal }) => getStudyGroup(groupId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: groupId !== null && groupId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudyGroup>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudyGroupQueryResult = NonNullable<Awaited<ReturnType<typeof getStudyGroup>>>
+export type GetStudyGroupQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get study group details, members, and my role
+ */
+
+export function useGetStudyGroup<TData = Awaited<ReturnType<typeof getStudyGroup>>, TError = ErrorType<void>>(
+ groupId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudyGroup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudyGroupQueryOptions(groupId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateStudyGroupUrl = (groupId: number,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}`
+}
+
+/**
+ * @summary Update study group name, description, or avatar (owner only)
+ */
+export const updateStudyGroup = async (groupId: number,
+    updateStudyGroupInput: UpdateStudyGroupInput, options?: RequestInit): Promise<StudyGroupSummary> => {
+
+  return customFetch<StudyGroupSummary>(getUpdateStudyGroupUrl(groupId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateStudyGroupInput)
+  }
+);}
+
+
+
+
+export const getUpdateStudyGroupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudyGroup>>, TError,{groupId: number;data: BodyType<UpdateStudyGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStudyGroup>>, TError,{groupId: number;data: BodyType<UpdateStudyGroupInput>}, TContext> => {
+
+const mutationKey = ['updateStudyGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStudyGroup>>, {groupId: number;data: BodyType<UpdateStudyGroupInput>}> = (props) => {
+          const {groupId,data} = props ?? {};
+
+          return  updateStudyGroup(groupId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStudyGroupMutationResult = NonNullable<Awaited<ReturnType<typeof updateStudyGroup>>>
+    export type UpdateStudyGroupMutationBody = BodyType<UpdateStudyGroupInput>
+    export type UpdateStudyGroupMutationError = ErrorType<void>
+
+    /**
+ * @summary Update study group name, description, or avatar (owner only)
+ */
+export const useUpdateStudyGroup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudyGroup>>, TError,{groupId: number;data: BodyType<UpdateStudyGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStudyGroup>>,
+        TError,
+        {groupId: number;data: BodyType<UpdateStudyGroupInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateStudyGroupMutationOptions(options));
+    }
+
+export const getDeleteStudyGroupUrl = (groupId: number,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}`
+}
+
+/**
+ * @summary Delete a study group (owner only)
+ */
+export const deleteStudyGroup = async (groupId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteStudyGroupUrl(groupId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteStudyGroupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudyGroup>>, TError,{groupId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStudyGroup>>, TError,{groupId: number}, TContext> => {
+
+const mutationKey = ['deleteStudyGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStudyGroup>>, {groupId: number}> = (props) => {
+          const {groupId} = props ?? {};
+
+          return  deleteStudyGroup(groupId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStudyGroupMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStudyGroup>>>
+
+    export type DeleteStudyGroupMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a study group (owner only)
+ */
+export const useDeleteStudyGroup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudyGroup>>, TError,{groupId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStudyGroup>>,
+        TError,
+        {groupId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteStudyGroupMutationOptions(options));
+    }
+
+export const getInviteStudyGroupMembersUrl = (groupId: number,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}/invites`
+}
+
+/**
+ * @summary Invite one or more users by username (owner/admin only)
+ */
+export const inviteStudyGroupMembers = async (groupId: number,
+    inviteMembersInput: InviteMembersInput, options?: RequestInit): Promise<StudyGroupMember[]> => {
+
+  return customFetch<StudyGroupMember[]>(getInviteStudyGroupMembersUrl(groupId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(inviteMembersInput)
+  }
+);}
+
+
+
+
+export const getInviteStudyGroupMembersMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inviteStudyGroupMembers>>, TError,{groupId: number;data: BodyType<InviteMembersInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof inviteStudyGroupMembers>>, TError,{groupId: number;data: BodyType<InviteMembersInput>}, TContext> => {
+
+const mutationKey = ['inviteStudyGroupMembers'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof inviteStudyGroupMembers>>, {groupId: number;data: BodyType<InviteMembersInput>}> = (props) => {
+          const {groupId,data} = props ?? {};
+
+          return  inviteStudyGroupMembers(groupId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InviteStudyGroupMembersMutationResult = NonNullable<Awaited<ReturnType<typeof inviteStudyGroupMembers>>>
+    export type InviteStudyGroupMembersMutationBody = BodyType<InviteMembersInput>
+    export type InviteStudyGroupMembersMutationError = ErrorType<void>
+
+    /**
+ * @summary Invite one or more users by username (owner/admin only)
+ */
+export const useInviteStudyGroupMembers = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inviteStudyGroupMembers>>, TError,{groupId: number;data: BodyType<InviteMembersInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof inviteStudyGroupMembers>>,
+        TError,
+        {groupId: number;data: BodyType<InviteMembersInput>},
+        TContext
+      > => {
+      return useMutation(getInviteStudyGroupMembersMutationOptions(options));
+    }
+
+export const getUpdateStudyGroupMemberRoleUrl = (groupId: number,
+    userId: string,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}/members/${userId}`
+}
+
+/**
+ * @summary Promote/demote a member's role (owner only)
+ */
+export const updateStudyGroupMemberRole = async (groupId: number,
+    userId: string,
+    updateMemberRoleInput: UpdateMemberRoleInput, options?: RequestInit): Promise<StudyGroupMember> => {
+
+  return customFetch<StudyGroupMember>(getUpdateStudyGroupMemberRoleUrl(groupId,userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateMemberRoleInput)
+  }
+);}
+
+
+
+
+export const getUpdateStudyGroupMemberRoleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudyGroupMemberRole>>, TError,{groupId: number;userId: string;data: BodyType<UpdateMemberRoleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStudyGroupMemberRole>>, TError,{groupId: number;userId: string;data: BodyType<UpdateMemberRoleInput>}, TContext> => {
+
+const mutationKey = ['updateStudyGroupMemberRole'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStudyGroupMemberRole>>, {groupId: number;userId: string;data: BodyType<UpdateMemberRoleInput>}> = (props) => {
+          const {groupId,userId,data} = props ?? {};
+
+          return  updateStudyGroupMemberRole(groupId,userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStudyGroupMemberRoleMutationResult = NonNullable<Awaited<ReturnType<typeof updateStudyGroupMemberRole>>>
+    export type UpdateStudyGroupMemberRoleMutationBody = BodyType<UpdateMemberRoleInput>
+    export type UpdateStudyGroupMemberRoleMutationError = ErrorType<void>
+
+    /**
+ * @summary Promote/demote a member's role (owner only)
+ */
+export const useUpdateStudyGroupMemberRole = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudyGroupMemberRole>>, TError,{groupId: number;userId: string;data: BodyType<UpdateMemberRoleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStudyGroupMemberRole>>,
+        TError,
+        {groupId: number;userId: string;data: BodyType<UpdateMemberRoleInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateStudyGroupMemberRoleMutationOptions(options));
+    }
+
+export const getRemoveStudyGroupMemberUrl = (groupId: number,
+    userId: string,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}/members/${userId}`
+}
+
+/**
+ * @summary Remove a member (owner/admin), or leave the group yourself
+ */
+export const removeStudyGroupMember = async (groupId: number,
+    userId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveStudyGroupMemberUrl(groupId,userId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveStudyGroupMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeStudyGroupMember>>, TError,{groupId: number;userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeStudyGroupMember>>, TError,{groupId: number;userId: string}, TContext> => {
+
+const mutationKey = ['removeStudyGroupMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeStudyGroupMember>>, {groupId: number;userId: string}> = (props) => {
+          const {groupId,userId} = props ?? {};
+
+          return  removeStudyGroupMember(groupId,userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveStudyGroupMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeStudyGroupMember>>>
+
+    export type RemoveStudyGroupMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a member (owner/admin), or leave the group yourself
+ */
+export const useRemoveStudyGroupMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeStudyGroupMember>>, TError,{groupId: number;userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeStudyGroupMember>>,
+        TError,
+        {groupId: number;userId: string},
+        TContext
+      > => {
+      return useMutation(getRemoveStudyGroupMemberMutationOptions(options));
+    }
+
+export const getListStudyGroupMessagesUrl = (groupId: number,
+    params?: ListStudyGroupMessagesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/study-groups/${groupId}/messages?${stringifiedParams}` : `/api/study-groups/${groupId}/messages`
+}
+
+/**
+ * @summary List messages in a study group (paginated, newest last)
+ */
+export const listStudyGroupMessages = async (groupId: number,
+    params?: ListStudyGroupMessagesParams, options?: RequestInit): Promise<StudyGroupMessageOut[]> => {
+
+  return customFetch<StudyGroupMessageOut[]>(getListStudyGroupMessagesUrl(groupId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStudyGroupMessagesQueryKey = (groupId: number,
+    params?: ListStudyGroupMessagesParams,) => {
+    return [
+    `/api/study-groups/${groupId}/messages`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListStudyGroupMessagesQueryOptions = <TData = Awaited<ReturnType<typeof listStudyGroupMessages>>, TError = ErrorType<void>>(groupId: number,
+    params?: ListStudyGroupMessagesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStudyGroupMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStudyGroupMessagesQueryKey(groupId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStudyGroupMessages>>> = ({ signal }) => listStudyGroupMessages(groupId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: groupId !== null && groupId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStudyGroupMessages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStudyGroupMessagesQueryResult = NonNullable<Awaited<ReturnType<typeof listStudyGroupMessages>>>
+export type ListStudyGroupMessagesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List messages in a study group (paginated, newest last)
+ */
+
+export function useListStudyGroupMessages<TData = Awaited<ReturnType<typeof listStudyGroupMessages>>, TError = ErrorType<void>>(
+ groupId: number,
+    params?: ListStudyGroupMessagesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStudyGroupMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStudyGroupMessagesQueryOptions(groupId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStudyGroupMessageUrl = (groupId: number,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}/messages`
+}
+
+/**
+ * @summary Send a message to a study group
+ */
+export const createStudyGroupMessage = async (groupId: number,
+    createStudyGroupMessageInput: CreateStudyGroupMessageInput, options?: RequestInit): Promise<StudyGroupMessageOut> => {
+
+  return customFetch<StudyGroupMessageOut>(getCreateStudyGroupMessageUrl(groupId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createStudyGroupMessageInput)
+  }
+);}
+
+
+
+
+export const getCreateStudyGroupMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStudyGroupMessage>>, TError,{groupId: number;data: BodyType<CreateStudyGroupMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStudyGroupMessage>>, TError,{groupId: number;data: BodyType<CreateStudyGroupMessageInput>}, TContext> => {
+
+const mutationKey = ['createStudyGroupMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStudyGroupMessage>>, {groupId: number;data: BodyType<CreateStudyGroupMessageInput>}> = (props) => {
+          const {groupId,data} = props ?? {};
+
+          return  createStudyGroupMessage(groupId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStudyGroupMessageMutationResult = NonNullable<Awaited<ReturnType<typeof createStudyGroupMessage>>>
+    export type CreateStudyGroupMessageMutationBody = BodyType<CreateStudyGroupMessageInput>
+    export type CreateStudyGroupMessageMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a message to a study group
+ */
+export const useCreateStudyGroupMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStudyGroupMessage>>, TError,{groupId: number;data: BodyType<CreateStudyGroupMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStudyGroupMessage>>,
+        TError,
+        {groupId: number;data: BodyType<CreateStudyGroupMessageInput>},
+        TContext
+      > => {
+      return useMutation(getCreateStudyGroupMessageMutationOptions(options));
+    }
+
+export const getDeleteStudyGroupMessageUrl = (groupId: number,
+    messageId: number,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}/messages/${messageId}`
+}
+
+/**
+ * @summary Delete your own message
+ */
+export const deleteStudyGroupMessage = async (groupId: number,
+    messageId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteStudyGroupMessageUrl(groupId,messageId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteStudyGroupMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudyGroupMessage>>, TError,{groupId: number;messageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStudyGroupMessage>>, TError,{groupId: number;messageId: number}, TContext> => {
+
+const mutationKey = ['deleteStudyGroupMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStudyGroupMessage>>, {groupId: number;messageId: number}> = (props) => {
+          const {groupId,messageId} = props ?? {};
+
+          return  deleteStudyGroupMessage(groupId,messageId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStudyGroupMessageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStudyGroupMessage>>>
+
+    export type DeleteStudyGroupMessageMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete your own message
+ */
+export const useDeleteStudyGroupMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudyGroupMessage>>, TError,{groupId: number;messageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStudyGroupMessage>>,
+        TError,
+        {groupId: number;messageId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteStudyGroupMessageMutationOptions(options));
+    }
+
+export const getToggleStudyGroupMessageReactionUrl = (groupId: number,
+    messageId: number,) => {
+
+
+
+
+  return `/api/study-groups/${groupId}/messages/${messageId}/reactions`
+}
+
+/**
+ * @summary Toggle an emoji reaction on a message (adds if absent, removes if present)
+ */
+export const toggleStudyGroupMessageReaction = async (groupId: number,
+    messageId: number,
+    toggleReactionInput: ToggleReactionInput, options?: RequestInit): Promise<StudyGroupMessageReaction[]> => {
+
+  return customFetch<StudyGroupMessageReaction[]>(getToggleStudyGroupMessageReactionUrl(groupId,messageId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(toggleReactionInput)
+  }
+);}
+
+
+
+
+export const getToggleStudyGroupMessageReactionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleStudyGroupMessageReaction>>, TError,{groupId: number;messageId: number;data: BodyType<ToggleReactionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleStudyGroupMessageReaction>>, TError,{groupId: number;messageId: number;data: BodyType<ToggleReactionInput>}, TContext> => {
+
+const mutationKey = ['toggleStudyGroupMessageReaction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleStudyGroupMessageReaction>>, {groupId: number;messageId: number;data: BodyType<ToggleReactionInput>}> = (props) => {
+          const {groupId,messageId,data} = props ?? {};
+
+          return  toggleStudyGroupMessageReaction(groupId,messageId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleStudyGroupMessageReactionMutationResult = NonNullable<Awaited<ReturnType<typeof toggleStudyGroupMessageReaction>>>
+    export type ToggleStudyGroupMessageReactionMutationBody = BodyType<ToggleReactionInput>
+    export type ToggleStudyGroupMessageReactionMutationError = ErrorType<void>
+
+    /**
+ * @summary Toggle an emoji reaction on a message (adds if absent, removes if present)
+ */
+export const useToggleStudyGroupMessageReaction = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleStudyGroupMessageReaction>>, TError,{groupId: number;messageId: number;data: BodyType<ToggleReactionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleStudyGroupMessageReaction>>,
+        TError,
+        {groupId: number;messageId: number;data: BodyType<ToggleReactionInput>},
+        TContext
+      > => {
+      return useMutation(getToggleStudyGroupMessageReactionMutationOptions(options));
+    }
+
+export const getRequestStudyGroupUploadUrlUrl = () => {
+
+
+
+
+  return `/api/storage/uploads/request-url`
+}
+
+/**
+ * @summary Request a presigned upload URL for a study group avatar or chat attachment
+ */
+export const requestStudyGroupUploadUrl = async (requestUploadUrlBody: RequestUploadUrlBody, options?: RequestInit): Promise<RequestUploadUrlResponse> => {
+
+  return customFetch<RequestUploadUrlResponse>(getRequestStudyGroupUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(requestUploadUrlBody)
+  }
+);}
+
+
+
+
+export const getRequestStudyGroupUploadUrlMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestStudyGroupUploadUrl>>, TError,{data: BodyType<RequestUploadUrlBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestStudyGroupUploadUrl>>, TError,{data: BodyType<RequestUploadUrlBody>}, TContext> => {
+
+const mutationKey = ['requestStudyGroupUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestStudyGroupUploadUrl>>, {data: BodyType<RequestUploadUrlBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestStudyGroupUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestStudyGroupUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestStudyGroupUploadUrl>>>
+    export type RequestStudyGroupUploadUrlMutationBody = BodyType<RequestUploadUrlBody>
+    export type RequestStudyGroupUploadUrlMutationError = ErrorType<void>
+
+    /**
+ * @summary Request a presigned upload URL for a study group avatar or chat attachment
+ */
+export const useRequestStudyGroupUploadUrl = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestStudyGroupUploadUrl>>, TError,{data: BodyType<RequestUploadUrlBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestStudyGroupUploadUrl>>,
+        TError,
+        {data: BodyType<RequestUploadUrlBody>},
+        TContext
+      > => {
+      return useMutation(getRequestStudyGroupUploadUrlMutationOptions(options));
+    }
 

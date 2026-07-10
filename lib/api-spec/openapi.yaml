@@ -26,6 +26,8 @@ tags:
     description: Leaderboard
   - name: admin
     description: Admin operations
+  - name: studyGroups
+    description: Study groups, chat, and social features
 paths:
   /healthz:
     get:
@@ -445,6 +447,497 @@ paths:
           description: Unauthorized
         "403":
           description: Forbidden
+
+  /users/me/username:
+    get:
+      operationId: getMyUsername
+      tags: [studyGroups]
+      summary: Get the current user's username (null if not set yet)
+      responses:
+        "200":
+          description: Current username
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsernameResponse"
+        "401":
+          description: Unauthorized
+    patch:
+      operationId: setMyUsername
+      tags: [studyGroups]
+      summary: Set or change the current user's unique username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetUsernameInput"
+      responses:
+        "200":
+          description: Username updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsernameResponse"
+        "401":
+          description: Unauthorized
+        "409":
+          description: Username already taken
+
+  /users/search:
+    get:
+      operationId: searchUsers
+      tags: [studyGroups]
+      summary: Search users by username, for adding study group members
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Matching users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSearchResult"
+        "401":
+          description: Unauthorized
+
+  /study-groups:
+    get:
+      operationId: listStudyGroups
+      tags: [studyGroups]
+      summary: List study groups the current user belongs to
+      responses:
+        "200":
+          description: My study groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudyGroupSummary"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: createStudyGroup
+      tags: [studyGroups]
+      summary: Create a new study group (creator becomes owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStudyGroupInput"
+      responses:
+        "200":
+          description: Created study group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupSummary"
+        "401":
+          description: Unauthorized
+
+  /study-groups/invites/pending:
+    get:
+      operationId: listPendingInvites
+      tags: [studyGroups]
+      summary: List the current user's pending group invitations
+      responses:
+        "200":
+          description: Pending invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingInvite"
+        "401":
+          description: Unauthorized
+
+  /study-groups/invites/{membershipId}/accept:
+    post:
+      operationId: acceptStudyGroupInvite
+      tags: [studyGroups]
+      summary: Accept a pending group invitation
+      parameters:
+        - in: path
+          name: membershipId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Membership accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupMember"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Invite not found
+
+  /study-groups/invites/{membershipId}/decline:
+    post:
+      operationId: declineStudyGroupInvite
+      tags: [studyGroups]
+      summary: Decline a pending group invitation
+      parameters:
+        - in: path
+          name: membershipId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Membership declined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupMember"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Invite not found
+
+  /study-groups/notifications:
+    get:
+      operationId: listNotifications
+      tags: [studyGroups]
+      summary: List the current user's recent notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudyGroupNotification"
+        "401":
+          description: Unauthorized
+
+  /study-groups/notifications/{notificationId}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [studyGroups]
+      summary: Mark a notification as read
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Notification updated
+        "401":
+          description: Unauthorized
+
+  /study-groups/{groupId}:
+    get:
+      operationId: getStudyGroup
+      tags: [studyGroups]
+      summary: Get study group details, members, and my role
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Study group detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupDetail"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not a member
+        "404":
+          description: Not found
+    patch:
+      operationId: updateStudyGroup
+      tags: [studyGroups]
+      summary: Update study group name, description, or avatar (owner only)
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStudyGroupInput"
+      responses:
+        "200":
+          description: Updated study group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupSummary"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Owner only
+    delete:
+      operationId: deleteStudyGroup
+      tags: [studyGroups]
+      summary: Delete a study group (owner only)
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Owner only
+
+  /study-groups/{groupId}/invites:
+    post:
+      operationId: inviteStudyGroupMembers
+      tags: [studyGroups]
+      summary: Invite one or more users by username (owner/admin only)
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteMembersInput"
+      responses:
+        "200":
+          description: Invitations sent
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudyGroupMember"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Owner/admin only
+
+  /study-groups/{groupId}/members/{userId}:
+    patch:
+      operationId: updateStudyGroupMemberRole
+      tags: [studyGroups]
+      summary: Promote/demote a member's role (owner only)
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemberRoleInput"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupMember"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Owner only
+    delete:
+      operationId: removeStudyGroupMember
+      tags: [studyGroups]
+      summary: Remove a member (owner/admin), or leave the group yourself
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Removed
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not allowed
+
+  /study-groups/{groupId}/messages:
+    get:
+      operationId: listStudyGroupMessages
+      tags: [studyGroups]
+      summary: List messages in a study group (paginated, newest last)
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: before
+          schema:
+            type: ["integer", "null"]
+          description: Return messages with id less than this (pagination cursor)
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudyGroupMessageOut"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not a member
+    post:
+      operationId: createStudyGroupMessage
+      tags: [studyGroups]
+      summary: Send a message to a study group
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStudyGroupMessageInput"
+      responses:
+        "200":
+          description: Created message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyGroupMessageOut"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not a member
+
+  /study-groups/{groupId}/messages/{messageId}:
+    delete:
+      operationId: deleteStudyGroupMessage
+      tags: [studyGroups]
+      summary: Delete your own message
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not your message
+
+  /study-groups/{groupId}/messages/{messageId}/reactions:
+    post:
+      operationId: toggleStudyGroupMessageReaction
+      tags: [studyGroups]
+      summary: Toggle an emoji reaction on a message (adds if absent, removes if present)
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToggleReactionInput"
+      responses:
+        "200":
+          description: Updated reactions for the message
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudyGroupMessageReaction"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not a member
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestStudyGroupUploadUrl
+      tags: [studyGroups]
+      summary: Request a presigned upload URL for a study group avatar or chat attachment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlBody"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResponse"
+        "401":
+          description: Unauthorized
 
 components:
   schemas:
@@ -903,3 +1396,371 @@ components:
         - lessonsCompleted
         - quizzesPassed
         - joinedAt
+
+    UsernameResponse:
+      type: object
+      properties:
+        username:
+          type: ["string", "null"]
+      required:
+        - username
+
+    SetUsernameInput:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+          pattern: "^[a-zA-Z0-9_]+$"
+      required:
+        - username
+
+    UserSearchResult:
+      type: object
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        xp:
+          type: integer
+      required:
+        - userId
+        - username
+        - displayName
+        - xp
+
+    MemberOut:
+      type: object
+      properties:
+        userId:
+          type: string
+        username:
+          type: ["string", "null"]
+        displayName:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        xp:
+          type: integer
+        learningLevel:
+          type: string
+          enum: [Beginner, Intermediate, Advanced, Expert]
+        role:
+          type: string
+          enum: [owner, admin, member]
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+        online:
+          type: boolean
+      required:
+        - userId
+        - displayName
+        - xp
+        - learningLevel
+        - role
+        - status
+        - online
+
+    StudyGroupSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        avatarObjectPath:
+          type: ["string", "null"]
+        ownerId:
+          type: string
+        memberCount:
+          type: integer
+        myRole:
+          type: string
+          enum: [owner, admin, member]
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - ownerId
+        - memberCount
+        - myRole
+        - createdAt
+
+    StudyGroupDetail:
+      allOf:
+        - $ref: "#/components/schemas/StudyGroupSummary"
+        - type: object
+          properties:
+            members:
+              type: array
+              items:
+                $ref: "#/components/schemas/MemberOut"
+          required:
+            - members
+
+    CreateStudyGroupInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: ["string", "null"]
+        avatarObjectPath:
+          type: ["string", "null"]
+      required:
+        - name
+
+    UpdateStudyGroupInput:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        avatarObjectPath:
+          type: ["string", "null"]
+
+    InviteMembersInput:
+      type: object
+      properties:
+        usernames:
+          type: array
+          items:
+            type: string
+          minItems: 1
+      required:
+        - usernames
+
+    UpdateMemberRoleInput:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [admin, member]
+      required:
+        - role
+
+    StudyGroupMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        groupId:
+          type: integer
+        userId:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, member]
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+        invitedBy:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - groupId
+        - userId
+        - role
+        - status
+        - invitedBy
+        - createdAt
+
+    PendingInvite:
+      type: object
+      properties:
+        membershipId:
+          type: integer
+        groupId:
+          type: integer
+        groupName:
+          type: string
+        groupAvatarObjectPath:
+          type: ["string", "null"]
+        invitedBy:
+          type: string
+        invitedByUsername:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - membershipId
+        - groupId
+        - groupName
+        - invitedBy
+        - createdAt
+
+    MessageAttachmentOut:
+      type: object
+      properties:
+        objectPath:
+          type: string
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+      required:
+        - objectPath
+        - name
+        - size
+        - contentType
+
+    StudyGroupMessageOut:
+      type: object
+      properties:
+        id:
+          type: integer
+        groupId:
+          type: integer
+        userId:
+          type: string
+        username:
+          type: ["string", "null"]
+        displayName:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        content:
+          type: string
+        replyToId:
+          type: ["integer", "null"]
+        mentions:
+          type: array
+          items:
+            type: string
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageAttachmentOut"
+        reactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudyGroupMessageReaction"
+        deleted:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - groupId
+        - userId
+        - displayName
+        - content
+        - mentions
+        - attachments
+        - reactions
+        - deleted
+        - createdAt
+
+    CreateStudyGroupMessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+        replyToId:
+          type: ["integer", "null"]
+        mentions:
+          type: array
+          items:
+            type: string
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageAttachmentOut"
+      required:
+        - content
+
+    StudyGroupMessageReaction:
+      type: object
+      properties:
+        messageId:
+          type: integer
+        userId:
+          type: string
+        emoji:
+          type: string
+      required:
+        - messageId
+        - userId
+        - emoji
+
+    ToggleReactionInput:
+      type: object
+      properties:
+        emoji:
+          type: string
+      required:
+        - emoji
+
+    StudyGroupNotification:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [group_invite, invite_accepted, invite_declined, mention, member_removed, role_changed]
+        groupId:
+          type: integer
+        groupName:
+          type: ["string", "null"]
+        actorId:
+          type: string
+        actorUsername:
+          type: ["string", "null"]
+        payload:
+          type: object
+          additionalProperties: true
+        read:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - type
+        - groupId
+        - actorId
+        - payload
+        - read
+        - createdAt
+
+    RequestUploadUrlBody:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+      required:
+        - name
+        - size
+        - contentType
+
+    RequestUploadUrlResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+      required:
+        - uploadURL
+        - objectPath

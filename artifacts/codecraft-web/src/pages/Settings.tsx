@@ -10,9 +10,58 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Moon, Sun, Bell, Shield, Palette, User, LogOut, Trash2, Globe } from "lucide-react";
+import { Settings as SettingsIcon, Moon, Sun, Bell, Shield, Palette, User, LogOut, Trash2, Globe, AtSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { useState as useReactState } from "react";
+import { useGetMyUsername, useSetMyUsername, getGetMyUsernameQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+
+function UsernameField() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data } = useGetMyUsername();
+  const [value, setValue] = useReactState("");
+  const [editing, setEditing] = useReactState(false);
+  const { mutate, isPending } = useSetMyUsername({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetMyUsernameQueryKey() });
+        setEditing(false);
+        toast({ title: "Username saved" });
+      },
+      onError: (err: any) => {
+        toast({ title: "Couldn't save username", description: err?.status === 409 ? "That username is taken." : "Try again.", variant: "destructive" });
+      },
+    },
+  });
+
+  const current = data?.username ?? null;
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs flex items-center gap-1"><AtSign className="w-3 h-3" /> Username (for Study Groups)</Label>
+      {editing || !current ? (
+        <div className="flex gap-2">
+          <Input
+            value={value || current || ""}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="e.g. code_ninja"
+            className="h-9 text-sm"
+          />
+          <Button size="sm" disabled={isPending || !(value || "").trim()} onClick={() => mutate({ data: { username: (value || "").trim() } })}>
+            Save
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">@{current}</span>
+          <Button size="sm" variant="ghost" onClick={() => { setValue(current); setEditing(true); }}>Change</Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Settings() {
   const { user } = useUser();
@@ -83,6 +132,7 @@ export default function Settings() {
                   <Label className="text-xs">Email</Label>
                   <Input defaultValue={user?.primaryEmailAddress?.emailAddress || ""} disabled className="h-9 text-sm opacity-60" />
                 </div>
+                <UsernameField />
               </div>
               <Button size="sm" onClick={handleSave}>Save Profile</Button>
             </CardContent>
