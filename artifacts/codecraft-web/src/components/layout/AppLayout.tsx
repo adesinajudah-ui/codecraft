@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useListPendingInvites } from "@workspace/api-client-react";
+import { useIsDesktop } from "@/hooks/use-desktop";
 
 const drawerNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -62,12 +63,120 @@ function ThemeToggle() {
   );
 }
 
+function DesktopSidebar({
+  allNavItems,
+  pendingCount,
+  location,
+}: {
+  allNavItems: typeof drawerNavItems;
+  pendingCount: number;
+  location: string;
+}) {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
+  return (
+    <aside className="w-64 flex-shrink-0 h-screen sticky top-0 flex flex-col bg-card border-r border-border">
+      <div className="flex items-center gap-2 px-5 py-5">
+        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+          <GraduationCap className="w-5 h-5 text-primary" />
+        </div>
+        <span className="text-lg font-bold font-mono tracking-tight text-primary">CodeCraft</span>
+      </div>
+
+      <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+        {allNavItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
+          return (
+            <Link key={item.href} href={item.href}>
+              <div
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150",
+                  isActive
+                    ? "bg-primary/15 text-primary font-semibold"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                )}
+              >
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm flex-1">{item.label}</span>
+                {item.href === "/study-groups" && pendingCount > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                    {pendingCount}
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-border p-3">
+        <Link href="/profile">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-secondary transition-colors cursor-pointer mb-2">
+            {user?.imageUrl ? (
+              <img src={user.imageUrl} alt={user.fullName || "User"} className="w-9 h-9 rounded-full border-2 border-primary/30 flex-shrink-0" />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-bold text-primary">{user?.firstName?.[0] || "U"}</span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">{user?.fullName || "Developer"}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
+            </div>
+          </div>
+        </Link>
+        <div className="flex gap-1">
+          <Link href="/settings" className="flex-1">
+            <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground">
+              <Settings className="w-4 h-4" />
+              <span className="ml-2">Settings</span>
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 justify-start text-muted-foreground hover:text-destructive"
+            onClick={() => signOut()}
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="ml-2">Sign Out</span>
+          </Button>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function DesktopShell({ children, allNavItems, pendingCount, location }: {
+  children: ReactNode;
+  allNavItems: typeof drawerNavItems;
+  pendingCount: number;
+  location: string;
+}) {
+  return (
+    <div className="min-h-screen flex bg-background">
+      <DesktopSidebar allNavItems={allNavItems} pendingCount={pendingCount} location={location} />
+      <div className="flex-1 min-w-0 flex flex-col">
+        <header className="flex items-center justify-end px-6 py-3 border-b border-border bg-card flex-shrink-0">
+          <ThemeToggle />
+        </header>
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-5xl mx-auto w-full px-6 py-6">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
   const isAdmin = user?.publicMetadata?.role === "admin";
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const isDesktop = useIsDesktop();
 
   const allNavItems = isAdmin
     ? [...drawerNavItems, { href: "/admin", label: "Admin", icon: ShieldAlert }]
@@ -76,10 +185,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { data: pendingInvites } = useListPendingInvites();
   const pendingCount = pendingInvites?.length ?? 0;
 
+  if (isDesktop) {
+    return (
+      <DesktopShell allNavItems={allNavItems} pendingCount={pendingCount} location={location}>
+        {children}
+      </DesktopShell>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-muted/30 flex items-start justify-center py-0 sm:py-6">
-      {/* Phone frame wrapper */}
-      <div className="relative w-full max-w-[430px] h-screen sm:h-[844px] sm:rounded-[40px] sm:shadow-2xl overflow-hidden bg-background flex flex-col sm:border sm:border-border">
+    <div className="min-h-screen bg-background">
+      {/* Mobile app shell — fills the viewport like a native phone app */}
+      <div className="relative w-full h-screen overflow-hidden bg-background flex flex-col">
 
         {/* Top Bar */}
         <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card flex-shrink-0">
