@@ -20,7 +20,9 @@ import {
   useGenerateInviteCode,
   type StudyGroupMessageOut,
   type MemberOut,
+  type MessageAttachmentOut,
 } from "@workspace/api-client-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { useStudyGroupEvents, sendTypingPing } from "@/hooks/useStudyGroupEvents";
 import { extractMentions, MessageContent } from "@/lib/messageFormat";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -57,6 +59,10 @@ import {
   Share2,
   RefreshCw,
   Check as CheckIcon,
+  Camera,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -65,7 +71,13 @@ const REACTION_EMOJIS = ["👍", "❤️", "😂", "🎉", "🤔", "🔥"];
 function objectUrl(objectPath: string | null | undefined) {
   if (!objectPath) return undefined;
   const basePath = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
-  return `${basePath}${objectPath.replace(/^\//, "")}`;
+  return `${basePath}/api/storage${objectPath}`;
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function initials(name: string) {
@@ -277,22 +289,24 @@ function GroupSettingsDialog({
   groupId,
   name,
   description,
+  avatarObjectPath,
 }: {
   groupId: number;
   name: string;
   description: string | null;
+  avatarObjectPath: string | null;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState(name);
   const [newDescription, setNewDescription] = useState(description ?? "");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const { mutate: update, isPending } = useUpdateStudyGroup({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetStudyGroupQueryKey(groupId) });
-        setOpen(false);
         toast({ title: "Group updated" });
       },
     },
@@ -306,6 +320,23 @@ function GroupSettingsDialog({
     },
   });
 
+  const { uploadFile, isUploading: uploadingAvatar } = useUpload({
+    basePath: `${(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}/api/storage`,
+    onSuccess: (res) => update({ groupId, data: { avatarObjectPath: res.objectPath } }),
+    onError: () => toast({ title: "Couldn't upload picture", variant: "destructive" }),
+  });
+
+  const handleAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please choose an image file", variant: "destructive" });
+      return;
+    }
+    uploadFile(file);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -318,6 +349,23 @@ function GroupSettingsDialog({
           <DialogTitle>Group Settings</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          <div className="flex justify-center py-1">
+            <button
+              type="button"
+              className="relative group/avatar rounded-full"
+              disabled={uploadingAvatar}
+              onClick={() => avatarInputRef.current?.click()}
+            >
+              <Avatar className="w-16 h-16 border border-border">
+                <AvatarImage src={objectUrl(avatarObjectPath)} />
+                <AvatarFallback className="bg-primary/20 text-primary text-lg font-bold">{initials(name)}</AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                {uploadingAvatar ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
+              </div>
+              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarPick} />
+            </button>
+          </div>
           <Input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} />
           <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="resize-none" placeholder="Description" />
         </div>
@@ -326,7 +374,7 @@ function GroupSettingsDialog({
           <Button
             className="w-full"
             disabled={isPending || !newName.trim()}
-            onClick={() => update({ groupId, data: { name: newName.trim(), description: newDescription.trim() || null } })}
+            onClick={() => update({ groupId, data: { name: newName.trim(), description: newDescription.trim() || null } }, { onSuccess: () => setOpen(false) })}
           >
             Save changes
           </Button>
@@ -383,12 +431,18 @@ function MessageBubble({
             <>
               <MessageContent content={message.content} isMentioned={(u) => u === myUsername} />
               {message.attachments.length > 0 && (
-                <div className="mt-1.5 space-y-1">
-                  {message.attachments.map((a, i) => (
-                    <a key={i} href={objectUrl(a.objectPath)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs underline opacity-90">
-                      📎 {a.name}
-                    </a>
-                  ))}
+                <div className="mt-1.5 space-y-1.5">
+                  {message.attachments.map((a, i) =>
+                    a.contentType.startsWith("image/") ? (
+                      <a key={i} href={objectUrl(a.objectPath)} target="_blank" rel="noreferrer" className="block">
+                        <img src={objectUrl(a.objectPath)} alt={a.name} className="max-w-full max-h-56 rounded-lg border border-border/40" />
+                      </a>
+                    ) : (
+                      <a key={i} href={objectUrl(a.objectPath)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs underline opacity-90">
+                        <FileText className="w-3.5 h-3.5 flex-shrink-0" /> {a.name} <span className="opacity-70">({formatFileSize(a.size)})</span>
+                      </a>
+                    ),
+                  )}
                 </div>
               )}
             </>
@@ -443,10 +497,18 @@ export default function StudyGroupDetail() {
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<StudyGroupMessageOut | null>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [pendingAttachment, setPendingAttachment] = useState<MessageAttachmentOut | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
-  const messagesKey = getListStudyGroupMessagesQueryKey(groupId);
+  const { uploadFile, isUploading: uploadingAttachment } = useUpload({
+    basePath: `${(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}/api/storage`,
+    onSuccess: (res) => setPendingAttachment({ objectPath: res.objectPath, name: res.metadata.name, size: res.metadata.size, contentType: res.metadata.contentType }),
+    onError: () => toast({ title: "Couldn't upload file", variant: "destructive" }),
+  });
+
+  const messagesKey = getListStudyGroupMessagesQueryKey(groupId, {});
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }));
@@ -495,6 +557,7 @@ export default function StudyGroupDetail() {
         queryClient.setQueryData(messagesKey, (old: StudyGroupMessageOut[] | undefined) => (old ? [...old, data] : [data]));
         setInput("");
         setReplyTo(null);
+        setPendingAttachment(null);
         scrollToBottom();
       },
       onError: () => toast({ title: "Message failed to send", variant: "destructive" }),
@@ -530,8 +593,27 @@ export default function StudyGroupDetail() {
 
   const handleSend = () => {
     const trimmed = input.trim();
-    if (!trimmed) return;
-    sendMessage({ groupId, data: { content: trimmed, replyToId: replyTo?.id ?? null, mentions: extractMentions(trimmed) } });
+    if (!trimmed && !pendingAttachment) return;
+    sendMessage({
+      groupId,
+      data: {
+        content: trimmed,
+        replyToId: replyTo?.id ?? null,
+        mentions: extractMentions(trimmed),
+        attachments: pendingAttachment ? [pendingAttachment] : [],
+      },
+    });
+  };
+
+  const handleAttachmentPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "File is too large (max 10 MB)", variant: "destructive" });
+      return;
+    }
+    uploadFile(file);
   };
 
   const typingLabel = [...typingUsers]
@@ -556,7 +638,14 @@ export default function StudyGroupDetail() {
               <p className="text-sm font-semibold truncate">{group.name}</p>
               <p className="text-xs text-muted-foreground truncate">{group.memberCount} members</p>
             </div>
-            {myRole === "owner" && <GroupSettingsDialog groupId={groupId} name={group.name} description={group.description ?? null} />}
+            {myRole === "owner" && (
+              <GroupSettingsDialog
+                groupId={groupId}
+                name={group.name}
+                description={group.description ?? null}
+                avatarObjectPath={group.avatarObjectPath ?? null}
+              />
+            )}
           </>
         )}
       </div>
@@ -592,7 +681,35 @@ export default function StudyGroupDetail() {
             </div>
           )}
 
+          {(pendingAttachment || uploadingAttachment) && (
+            <div className="flex items-center justify-between px-3 py-1.5 bg-secondary/60 border-t border-border text-xs">
+              {uploadingAttachment ? (
+                <span className="flex items-center gap-1.5 text-muted-foreground"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</span>
+              ) : (
+                <span className="flex items-center gap-1.5 truncate">
+                  {pendingAttachment?.contentType.startsWith("image/") ? <ImageIcon className="w-3.5 h-3.5 flex-shrink-0" /> : <FileText className="w-3.5 h-3.5 flex-shrink-0" />}
+                  <span className="truncate">{pendingAttachment?.name}</span>
+                  <span className="text-muted-foreground flex-shrink-0">{pendingAttachment && formatFileSize(pendingAttachment.size)}</span>
+                </span>
+              )}
+              {!uploadingAttachment && (
+                <button onClick={() => setPendingAttachment(null)}><X className="w-3.5 h-3.5" /></button>
+              )}
+            </div>
+          )}
+
           <div className="p-2.5 border-t border-border flex items-end gap-2 flex-shrink-0">
+            <input ref={attachmentInputRef} type="file" className="hidden" onChange={handleAttachmentPick} />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-9 w-9 flex-shrink-0"
+              disabled={uploadingAttachment || !!pendingAttachment}
+              onClick={() => attachmentInputRef.current?.click()}
+              title="Attach a picture or file"
+            >
+              <Paperclip className="w-4 h-4" />
+            </Button>
             <Textarea
               value={input}
               onChange={(e) => { setInput(e.target.value); sendTypingPing(groupId); }}
@@ -600,7 +717,7 @@ export default function StudyGroupDetail() {
               placeholder="Message... use @username or ```code```"
               className="min-h-[38px] max-h-24 text-sm resize-none py-2"
             />
-            <Button size="icon" className="h-9 w-9 flex-shrink-0" disabled={!input.trim() || sending} onClick={handleSend}>
+            <Button size="icon" className="h-9 w-9 flex-shrink-0" disabled={(!input.trim() && !pendingAttachment) || sending || uploadingAttachment} onClick={handleSend}>
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </div>

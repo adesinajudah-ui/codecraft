@@ -78,6 +78,9 @@ onlyBuiltDependencies:
 overrides:
   # Force a single @types/react version to avoid phantom-type TS errors
   "@types/react": "^19.2.0"
+  # @uppy packages declare a react@>=19 peer; force them onto the project's react version
+  "react": "19.1.0"
+  "react-dom": "19.1.0"
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"

@@ -5,3 +5,6 @@
 - [api-client-react type declarations](api-client-react-types.md) — run tsc --declaration --emitDeclarationOnly --outDir dist in lib/api-client-react to fix "Output file not built" TS errors in web pages.
 - [Seed script backtick escaping](seed-backtick.md) — backticks inside template literal content strings must be escaped as \` or esbuild misparses them; DB push needed before first seed; partial seeds need manual psql cleanup.
 - [orval mixed path+query param collision](orval-mixed-params-collision.md) — an op with both path & query params emits two same-named exports; barrel must exclude that one type file explicitly.
+- [orval query key params must match](orval-query-key-params.md) — getXQueryKey(id) vs getXQueryKey(id, {}) are different cache keys; manual cache writes must match the hook's exact call.
+- [object-storage-web Uppy barrel](object-storage-web-uppy-barrel.md) — importing useUpload alone still bundles ObjectUploader's @uppy/react subpath import; strip it from index.ts if unused.
+- [pnpm overrides location](pnpm-overrides-location.md) — put version overrides in pnpm-workspace.yaml's `overrides:`, not a root package.json `pnpm.overrides` block.
