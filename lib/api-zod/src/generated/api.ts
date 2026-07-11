@@ -461,9 +461,6 @@ export const ListStudyGroupsResponseItem = zod.object({
   "ownerId": zod.string(),
   "memberCount": zod.number(),
   "myRole": zod.enum(['owner', 'admin', 'member']),
-  "joinCode": zod.string().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeEnabled": zod.boolean().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeUses": zod.number().nullish().describe('Only present for the owner\/admin'),
   "createdAt": zod.string()
 })
 export const ListStudyGroupsResponse = zod.array(ListStudyGroupsResponseItem)
@@ -490,9 +487,6 @@ export const CreateStudyGroupResponse = zod.object({
   "ownerId": zod.string(),
   "memberCount": zod.number(),
   "myRole": zod.enum(['owner', 'admin', 'member']),
-  "joinCode": zod.string().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeEnabled": zod.boolean().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeUses": zod.number().nullish().describe('Only present for the owner\/admin'),
   "createdAt": zod.string()
 })
 
@@ -590,9 +584,6 @@ export const GetStudyGroupResponse = zod.object({
   "ownerId": zod.string(),
   "memberCount": zod.number(),
   "myRole": zod.enum(['owner', 'admin', 'member']),
-  "joinCode": zod.string().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeEnabled": zod.boolean().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeUses": zod.number().nullish().describe('Only present for the owner\/admin'),
   "createdAt": zod.string()
 }).and(zod.object({
   "members": zod.array(zod.object({
@@ -630,9 +621,6 @@ export const UpdateStudyGroupResponse = zod.object({
   "ownerId": zod.string(),
   "memberCount": zod.number(),
   "myRole": zod.enum(['owner', 'admin', 'member']),
-  "joinCode": zod.string().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeEnabled": zod.boolean().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeUses": zod.number().nullish().describe('Only present for the owner\/admin'),
   "createdAt": zod.string()
 })
 
@@ -648,7 +636,19 @@ export const DeleteStudyGroupResponse = zod.unknown()
 
 
 /**
- * @summary Preview a study group by its join code before joining
+ * @summary Generate a new single-use invite code for this group (owner/admin only)
+ */
+export const GenerateInviteCodeParams = zod.object({
+  "groupId": zod.coerce.number()
+})
+
+export const GenerateInviteCodeResponse = zod.object({
+  "code": zod.string()
+})
+
+
+/**
+ * @summary Preview a study group by an unused invite code before joining
  */
 export const PreviewGroupByCodeParams = zod.object({
   "code": zod.coerce.string()
@@ -667,7 +667,7 @@ export const PreviewGroupByCodeResponse = zod.object({
 
 
 /**
- * @summary Join a study group immediately using a join code
+ * @summary Join a study group immediately by redeeming a single-use invite code
  */
 export const JoinGroupByCodeParams = zod.object({
   "code": zod.coerce.string()
@@ -681,57 +681,6 @@ export const JoinGroupByCodeResponse = zod.object({
   "ownerId": zod.string(),
   "memberCount": zod.number(),
   "myRole": zod.enum(['owner', 'admin', 'member']),
-  "joinCode": zod.string().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeEnabled": zod.boolean().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeUses": zod.number().nullish().describe('Only present for the owner\/admin'),
-  "createdAt": zod.string()
-})
-
-
-/**
- * @summary Generate a new join code, invalidating the previous one (owner only)
- */
-export const RegenerateJoinCodeParams = zod.object({
-  "groupId": zod.coerce.number()
-})
-
-export const RegenerateJoinCodeResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
-  "avatarObjectPath": zod.string().nullish(),
-  "ownerId": zod.string(),
-  "memberCount": zod.number(),
-  "myRole": zod.enum(['owner', 'admin', 'member']),
-  "joinCode": zod.string().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeEnabled": zod.boolean().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeUses": zod.number().nullish().describe('Only present for the owner\/admin'),
-  "createdAt": zod.string()
-})
-
-
-/**
- * @summary Enable or disable joining this group by code (owner only)
- */
-export const ToggleJoinCodeParams = zod.object({
-  "groupId": zod.coerce.number()
-})
-
-export const ToggleJoinCodeBody = zod.object({
-  "enabled": zod.boolean()
-})
-
-export const ToggleJoinCodeResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
-  "avatarObjectPath": zod.string().nullish(),
-  "ownerId": zod.string(),
-  "memberCount": zod.number(),
-  "myRole": zod.enum(['owner', 'admin', 'member']),
-  "joinCode": zod.string().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeEnabled": zod.boolean().nullish().describe('Only present for the owner\/admin'),
-  "joinCodeUses": zod.number().nullish().describe('Only present for the owner\/admin'),
   "createdAt": zod.string()
 })
 

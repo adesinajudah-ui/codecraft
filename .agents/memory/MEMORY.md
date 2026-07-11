@@ -4,3 +4,4 @@
 - [Clerk Router context bug](clerk-router-context.md) — useLocation() must be called inside WouterRouter; ClerkProvider must be a child of WouterRouter, not a sibling/parent.
 - [api-client-react type declarations](api-client-react-types.md) — run tsc --declaration --emitDeclarationOnly --outDir dist in lib/api-client-react to fix "Output file not built" TS errors in web pages.
 - [Seed script backtick escaping](seed-backtick.md) — backticks inside template literal content strings must be escaped as \` or esbuild misparses them; DB push needed before first seed; partial seeds need manual psql cleanup.
+- [orval mixed path+query param collision](orval-mixed-params-collision.md) — an op with both path & query params emits two same-named exports; barrel must exclude that one type file explicitly.

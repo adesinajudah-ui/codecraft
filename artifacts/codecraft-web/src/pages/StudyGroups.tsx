@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { UsersRound, Plus, Check, X, Crown, ShieldCheck, Loader2, KeyRound } from "lucide-react";
+import { ApiError } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 
@@ -108,7 +109,20 @@ function JoinByCodeDialog() {
         toast({ title: `Welcome to ${data.name}!` });
         navigate(`/study-groups/${data.id}`);
       },
-      onError: () => toast({ title: "Couldn't join group", variant: "destructive" }),
+      onError: (err) => {
+        const status = err instanceof ApiError ? err.status : null;
+        if (status === 404) {
+          toast({ title: "That code was just used or is invalid", variant: "destructive" });
+          setSubmittedCode(""); // back to the code-entry step
+        } else if (status === 409) {
+          toast({ title: "You're already a member of this group" });
+          queryClient.invalidateQueries({ queryKey: getListStudyGroupsQueryKey() });
+          setOpen(false);
+          reset();
+        } else {
+          toast({ title: "Couldn't join group", variant: "destructive" });
+        }
+      },
     },
   });
 
@@ -145,7 +159,7 @@ function JoinByCodeDialog() {
               className="font-mono tracking-wider text-center"
               autoFocus
             />
-            {isError && <p className="text-xs text-destructive">Invalid or expired group code. Please check the code and try again.</p>}
+            {isError && <p className="text-xs text-destructive">Invalid or already-used invite code. Please check the code and try again.</p>}
             <Button className="w-full" disabled={!code.trim() || isChecking} onClick={handleCheck}>
               {isChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join Group"}
             </Button>

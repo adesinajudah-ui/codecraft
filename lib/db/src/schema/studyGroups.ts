@@ -19,6 +19,18 @@ export const studyGroupsTable = pgTable("study_groups", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+// A single-use invite code: an owner/admin generates one, shares it with exactly
+// one prospective member, and it becomes permanently unusable once redeemed.
+export const studyGroupInviteCodesTable = pgTable("study_group_invite_codes", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  code: text("code").notNull().unique(),
+  createdBy: text("created_by").notNull(),
+  usedByUserId: text("used_by_user_id"),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 // role: "owner" | "admin" | "member"
 // status: "pending" | "accepted" | "declined"
 export const studyGroupMembersTable = pgTable("study_group_members", {
@@ -71,6 +83,10 @@ export const studyGroupNotificationsTable = pgTable("study_group_notifications",
 export const insertStudyGroupSchema = createInsertSchema(studyGroupsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertStudyGroup = z.infer<typeof insertStudyGroupSchema>;
 export type StudyGroup = typeof studyGroupsTable.$inferSelect;
+
+export const insertStudyGroupInviteCodeSchema = createInsertSchema(studyGroupInviteCodesTable).omit({ id: true, createdAt: true, usedAt: true, usedByUserId: true });
+export type InsertStudyGroupInviteCode = z.infer<typeof insertStudyGroupInviteCodeSchema>;
+export type StudyGroupInviteCode = typeof studyGroupInviteCodesTable.$inferSelect;
 
 export const insertStudyGroupMemberSchema = createInsertSchema(studyGroupMembersTable).omit({ id: true, createdAt: true, respondedAt: true });
 export type InsertStudyGroupMember = z.infer<typeof insertStudyGroupMemberSchema>;

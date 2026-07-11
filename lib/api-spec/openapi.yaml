@@ -709,11 +709,34 @@ paths:
         "403":
           description: Owner only
 
+  /study-groups/{groupId}/invite-codes:
+    post:
+      operationId: generateInviteCode
+      tags: [studyGroups]
+      summary: Generate a new single-use invite code for this group (owner/admin only)
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Newly generated invite code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InviteCodeOut"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Owner/admin only
+
   /study-groups/join/{code}:
     get:
       operationId: previewGroupByCode
       tags: [studyGroups]
-      summary: Preview a study group by its join code before joining
+      summary: Preview a study group by an unused invite code before joining
       parameters:
         - in: path
           name: code
@@ -730,11 +753,11 @@ paths:
         "401":
           description: Unauthorized
         "404":
-          description: Invalid or expired group code
+          description: Invalid or already-used invite code
     post:
       operationId: joinGroupByCode
       tags: [studyGroups]
-      summary: Join a study group immediately using a join code
+      summary: Join a study group immediately by redeeming a single-use invite code
       parameters:
         - in: path
           name: code
@@ -751,61 +774,9 @@ paths:
         "401":
           description: Unauthorized
         "404":
-          description: Invalid or expired group code
+          description: Invalid or already-used invite code
         "409":
           description: Already a member
-
-  /study-groups/{groupId}/join-code/regenerate:
-    patch:
-      operationId: regenerateJoinCode
-      tags: [studyGroups]
-      summary: Generate a new join code, invalidating the previous one (owner only)
-      parameters:
-        - in: path
-          name: groupId
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Updated study group
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StudyGroupSummary"
-        "401":
-          description: Unauthorized
-        "403":
-          description: Owner only
-
-  /study-groups/{groupId}/join-code/toggle:
-    patch:
-      operationId: toggleJoinCode
-      tags: [studyGroups]
-      summary: Enable or disable joining this group by code (owner only)
-      parameters:
-        - in: path
-          name: groupId
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ToggleJoinCodeInput"
-      responses:
-        "200":
-          description: Updated study group
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StudyGroupSummary"
-        "401":
-          description: Unauthorized
-        "403":
-          description: Owner only
 
   /study-groups/{groupId}/invites:
     post:
@@ -1584,15 +1555,6 @@ components:
         myRole:
           type: string
           enum: [owner, admin, member]
-        joinCode:
-          description: Only present for the owner/admin
-          type: ["string", "null"]
-        joinCodeEnabled:
-          description: Only present for the owner/admin
-          type: ["boolean", "null"]
-        joinCodeUses:
-          description: Only present for the owner/admin
-          type: ["integer", "null"]
         createdAt:
           type: string
       required:
@@ -1629,13 +1591,13 @@ components:
         - memberCount
         - alreadyMember
 
-    ToggleJoinCodeInput:
+    InviteCodeOut:
       type: object
       properties:
-        enabled:
-          type: boolean
+        code:
+          type: string
       required:
-        - enabled
+        - code
 
     StudyGroupDetail:
       allOf:
@@ -1856,7 +1818,7 @@ components:
           type: integer
         type:
           type: string
-          enum: [group_invite, invite_accepted, invite_declined, mention, member_removed, role_changed]
+          enum: [group_invite, invite_accepted, invite_declined, joined_via_code, mention, member_removed, role_changed]
         groupId:
           type: integer
         groupName:

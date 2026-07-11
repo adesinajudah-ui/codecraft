@@ -6,13 +6,34 @@ import {
   studyGroupMessagesTable,
   studyGroupMessageReactionsTable,
   studyGroupNotificationsTable,
+  studyGroupInviteCodesTable,
   userStatsTable,
   type MessageAttachment,
 } from "@workspace/db";
-import { eq, and, inArray, desc, lt, sql } from "drizzle-orm";
+import { eq, and, inArray, desc, lt, sql, isNull } from "drizzle-orm";
 import { requireAuth, getAuth } from "@clerk/express";
+import crypto from "node:crypto";
 
 const router = Router();
+
+// ── Invite codes ────────────────────────────────────────────────────────────
+
+// Avoid ambiguous characters (0/O, 1/I/L) so codes are easy to read and type.
+const INVITE_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+function randomInviteCode(): string {
+  const chars = Array.from({ length: 8 }, () => INVITE_CODE_ALPHABET[crypto.randomInt(INVITE_CODE_ALPHABET.length)]);
+  return `${chars.slice(0, 4).join("")}-${chars.slice(4).join("")}`;
+}
+
+async function generateUniqueInviteCode(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = randomInviteCode();
+    const existing = await db.select({ id: studyGroupInviteCodesTable.id }).from(studyGroupInviteCodesTable).where(eq(studyGroupInviteCodesTable.code, code)).limit(1);
+    if (existing.length === 0) return code;
+  }
+  throw new Error("Could not generate a unique invite code");
+}
 
 // ── Real-time (SSE) infrastructure — mirrors the pattern used for quiz sessions ──
 
@@ -457,9 +478,140 @@ router.delete("/:groupId", requireAuth(), async (req, res) => {
   await db.delete(studyGroupMessagesTable).where(eq(studyGroupMessagesTable.groupId, groupId));
   await db.delete(studyGroupMembersTable).where(eq(studyGroupMembersTable.groupId, groupId));
   await db.delete(studyGroupNotificationsTable).where(eq(studyGroupNotificationsTable.groupId, groupId));
+  await db.delete(studyGroupInviteCodesTable).where(eq(studyGroupInviteCodesTable.groupId, groupId));
   await db.delete(studyGroupsTable).where(eq(studyGroupsTable.id, groupId));
 
   res.json({ ok: true });
+});
+
+// ── Invite codes ──────────────────────────────────────────────────────────────
+
+// POST /study-groups/:groupId/invite-codes — generate a fresh single-use code (owner/admin only)
+router.post("/:groupId/invite-codes", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  const groupId = parseInt(String(req.params.groupId));
+  if (!userId || isNaN(groupId)) { res.status(400).json({ error: "Invalid request" }); return; }
+
+  const membership = await requireAcceptedMember(groupId, userId);
+  if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
+    res.status(403).json({ error: "Owner/admin only" });
+    return;
+  }
+
+  const code = await generateUniqueInviteCode();
+  await db.insert(studyGroupInviteCodesTable).values({ groupId, code, createdBy: userId });
+
+  res.json({ code });
+});
+
+// GET /study-groups/join/:code — preview a group before joining. Any logged-in user.
+router.get("/join/:code", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  const code = String(req.params.code).trim().toUpperCase();
+  if (!userId || !code) { res.status(400).json({ error: "Invalid request" }); return; }
+
+  const inviteRows = await db
+    .select()
+    .from(studyGroupInviteCodesTable)
+    .where(and(eq(studyGroupInviteCodesTable.code, code), isNull(studyGroupInviteCodesTable.usedByUserId)))
+    .limit(1);
+  const invite = inviteRows[0];
+  if (!invite) {
+    res.status(404).json({ error: "Invalid or already-used invite code. Please check the code and try again." });
+    return;
+  }
+
+  const groupRows = await db.select().from(studyGroupsTable).where(eq(studyGroupsTable.id, invite.groupId)).limit(1);
+  const group = groupRows[0];
+  if (!group) {
+    res.status(404).json({ error: "Invalid or already-used invite code. Please check the code and try again." });
+    return;
+  }
+
+  const existing = await getMembership(group.id, userId);
+  const members = await db
+    .select()
+    .from(studyGroupMembersTable)
+    .where(and(eq(studyGroupMembersTable.groupId, group.id), eq(studyGroupMembersTable.status, "accepted")));
+  const [owner] = await db.select().from(userStatsTable).where(eq(userStatsTable.userId, group.ownerId)).limit(1);
+
+  res.json({
+    id: group.id,
+    name: group.name,
+    description: group.description,
+    avatarObjectPath: group.avatarObjectPath,
+    ownerId: group.ownerId,
+    ownerUsername: owner?.username ?? null,
+    memberCount: members.length,
+    alreadyMember: !!existing && existing.status === "accepted",
+  });
+});
+
+// POST /study-groups/join/:code — redeem a single-use invite code and join immediately.
+router.post("/join/:code", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  const code = String(req.params.code).trim().toUpperCase();
+  if (!userId || !code) { res.status(400).json({ error: "Invalid request" }); return; }
+
+  const inviteRows = await db
+    .select()
+    .from(studyGroupInviteCodesTable)
+    .where(and(eq(studyGroupInviteCodesTable.code, code), isNull(studyGroupInviteCodesTable.usedByUserId)))
+    .limit(1);
+  const invite = inviteRows[0];
+  if (!invite) {
+    res.status(404).json({ error: "Invalid or already-used invite code. Please check the code and try again." });
+    return;
+  }
+
+  const groupRows = await db.select().from(studyGroupsTable).where(eq(studyGroupsTable.id, invite.groupId)).limit(1);
+  const group = groupRows[0];
+  if (!group) {
+    res.status(404).json({ error: "Invalid or already-used invite code. Please check the code and try again." });
+    return;
+  }
+
+  // Check membership *before* burning the code — an already-member (or a direct
+  // re-post of a successful join) must not consume a code that could otherwise
+  // still be shared with someone else.
+  const existing = await getMembership(group.id, userId);
+  if (existing && existing.status === "accepted") {
+    res.status(409).json({ error: "You're already a member of this group" });
+    return;
+  }
+
+  // Claim the code and upsert membership atomically in one transaction: the
+  // claim only succeeds if the code is still unused (guards concurrent
+  // redemption), and if the membership write fails, the claim rolls back too
+  // so the code is not burned without a completed join.
+  const joined = await db.transaction(async (tx) => {
+    const claimed = await tx
+      .update(studyGroupInviteCodesTable)
+      .set({ usedByUserId: userId, usedAt: new Date() })
+      .where(and(eq(studyGroupInviteCodesTable.id, invite.id), isNull(studyGroupInviteCodesTable.usedByUserId)))
+      .returning();
+    if (claimed.length === 0) return false;
+
+    if (existing) {
+      await tx
+        .update(studyGroupMembersTable)
+        .set({ status: "accepted", role: existing.role === "owner" ? existing.role : "member", respondedAt: new Date() })
+        .where(eq(studyGroupMembersTable.id, existing.id));
+    } else {
+      await tx.insert(studyGroupMembersTable).values({ groupId: group.id, userId, role: "member", status: "accepted", invitedBy: invite.createdBy, respondedAt: new Date() });
+    }
+    return true;
+  });
+
+  if (!joined) {
+    res.status(404).json({ error: "Invalid or already-used invite code. Please check the code and try again." });
+    return;
+  }
+
+  await notify(group.ownerId, "joined_via_code", group.id, userId);
+  broadcast(group.id, "group_updated", { groupId: group.id });
+
+  res.json(await serializeGroupSummary(group, "member"));
 });
 
 // ── Members ───────────────────────────────────────────────────────────────────
