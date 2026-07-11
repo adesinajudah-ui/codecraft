@@ -554,7 +554,11 @@ export default function StudyGroupDetail() {
   const { mutate: sendMessage, isPending: sending } = useCreateStudyGroupMessage({
     mutation: {
       onSuccess: (data) => {
-        queryClient.setQueryData(messagesKey, (old: StudyGroupMessageOut[] | undefined) => (old ? [...old, data] : [data]));
+        queryClient.setQueryData(messagesKey, (old: StudyGroupMessageOut[] | undefined) => {
+          if (!old) return [data];
+          if (old.some((m) => m.id === data.id)) return old;
+          return [...old, data];
+        });
         setInput("");
         setReplyTo(null);
         setPendingAttachment(null);
