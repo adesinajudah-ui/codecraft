@@ -6,7 +6,9 @@ import {
   useJoinQuizSession,
   useStartQuizSession,
   useSubmitSessionAnswer,
+  useGetQuizByCourse,
   getGetQuizSessionQueryKey,
+  getGetQuizByCourseQueryKey,
 } from "@workspace/api-client-react";
 
 // ── Local question type (matches competition_questions row) ───────────────────
@@ -689,7 +691,7 @@ export default function MultiplayerQuiz() {
               <CardTitle className="text-lg leading-snug">{currentQ?.question}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {currentQ?.options.map((opt, idx) => (
+              {currentQ?.options.map((opt: string, idx: number) => (
                 <Button
                   key={idx}
                   variant="outline"

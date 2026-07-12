@@ -111,7 +111,9 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
   const { data: courses, isLoading: coursesLoading } = useListCoursesByLanguage(slug, {
     query: { enabled: open, queryKey: ["courses-by-language", slug] },
   });
-  const { data: balanceData } = useGetWalletBalance({ query: { enabled: open } });
+  const { data: balanceData } = useGetWalletBalance({
+    query: { enabled: open, queryKey: getGetWalletBalanceQueryKey() },
+  });
 
   const courseId = courses?.[0]?.id;
   const coinBalance = balanceData?.coinBalance ?? 0;
