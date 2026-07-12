@@ -78,7 +78,7 @@ router.get(
         return;
       }
 
-      const response = await objectStorageService.downloadObject(file);
+      const response = await objectStorageService.downloadObject(file, 3600, req.headers.range);
 
       res.status(response.status);
       response.headers.forEach((value, key) => res.setHeader(key, value));
@@ -121,7 +121,7 @@ router.get('/storage/objects/*path', async (req: Request, res: Response) => {
 
     // Any signed-in user may view group avatars/attachments they have a link
     // to; fine-grained per-group ACL is out of scope for this feature.
-    const response = await objectStorageService.downloadObject(objectFile);
+    const response = await objectStorageService.downloadObject(objectFile, 3600, req.headers.range);
 
     res.status(response.status);
     response.headers.forEach((value, key) => res.setHeader(key, value));

@@ -91,19 +91,60 @@ export class ObjectStorageService {
   async downloadObject(
     file: File,
     cacheTtlSec: number = 3600,
+    rangeHeader?: string,
   ): Promise<Response> {
     const [metadata] = await file.getMetadata();
     const aclPolicy = await getObjectAclPolicy(file);
     const isPublic = aclPolicy?.visibility === 'public';
+    const totalSize = Number(metadata.size) || 0;
 
-    const nodeStream = file.createReadStream();
-    const webStream = Readable.toWeb(nodeStream) as ReadableStream;
-
-    const headers: Record<string, string> = {
+    const baseHeaders: Record<string, string> = {
       'Content-Type':
         (metadata.contentType as string) || 'application/octet-stream',
       'Cache-Control': `${isPublic ? 'public' : 'private'}, max-age=${cacheTtlSec}`,
+      // Audio/video elements (esp. on mobile browsers) require byte-range
+      // support to play at all, not just to seek.
+      'Accept-Ranges': 'bytes',
     };
+
+    // Parse a "bytes=start-end" range header and serve a 206 Partial Content
+    // response when present and valid.
+    const match = totalSize > 0 ? rangeHeader?.match(/^bytes=(\d*)-(\d*)$/) : null;
+    if (match) {
+      const startStr = match[1];
+      const endStr = match[2];
+      let start = startStr ? parseInt(startStr, 10) : 0;
+      let end = endStr ? parseInt(endStr, 10) : totalSize - 1;
+      if (!startStr && endStr) {
+        // Suffix range like "bytes=-500" means the last 500 bytes.
+        start = Math.max(0, totalSize - parseInt(endStr, 10));
+        end = totalSize - 1;
+      }
+      end = Math.min(end, totalSize - 1);
+
+      if (!isNaN(start) && !isNaN(end) && start <= end && start < totalSize) {
+        const nodeStream = file.createReadStream({ start, end });
+        const webStream = Readable.toWeb(nodeStream) as ReadableStream;
+        return new Response(webStream, {
+          status: 206,
+          headers: {
+            ...baseHeaders,
+            'Content-Range': `bytes ${start}-${end}/${totalSize}`,
+            'Content-Length': String(end - start + 1),
+          },
+        });
+      }
+
+      // Unsatisfiable range.
+      return new Response(null, {
+        status: 416,
+        headers: { ...baseHeaders, 'Content-Range': `bytes */${totalSize}` },
+      });
+    }
+
+    const nodeStream = file.createReadStream();
+    const webStream = Readable.toWeb(nodeStream) as ReadableStream;
+    const headers = { ...baseHeaders };
     if (metadata.size) {
       headers['Content-Length'] = String(metadata.size);
     }
