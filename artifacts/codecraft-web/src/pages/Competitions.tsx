@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Swords, Plus, Users, Trophy, Zap, Star, Copy, Check, Crown, Play, Loader2, Coins, XCircle } from "lucide-react";
+import { Swords, Plus, Users, Trophy, Zap, Star, Copy, Check, Crown, Play, Loader2, Coins, XCircle, Settings2, HelpCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useListCoursesByLanguage, useGetWalletBalance, getGetWalletBalanceQueryKey } from "@workspace/api-client-react";
@@ -77,6 +77,7 @@ function RoomCard({ room }: { room: typeof activeRooms[0] }) {
   );
 }
 
+// ── Language → slug mapping ───────────────────────────────────────────────────
 const LANGUAGE_SLUGS: Record<string, string> = {
   HTML: "html",
   CSS: "css",
@@ -86,10 +87,22 @@ const LANGUAGE_SLUGS: Record<string, string> = {
   C: "c",
 };
 
+const QUESTION_COUNT_OPTIONS = [10, 20, 30, 40, 60, 80, 100] as const;
+type QuestionCount = typeof QUESTION_COUNT_OPTIONS[number];
+
+const DIFFICULTY_OPTIONS: { value: string; label: string; description: string }[] = [
+  { value: "mixed", label: "Mixed", description: "All difficulty levels" },
+  { value: "easy", label: "Easy", description: "Beginner-friendly" },
+  { value: "medium", label: "Medium", description: "Intermediate" },
+  { value: "hard", label: "Hard", description: "Expert level" },
+];
+
 const COMPETITION_COST = 5;
 
 function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [language, setLanguage] = useState("JavaScript");
+  const [difficulty, setDifficulty] = useState("mixed");
+  const [questionCount, setQuestionCount] = useState<QuestionCount>(20);
   const [charging, setCharging] = useState(false);
   const [chargeError, setChargeError] = useState<string | null>(null);
   const [, navigate] = useLocation();
@@ -103,6 +116,13 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
   const courseId = courses?.[0]?.id;
   const coinBalance = balanceData?.coinBalance ?? 0;
   const hasEnoughCoins = coinBalance >= COMPETITION_COST;
+
+  const reset = () => {
+    setChargeError(null);
+    setLanguage("JavaScript");
+    setDifficulty("mixed");
+    setQuestionCount(20);
+  };
 
   const handleStart = async () => {
     if (!courseId) return;
@@ -127,13 +147,14 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
         return;
       }
 
-      // Immediately reflect the deducted balance in the UI — no refetch delay.
       if (typeof body.coinBalance === "number") {
         queryClient.setQueryData(getGetWalletBalanceQueryKey(), { coinBalance: body.coinBalance });
       }
 
       onClose();
-      navigate(`/quiz/${courseId}/multiplayer`);
+      reset();
+      // Pass settings as URL search params — MultiplayerQuiz.tsx reads them
+      navigate(`/quiz/${courseId}/multiplayer?lang=${slug}&count=${questionCount}&difficulty=${difficulty}`);
     } catch {
       setChargeError("Connection error. Please try again.");
     } finally {
@@ -143,17 +164,18 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { setChargeError(null); onClose(); } }}>
-      <DialogContent className="max-w-[90vw] rounded-2xl">
+      <DialogContent className="max-w-[92vw] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Swords className="w-5 h-5 text-primary" />
-            Start a Competition
+            <Settings2 className="w-5 h-5 text-primary" />
+            Competition Settings
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Pick a language — you'll get a room code to share with your opponent.
+            Configure your competition — then share the room code with opponents.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-1">
+
           {/* Coin cost banner */}
           <div className={cn(
             "flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium",
@@ -166,12 +188,13 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
               Host fee: <strong>{COMPETITION_COST} coins</strong>
             </span>
             <span className="font-mono">
-              Your balance: <strong>{coinBalance}</strong>
+              Balance: <strong>{coinBalance}</strong>
             </span>
           </div>
 
+          {/* Course */}
           <div className="space-y-1">
-            <label className="text-xs font-medium">Language</label>
+            <label className="text-xs font-medium">Course</label>
             <Select value={language} onValueChange={(v) => { setLanguage(v); setChargeError(null); }}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -180,6 +203,57 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Difficulty */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium flex items-center gap-1">
+              Difficulty
+              <HelpCircle className="w-3 h-3 text-muted-foreground" />
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {DIFFICULTY_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDifficulty(opt.value)}
+                  className={cn(
+                    "flex flex-col items-start px-3 py-2 rounded-lg border text-left transition-all text-xs",
+                    difficulty === opt.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card hover:border-primary/40"
+                  )}
+                >
+                  <span className="font-semibold">{opt.label}</span>
+                  <span className={cn("text-[10px]", difficulty === opt.value ? "text-primary/70" : "text-muted-foreground")}>
+                    {opt.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Question count */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Number of Questions</label>
+            <div className="flex flex-wrap gap-1.5">
+              {QUESTION_COUNT_OPTIONS.map(n => (
+                <button
+                  key={n}
+                  onClick={() => setQuestionCount(n)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg border text-xs font-mono font-semibold transition-all",
+                    questionCount === n
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border hover:border-primary/40"
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Questions are randomly shuffled from our {language} bank of 100 unique questions.
+            </p>
           </div>
 
           {chargeError && (
@@ -213,7 +287,7 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
               ) : (
                 <Play className="w-4 h-4" />
               )}
-              {hasEnoughCoins ? "Start Competition" : "Insufficient Coins"}
+              {hasEnoughCoins ? `Start (${questionCount} Qs)` : "Insufficient Coins"}
             </Button>
           </div>
         </div>
@@ -227,7 +301,6 @@ function JoinRoomDialog({ open, onClose }: { open: boolean; onClose: () => void 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [, navigate] = useLocation();
-  const { toast } = useToast();
 
   const handleJoin = async () => {
     const trimmed = code.trim().toUpperCase();
@@ -241,9 +314,10 @@ function JoinRoomDialog({ open, onClose }: { open: boolean; onClose: () => void 
         setError("Room not found. Check the code and try again.");
         return;
       }
-      const { courseId } = await res.json() as { courseId: number; quizId: number };
+      const { courseId, languageSlug } = await res.json() as { courseId: number | null; quizId: number | null; languageSlug?: string };
       onClose();
-      navigate(`/quiz/${courseId}/multiplayer?join=${trimmed}`);
+      // For competition sessions, courseId may be null — use languageSlug to find a course
+      navigate(`/quiz/${courseId ?? 1}/multiplayer?join=${trimmed}`);
     } catch {
       setError("Connection error. Please try again.");
     } finally {

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, jsonb, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -42,14 +42,38 @@ export const quizAttemptsTable = pgTable("quiz_attempts", {
   completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow(),
 });
 
+// ── Competition question bank ─────────────────────────────────────────────────
+// 100 questions per course × 6 courses = 600 total.
+// Scalable to 500 / 1 000+ without changing competition logic — just add rows.
+export const competitionQuestionsTable = pgTable("competition_questions", {
+  id: serial("id").primaryKey(),
+  languageSlug: text("language_slug").notNull(), // 'html'|'css'|'javascript'|'python'|'java'|'c'
+  question: text("question").notNull(),
+  options: jsonb("options").notNull().$type<string[]>(),
+  correctIndex: integer("correct_index").notNull(),
+  difficulty: text("difficulty").notNull(), // 'easy'|'medium'|'hard'
+  questionNumber: integer("question_number").notNull().default(0),
+});
+
+export const insertCompetitionQuestionSchema = createInsertSchema(competitionQuestionsTable).omit({ id: true });
+export type InsertCompetitionQuestion = z.infer<typeof insertCompetitionQuestionSchema>;
+export type CompetitionQuestion = typeof competitionQuestionsTable.$inferSelect;
+
 export const quizSessionsTable = pgTable("quiz_sessions", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
-  quizId: integer("quiz_id").notNull(),
+  quizId: integer("quiz_id"),           // nullable — old solo-quiz sessions only
+  languageSlug: text("language_slug").notNull().default(""),
   status: text("status").notNull().default("waiting"),
   hostUserId: text("host_user_id").notNull(),
   participants: jsonb("participants").notNull().$type<SessionParticipant[]>().default([]),
   currentQuestion: integer("current_question"),
+  // Competition settings chosen by the host:
+  questionCount: integer("question_count").notNull().default(20),
+  difficulty: text("difficulty").notNull().default("mixed"), // 'easy'|'medium'|'hard'|'mixed'
+  // Pre-shuffled list of competition_question IDs in play order.
+  // Generated once on create; never reshuffled after players join.
+  questionOrder: jsonb("question_order").notNull().$type<number[]>().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 

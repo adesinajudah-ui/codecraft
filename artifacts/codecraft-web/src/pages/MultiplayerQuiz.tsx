@@ -7,9 +7,16 @@ import {
   useStartQuizSession,
   useSubmitSessionAnswer,
   getGetQuizSessionQueryKey,
-  useGetQuizByCourse,
-  getGetQuizByCourseQueryKey,
 } from "@workspace/api-client-react";
+
+// ── Local question type (matches competition_questions row) ───────────────────
+type LocalQuestion = {
+  id: number;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  difficulty: string;
+};
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

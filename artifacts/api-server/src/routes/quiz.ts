@@ -5,13 +5,24 @@ import {
   quizQuestionsTable,
   quizAttemptsTable,
   quizSessionsTable,
+  competitionQuestionsTable,
   userStatsTable,
   contentUnlocksTable,
   type SessionParticipant,
 } from "@workspace/db";
-import { eq, sql, desc, asc, and } from "drizzle-orm";
+import { eq, sql, desc, asc, and, inArray } from "drizzle-orm";
 import { requireAuth, getAuth } from "@clerk/express";
 import crypto from "crypto";
+
+/** Fisher-Yates shuffle — returns a new shuffled array, never mutates input */
+function shuffleArray<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
 
 const router = Router();
 
@@ -184,16 +195,57 @@ router.post("/attempts", requireAuth(), async (req, res) => {
 
 // ── Multiplayer sessions ──────────────────────────────────────────────────────
 
-// POST /quiz/sessions — create a session
+// POST /quiz/sessions — create a competition session
+// Body: { languageSlug, questionCount?, difficulty?, displayName? }
 router.post("/sessions", requireAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
-  const { quizId, displayName } = req.body as { quizId: number; displayName?: string };
+  const {
+    languageSlug,
+    questionCount = 20,
+    difficulty = "mixed",
+    displayName,
+  } = req.body as {
+    languageSlug: string;
+    questionCount?: number;
+    difficulty?: string;
+    displayName?: string;
+  };
+
+  if (!languageSlug) {
+    res.status(400).json({ error: "languageSlug is required" });
+    return;
+  }
+
+  // ── Fetch the competition question pool ──────────────────────────────────
+  const conditions = difficulty === "mixed"
+    ? eq(competitionQuestionsTable.languageSlug, languageSlug)
+    : and(
+        eq(competitionQuestionsTable.languageSlug, languageSlug),
+        eq(competitionQuestionsTable.difficulty, difficulty),
+      );
+
+  const pool = await db
+    .select()
+    .from(competitionQuestionsTable)
+    .where(conditions);
+
+  if (pool.length === 0) {
+    res.status(404).json({ error: `No questions found for language '${languageSlug}' with difficulty '${difficulty}'` });
+    return;
+  }
+
+  // ── Fisher-Yates shuffle → take first questionCount IDs ─────────────────
+  const shuffled = shuffleArray(pool);
+  const selected = shuffled.slice(0, Math.min(questionCount, shuffled.length));
+  const questionOrder = selected.map((q) => q.id);
+  const actualCount = selected.length;
+
+  // ── Create session ───────────────────────────────────────────────────────
   const hostName = displayName?.trim() || "Host";
   const code = crypto.randomBytes(3).toString("hex").toUpperCase();
 
-  // Look up host's existing XP
   const stats = await db.select().from(userStatsTable).where(eq(userStatsTable.userId, userId)).limit(1);
   const totalXp = stats[0]?.xp ?? 0;
 
@@ -201,10 +253,13 @@ router.post("/sessions", requireAuth(), async (req, res) => {
     .insert(quizSessionsTable)
     .values({
       code,
-      quizId,
+      languageSlug,
       status: "waiting",
       hostUserId: userId,
       currentQuestion: 0,
+      questionCount: actualCount,
+      difficulty,
+      questionOrder,
       participants: [makeParticipant(userId, hostName, totalXp)],
     })
     .returning();
@@ -220,17 +275,38 @@ router.get("/sessions/:code", async (req, res) => {
   res.json(serializeSession(session[0]));
 });
 
-// GET /quiz/sessions/:code/meta — lightweight: returns courseId so clients can redirect before joining
+// GET /quiz/sessions/:code/meta — lightweight metadata for redirect/join
 router.get("/sessions/:code/meta", async (req, res) => {
   const code = String(req.params.code).toUpperCase();
-  const rows = await db
-    .select({ quizId: quizSessionsTable.quizId, courseId: quizzesTable.courseId })
+  const sessions = await db
+    .select()
     .from(quizSessionsTable)
-    .innerJoin(quizzesTable, eq(quizSessionsTable.quizId, quizzesTable.id))
     .where(eq(quizSessionsTable.code, code))
     .limit(1);
-  if (!rows[0]) { res.status(404).json({ error: "Session not found" }); return; }
-  res.json({ quizId: rows[0].quizId, courseId: rows[0].courseId });
+  if (!sessions[0]) { res.status(404).json({ error: "Session not found" }); return; }
+  const s = sessions[0];
+  res.json({ quizId: s.quizId ?? null, languageSlug: s.languageSlug, courseId: null });
+});
+
+// GET /quiz/sessions/:code/questions — returns the ordered competition question list for a session
+router.get("/sessions/:code/questions", async (req, res) => {
+  const code = String(req.params.code).toUpperCase();
+  const sessions = await db
+    .select()
+    .from(quizSessionsTable)
+    .where(eq(quizSessionsTable.code, code))
+    .limit(1);
+  if (!sessions[0]) { res.status(404).json({ error: "Session not found" }); return; }
+  const session = sessions[0];
+  const order = session.questionOrder as number[];
+  if (!order || order.length === 0) { res.json([]); return; }
+  const questions = await db
+    .select()
+    .from(competitionQuestionsTable)
+    .where(inArray(competitionQuestionsTable.id, order));
+  const qMap = new Map(questions.map((q) => [q.id, q]));
+  const ordered = order.map((id) => qMap.get(id)).filter(Boolean);
+  res.json(ordered);
 });
 
 // POST /quiz/sessions/:code/join
@@ -357,18 +433,42 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
       return { kind: "already_answered", session };
     }
 
-    const questions = await tx
-      .select()
-      .from(quizQuestionsTable)
-      .where(eq(quizQuestionsTable.quizId, session.quizId))
-      .orderBy(asc(quizQuestionsTable.id));
+    // ── Look up current question ─────────────────────────────────────────────
+    // Competition sessions use questionOrder (array of competitionQuestion IDs).
+    // Legacy solo-quiz sessions use quizQuestionsTable + quizId.
+    const questionOrder = session.questionOrder as number[];
+    const isCompetitionSession = Array.isArray(questionOrder) && questionOrder.length > 0;
 
-    const currentQuestion = questions[currentQ];
-    if (!currentQuestion || currentQuestion.id !== questionId) {
-      return { kind: "error", status: 400, message: "Question ID does not match current question" };
+    let correct: boolean;
+    let totalQuestionsCount: number;
+
+    if (isCompetitionSession) {
+      const expectedId = questionOrder[currentQ];
+      if (expectedId === undefined || expectedId !== questionId) {
+        return { kind: "error", status: 400, message: "Question ID does not match current question" };
+      }
+      const compQs = await tx
+        .select()
+        .from(competitionQuestionsTable)
+        .where(eq(competitionQuestionsTable.id, expectedId))
+        .limit(1);
+      if (!compQs[0]) return { kind: "error", status: 400, message: "Question not found" };
+      correct = compQs[0].correctIndex === answerIndex;
+      totalQuestionsCount = questionOrder.length;
+    } else {
+      // Legacy quiz mode
+      const questions = await tx
+        .select()
+        .from(quizQuestionsTable)
+        .where(eq(quizQuestionsTable.quizId, session.quizId!))
+        .orderBy(asc(quizQuestionsTable.id));
+      const currentQuestion = questions[currentQ];
+      if (!currentQuestion || currentQuestion.id !== questionId) {
+        return { kind: "error", status: 400, message: "Question ID does not match current question" };
+      }
+      correct = currentQuestion.correctIndex === answerIndex;
+      totalQuestionsCount = questions.length;
     }
-
-    const correct = currentQuestion.correctIndex === answerIndex;
 
     const newParticipants: SessionParticipant[] = session.participants.map((p) => {
       if (p.userId !== userId) return p;
@@ -385,7 +485,7 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
 
     const allAnswered = newParticipants.every((p) => p.answeredCount >= currentQ + 1);
     const nextQ = currentQ + 1;
-    const finished = allAnswered && nextQ >= questions.length;
+    const finished = allAnswered && nextQ >= totalQuestionsCount;
 
     const finalParticipants: SessionParticipant[] = finished
       ? newParticipants.map((p) => ({ ...p, isFinished: true }))
@@ -404,7 +504,7 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
     // Award XP when the competition ends
     if (finished) {
       const sorted = [...finalParticipants].sort((a, b) => b.score - a.score);
-      const totalQuestions = questions.length;
+      const totalQuestions = totalQuestionsCount;
       const winnerId = sorted[0]?.userId;
 
       await Promise.all(

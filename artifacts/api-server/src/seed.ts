@@ -7,6 +7,7 @@ import {
   quizQuestionsTable,
 } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import { seedCompetitionQuestions } from "./seedCompetition.js";
 
 export async function seedDatabase() {
   // Check if already seeded
@@ -280,4 +281,7 @@ export async function seedDatabase() {
   console.log(`   Courses: 6`);
   console.log(`   Lessons: HTML(10) + JS(10) + Python(10) + CSS(5) + Java(5) + C(5) = 45`);
   console.log(`   Quizzes: 6 (20 questions each = 120 questions)`);
+
+  // Seed the competition question bank (separate from quiz questions)
+  await seedCompetitionQuestions();
 }

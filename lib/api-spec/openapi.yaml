@@ -330,6 +330,29 @@ paths:
         "404":
           description: Not found
 
+  /quiz/sessions/{code}/questions:
+    get:
+      operationId: getQuizSessionQuestions
+      tags: [quiz]
+      summary: Get the ordered competition questions for a session
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ordered list of questions for this competition
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompetitionQuestion"
+        "404":
+          description: Not found
+
   /quiz/sessions/{code}/answer:
     post:
       operationId: submitSessionAnswer
@@ -1527,18 +1550,49 @@ components:
     QuizSessionInput:
       type: object
       properties:
-        quizId:
+        languageSlug:
+          type: string
+          enum: [html, css, javascript, python, java, c]
+        questionCount:
           type: integer
+          enum: [10, 20, 30, 40, 60, 80, 100]
+          default: 20
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, mixed]
+          default: mixed
         displayName:
           type: string
       required:
-        - quizId
+        - languageSlug
 
     JoinSessionInput:
       type: object
       properties:
         displayName:
           type: string
+
+    CompetitionQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correctIndex:
+          type: integer
+        difficulty:
+          type: string
+      required:
+        - id
+        - question
+        - options
+        - correctIndex
+        - difficulty
 
     QuizSession:
       type: object
@@ -1548,7 +1602,9 @@ components:
         code:
           type: string
         quizId:
-          type: integer
+          type: ["integer", "null"]
+        languageSlug:
+          type: string
         status:
           type: string
           enum: [waiting, active, finished]
@@ -1560,15 +1616,25 @@ components:
             $ref: "#/components/schemas/SessionParticipant"
         currentQuestion:
           type: ["integer", "null"]
+        questionCount:
+          type: integer
+        difficulty:
+          type: string
+        questionOrder:
+          type: array
+          items:
+            type: integer
         createdAt:
           type: string
       required:
         - id
         - code
-        - quizId
         - status
         - hostUserId
         - participants
+        - questionCount
+        - difficulty
+        - questionOrder
         - createdAt
 
     SessionParticipant:
