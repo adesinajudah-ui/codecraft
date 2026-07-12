@@ -25,7 +25,7 @@ Required env (auto-managed by Replit):
 - `DATABASE_URL` — Replit-managed Postgres (postgresql-16 module)
 - `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Replit-managed Clerk
 
-**Setup status (2026-07-12):** Re-imported from GitHub into a fresh environment again. Reinstalled dependencies, pushed the Drizzle schema to the Replit-managed Postgres DB, re-provisioned Replit-managed Clerk (dev keys), and registered/started all 6 artifact workflows. Confirmed the web app and API respond correctly. Fixed a broken build left over from the last commit (`Competitions.tsx`/`MultiplayerQuiz.tsx` had a missing import and a missing React Query `queryKey`). Full `pnpm run typecheck` passes across the workspace. `codecraft-mobile` (Expo) is still unregistered as an artifact and does not run in this environment.
+**Setup status (2026-07-12):** Re-imported from GitHub into a fresh environment. Installed dependencies, provisioned Replit-managed Clerk (dev keys: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`), pushed Drizzle schema to Replit-managed Postgres, and registered/started all 6 artifact workflows. DB seeded with 6 languages, 45 lessons, 120 quiz questions, and 606 competition questions. Web app confirmed loading correctly. `codecraft-mobile` (Expo) is still unregistered as an artifact and does not run in this environment.
 
 ## Stack
 
