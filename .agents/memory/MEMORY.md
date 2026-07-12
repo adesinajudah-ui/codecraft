@@ -8,3 +8,4 @@
 - [orval query key params must match](orval-query-key-params.md) — getXQueryKey(id) vs getXQueryKey(id, {}) are different cache keys; manual cache writes must match the hook's exact call.
 - [object-storage-web Uppy barrel](object-storage-web-uppy-barrel.md) — importing useUpload alone still bundles ObjectUploader's @uppy/react subpath import; strip it from index.ts if unused.
 - [pnpm overrides location](pnpm-overrides-location.md) — put version overrides in pnpm-workspace.yaml's `overrides:`, not a root package.json `pnpm.overrides` block.
+- [Clerk external-vs-managed white screen](clerk-managed-vs-external-white-screen.md) — pk_live key baked with a clerk.<repl>.replit.app domain + missing client proxyUrl = prod white screen; check management status before assuming.

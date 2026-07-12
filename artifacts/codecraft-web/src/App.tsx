@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useUser } from "@clerk/react";
+import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +27,19 @@ import MyCourses from "./pages/MyCourses";
 import StudyGroups from "./pages/StudyGroups";
 import StudyGroupDetail from "./pages/StudyGroupDetail";
 
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
+// same build serves multiple Clerk custom domains. Do not inline the env var, leave
+// publishableKey undefined, or replace publishableKeyFromHost with anything else.
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+
+// REQUIRED — copy verbatim. Empty in dev (Clerk hits dev FAPI directly), auto-set
+// in prod. Do NOT gate on import.meta.env.PROD / NODE_ENV — the empty dev value
+// is intentional, and any branching breaks the prod proxy.
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function stripBase(path: string): string {
@@ -212,6 +225,7 @@ function ClerkProviderWithRoutes() {
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
+      proxyUrl={clerkProxyUrl}
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
