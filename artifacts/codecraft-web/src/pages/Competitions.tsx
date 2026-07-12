@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Swords, Plus, Users, Trophy, Zap, Star, Copy, Check, Crown, Play, Loader2, Coins, XCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { useListCoursesByLanguage, useGetWalletBalance } from "@workspace/api-client-react";
+import { useListCoursesByLanguage, useGetWalletBalance, getGetWalletBalanceQueryKey } from "@workspace/api-client-react";
+import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 
 const activeRooms = [
@@ -124,6 +125,11 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
       if (!res.ok) {
         setChargeError(body.error ?? "Something went wrong. Please try again.");
         return;
+      }
+
+      // Immediately reflect the deducted balance in the UI — no refetch delay.
+      if (typeof body.coinBalance === "number") {
+        queryClient.setQueryData(getGetWalletBalanceQueryKey(), { coinBalance: body.coinBalance });
       }
 
       onClose();
