@@ -1,0 +1,55 @@
+I want to add a real-time group voice chat feature to the CodeCraft Competition mode.
+Objective
+Whenever a quiz competition starts, every participant should be able to communicate through live voice, similar to a WhatsApp group call or Discord voice channel.
+Voice Room
+Every competition automatically creates a unique voice room.
+Only participants who joined that competition can enter the voice room.
+The room should close automatically when the competition ends.
+Host Controls
+The competition host should be able to:
+Start the voice chat.
+End the voice chat.
+Mute or unmute themselves.
+See who is connected.
+Remove disruptive participants from the voice room if necessary.
+Participant Controls
+Each participant should be able to:
+Join the voice chat.
+Leave the voice chat.
+Mute and unmute their microphone.
+See who is currently speaking.
+See a list of connected participants.
+Interface
+Add a voice panel showing:
+Microphone button
+Leave call button
+Connected users
+Speaking indicator
+Call timer
+The voice interface should appear during the competition without covering the quiz.
+Technology
+Implement the voice chat using:
+WebRTC for audio streaming.
+Socket.IO (or another real-time signaling service) for connection setup and room management.
+The connection should automatically reconnect if a user temporarily loses internet access.
+Permissions
+Ask for microphone permission only when the user joins the voice chat.
+If permission is denied, allow the user to continue taking the quiz without joining the call.
+Security
+Only competition participants can join the competition's voice room.
+Users outside the competition must never be able to access the call.
+Validate every user before allowing them into the room.
+Performance
+Optimize for:
+Low latency
+Clear voice quality
+Mobile and desktop compatibility
+Support for at least 10–20 participants in a single competition.
+User Experience
+When the host starts the competition, show:
+"Host has started the voice chat. Join?"
+Buttons:
+Join Voice Chat
+Continue Without Voice
+The voice chat should continue working while users answer quiz questions.
+The implementation must be production-ready, scalable, secure, and reliable.
