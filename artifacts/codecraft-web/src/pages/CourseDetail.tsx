@@ -110,12 +110,6 @@ export default function CourseDetail() {
             Solo Quiz
           </Button>
         </Link>
-        <Link href={`/quiz/${course.id}/multiplayer`} className="flex-1">
-          <Button variant="outline" className="w-full gap-2" size="sm">
-            <PlayCircle className="w-4 h-4" />
-            Multiplayer
-          </Button>
-        </Link>
       </div>
     </div>
   );
