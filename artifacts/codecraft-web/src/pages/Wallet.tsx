@@ -13,12 +13,90 @@ import {
   getVerifyCoinPurchaseQueryKey,
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
-import { Coins, ArrowLeft, History, Loader2, CheckCircle2, XCircle, Sparkles } from "lucide-react";
+import { Coins, ArrowLeft, History, Loader2, CheckCircle2, XCircle, Sparkles, Gift } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function FirstPrizeBanner() {
+  const { toast } = useToast();
+  const [status, setStatus] = useState<"idle" | "loading" | "claimed">("idle");
+  const [hasClaimed, setHasClaimed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch(`${basePath}/api/wallet/claims/first-prize`)
+      .then((r) => r.json())
+      .then((data: { claimed: boolean }) => setHasClaimed(data.claimed))
+      .catch(() => setHasClaimed(false));
+  }, []);
+
+  const handleClaim = async () => {
+    setStatus("loading");
+    try {
+      const res = await fetch(`${basePath}/api/wallet/claims/first-prize`, { method: "POST" });
+      const body = await res.json() as any;
+
+      if (res.status === 409 || body?.error?.includes("already")) {
+        setHasClaimed(true);
+        setStatus("claimed");
+        toast({ title: "Already claimed", description: "You've already collected this reward." });
+        return;
+      }
+      if (!res.ok) {
+        setStatus("idle");
+        toast({ title: "Couldn't claim", description: body?.error ?? "Please try again.", variant: "destructive" });
+        return;
+      }
+
+      setHasClaimed(true);
+      setStatus("claimed");
+      if (typeof body.coinBalance === "number") {
+        queryClient.setQueryData(getGetWalletBalanceQueryKey(), { coinBalance: body.coinBalance });
+      }
+      toast({ title: "🎉 5 coins added!", description: "Your free coins are now in your wallet." });
+    } catch {
+      setStatus("idle");
+      toast({ title: "Connection error", description: "Please try again.", variant: "destructive" });
+    }
+  };
+
+  const claimed = hasClaimed || status === "claimed";
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+      <Card className="border-yellow-500/40 bg-gradient-to-r from-yellow-500/10 via-yellow-400/5 to-transparent">
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+            <Gift className="w-5 h-5 text-yellow-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm">🥇 First Prize — Free Coins</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Claim <strong>5 free coins</strong> once, on us!
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant={claimed ? "outline" : "default"}
+            className={cn("flex-shrink-0 gap-1.5 h-8 text-xs min-w-[80px]", claimed && "text-muted-foreground")}
+            disabled={claimed || status === "loading" || hasClaimed === null}
+            onClick={handleClaim}
+          >
+            {status === "loading" ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : claimed ? (
+              <><CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> Claimed</>
+            ) : (
+              <><Coins className="w-3.5 h-3.5" /> Claim</>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
 
 function VerifyBanner({ reference, onDone }: { reference: string; onDone: () => void }) {
   const { toast } = useToast();
@@ -143,6 +221,8 @@ export default function Wallet() {
           </div>
         </CardContent>
       </Card>
+
+      <FirstPrizeBanner />
 
       {config && !config.paystackConfigured && (
         <Card className="mb-4 border-orange-500/30 bg-orange-500/5">
