@@ -227,6 +227,43 @@ router.get("/paystack/verify/:reference", requireAuth(), async (req, res) => {
   }
 });
 
+const COMPETITION_CREATE_COST = 5;
+
+router.post("/charge-competition-create", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  try {
+    const result = await db.transaction(async (tx) => {
+      const debited = await tx
+        .update(userStatsTable)
+        .set({ coinBalance: sql`${userStatsTable.coinBalance} - ${COMPETITION_CREATE_COST}` })
+        .where(and(
+          eq(userStatsTable.userId, userId),
+          sql`${userStatsTable.coinBalance} >= ${COMPETITION_CREATE_COST}`,
+        ))
+        .returning();
+
+      if (debited.length === 0) {
+        return { insufficientFunds: true, coinBalance: null as number | null };
+      }
+      return { insufficientFunds: false, coinBalance: debited[0].coinBalance };
+    });
+
+    if (result.insufficientFunds) {
+      res.status(402).json({
+        error: `You need at least ${COMPETITION_CREATE_COST} coins to create a competition. Top up your wallet and try again.`,
+      });
+      return;
+    }
+
+    res.json({ success: true, coinBalance: result.coinBalance });
+  } catch (err) {
+    logger.error({ err }, "Failed to charge competition creation fee");
+    res.status(500).json({ error: "Failed to process coin charge" });
+  }
+});
+
 router.post("/unlock", requireAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }

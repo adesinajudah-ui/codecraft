@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useUser } from "@clerk/react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Swords, Plus, Users, Trophy, Zap, Star, Copy, Check, Crown, Play, Loader2 } from "lucide-react";
+import { Swords, Plus, Users, Trophy, Zap, Star, Copy, Check, Crown, Play, Loader2, Coins, XCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { useListCoursesByLanguage } from "@workspace/api-client-react";
+import { useListCoursesByLanguage, useGetWalletBalance } from "@workspace/api-client-react";
+import { cn } from "@/lib/utils";
 
 const activeRooms = [
   { id: "R1", code: "JS-4829", host: "Alex C.", language: "JavaScript", difficulty: "Medium", players: 3, maxPlayers: 8, status: "waiting" },
@@ -84,24 +85,58 @@ const LANGUAGE_SLUGS: Record<string, string> = {
   C: "c",
 };
 
+const COMPETITION_COST = 5;
+
 function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [language, setLanguage] = useState("JavaScript");
+  const [charging, setCharging] = useState(false);
+  const [chargeError, setChargeError] = useState<string | null>(null);
   const [, navigate] = useLocation();
 
   const slug = LANGUAGE_SLUGS[language] ?? "javascript";
   const { data: courses, isLoading: coursesLoading } = useListCoursesByLanguage(slug, {
     query: { enabled: open, queryKey: ["courses-by-language", slug] },
   });
-  const courseId = courses?.[0]?.id;
+  const { data: balanceData } = useGetWalletBalance({ query: { enabled: open } });
 
-  const handleStart = () => {
+  const courseId = courses?.[0]?.id;
+  const coinBalance = balanceData?.coinBalance ?? 0;
+  const hasEnoughCoins = coinBalance >= COMPETITION_COST;
+
+  const handleStart = async () => {
     if (!courseId) return;
-    onClose();
-    navigate(`/quiz/${courseId}/multiplayer`);
+    setCharging(true);
+    setChargeError(null);
+
+    const basePath = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+    try {
+      const res = await fetch(`${basePath}/api/wallet/charge-competition-create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const body = await res.json().catch(() => ({})) as any;
+
+      if (res.status === 402) {
+        setChargeError(body.error ?? "Not enough coins to create a competition.");
+        return;
+      }
+      if (!res.ok) {
+        setChargeError(body.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+
+      onClose();
+      navigate(`/quiz/${courseId}/multiplayer`);
+    } catch {
+      setChargeError("Connection error. Please try again.");
+    } finally {
+      setCharging(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) { setChargeError(null); onClose(); } }}>
       <DialogContent className="max-w-[90vw] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
@@ -113,9 +148,25 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-1">
+          {/* Coin cost banner */}
+          <div className={cn(
+            "flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium",
+            hasEnoughCoins
+              ? "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
+              : "bg-destructive/10 text-destructive",
+          )}>
+            <span className="flex items-center gap-1.5">
+              <Coins className="w-3.5 h-3.5" />
+              Host fee: <strong>{COMPETITION_COST} coins</strong>
+            </span>
+            <span className="font-mono">
+              Your balance: <strong>{coinBalance}</strong>
+            </span>
+          </div>
+
           <div className="space-y-1">
             <label className="text-xs font-medium">Language</label>
-            <Select value={language} onValueChange={setLanguage}>
+            <Select value={language} onValueChange={(v) => { setLanguage(v); setChargeError(null); }}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.keys(LANGUAGE_SLUGS).map(o => (
@@ -124,20 +175,39 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
               </SelectContent>
             </Select>
           </div>
+
+          {chargeError && (
+            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <XCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              <span>{chargeError}</span>
+            </div>
+          )}
+
+          {!hasEnoughCoins && (
+            <p className="text-xs text-center text-muted-foreground">
+              You need {COMPETITION_COST - coinBalance} more coin{COMPETITION_COST - coinBalance !== 1 ? "s" : ""}.{" "}
+              <Link href="/wallet" onClick={onClose} className="underline underline-offset-2 text-primary">
+                Top up your wallet
+              </Link>
+            </p>
+          )}
+
           <div className="flex gap-2 pt-1">
-            <Button variant="outline" className="flex-1" size="sm" onClick={onClose}>Cancel</Button>
+            <Button variant="outline" className="flex-1" size="sm" onClick={() => { setChargeError(null); onClose(); }}>
+              Cancel
+            </Button>
             <Button
               className="flex-1 gap-2"
               size="sm"
-              disabled={!courseId || coursesLoading}
+              disabled={!courseId || coursesLoading || charging || !hasEnoughCoins}
               onClick={handleStart}
             >
-              {coursesLoading ? (
+              {charging || coursesLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Play className="w-4 h-4" />
               )}
-              Start Competition
+              {hasEnoughCoins ? "Start Competition" : "Insufficient Coins"}
             </Button>
           </div>
         </div>
