@@ -142,6 +142,9 @@ export function useVoiceChat({ courseId, sessionCode, selfUserId }: UseVoiceChat
       if (!audioEl) {
         audioEl = new Audio();
         audioEl.autoplay = true;
+        // Must be in the DOM — browsers (Chrome/Safari) block autoplay on
+        // detached Audio elements even when autoplay=true and srcObject is set.
+        document.body.appendChild(audioEl);
         audioElementsRef.current.set(peerUserId, audioEl);
       }
       audioEl.srcObject = event.streams[0] ?? null;

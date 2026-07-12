@@ -7,11 +7,13 @@ import {
   useStartQuizSession,
   useSubmitSessionAnswer,
   useGetQuizByCourse,
+  useGetQuizSessionQuestions,
   useGetVoiceStatus,
   useStartVoiceChat,
   useEndVoiceChat,
   getGetQuizSessionQueryKey,
   getGetQuizByCourseQueryKey,
+  getGetQuizSessionQuestionsQueryKey,
   getGetVoiceStatusQueryKey,
   type QuizSessionInputLanguageSlug,
   type QuizSessionInputQuestionCount,
@@ -189,6 +191,20 @@ export default function MultiplayerQuiz() {
   const { data: voiceStatus } = useGetVoiceStatus(sessionCode, {
     query: { enabled: !!sessionCode, queryKey: voiceStatusQueryKey, refetchInterval: false },
   });
+
+  // Competition sessions use competition questions (competitionQuestionsTable),
+  // NOT the regular quiz questions (quizQuestionsTable). Fetch them once the
+  // session code is known; they're stable for the session's lifetime.
+  const competitionQuestionsQueryKey = getGetQuizSessionQuestionsQueryKey(sessionCode);
+  const { data: competitionQuestions, isLoading: isCompetitionQuestionsLoading } =
+    useGetQuizSessionQuestions(sessionCode, {
+      query: {
+        enabled: !!sessionCode,
+        queryKey: competitionQuestionsQueryKey,
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+      },
+    });
   const voiceChat = useVoiceChat({ courseId: courseId ?? "", sessionCode, selfUserId: user?.id });
 
   const handleStartVoiceChat = () => {
@@ -459,7 +475,8 @@ export default function MultiplayerQuiz() {
   }
 
   // ── Loading ───────────────────────────────────────────────────────────────
-  if (isSessionLoading || !session || !quiz) {
+  const needsCompetitionQuestions = !!sessionCode && (session?.status === "active" || session?.status === "finished");
+  if (isSessionLoading || !session || (needsCompetitionQuestions && (isCompetitionQuestionsLoading || !competitionQuestions))) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -608,7 +625,8 @@ export default function MultiplayerQuiz() {
     const sorted = [...participants].sort((a, b) => b.score - a.score);
     const me = participants.find((p) => p.userId === user?.id);
     const iWon = sorted[0]?.userId === user?.id;
-    const isPerfect = me ? me.correctCount === quiz.questions.length : false;
+    const totalQuestions = competitionQuestions?.length ?? session.questionCount ?? 0;
+    const isPerfect = me ? me.correctCount === totalQuestions : false;
     const correctXp = (me?.correctCount ?? 0) * 10;
     const fastXp = (me?.fastAnswerCount ?? 0) * 5;
     const winBonus = iWon ? 100 : 0;
@@ -693,7 +711,7 @@ export default function MultiplayerQuiz() {
                     </div>
                     <div className="text-right">
                       <div className="font-mono text-2xl font-bold text-primary">{p.score}</div>
-                      <div className="text-xs text-muted-foreground">/{quiz.questions.length}</div>
+                      <div className="text-xs text-muted-foreground">/{totalQuestions}</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
@@ -739,8 +757,11 @@ export default function MultiplayerQuiz() {
   }
 
   // ── Active quiz ────────────────────────────────────────────────────────────
-  const currentQ = quiz.questions[currentQIndex];
-  const totalQ = quiz.questions.length;
+  // Competition sessions use competitionQuestionsTable rows, NOT quizQuestionsTable.
+  // Using quiz.questions here caused wrong questionIds to be sent to the server,
+  // which rejected every answer and answeredCount never incremented.
+  const currentQ = competitionQuestions?.[currentQIndex];
+  const totalQ = competitionQuestions?.length ?? session.questionCount ?? 0;
   const sortedParticipants = [...participants].sort((a, b) => b.score - a.score);
 
   return (
@@ -831,7 +852,7 @@ export default function MultiplayerQuiz() {
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:border-primary hover:bg-primary/5"
                   }`}
-                  onClick={() => handleAnswer(currentQ.id, idx)}
+                  onClick={() => currentQ && handleAnswer(currentQ.id, idx)}
                   disabled={hasAnsweredCurrentQ || submitAnswer.isPending}
                 >
                   <span className="font-mono text-muted-foreground mr-3 w-5 shrink-0">
