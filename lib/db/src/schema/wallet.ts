@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, unique, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -45,6 +45,19 @@ export type WalletTransaction = typeof walletTransactionsTable.$inferSelect;
 export const insertContentUnlockSchema = createInsertSchema(contentUnlocksTable).omit({ id: true, unlockedAt: true });
 export type InsertContentUnlock = z.infer<typeof insertContentUnlockSchema>;
 export type ContentUnlock = typeof contentUnlocksTable.$inferSelect;
+
+// Tracks one-time coin reward claims (e.g. "first_prize" welcome bonus).
+// The unique constraint on (userId, claimType) guarantees each user can
+// only claim each reward type once, even under concurrent requests.
+export const coinClaimsTable = pgTable("coin_claims", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  claimType: text("claim_type").notNull(), // e.g. "first_prize"
+  coinsAwarded: integer("coins_awarded").notNull(),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  userClaimTypeUnique: unique().on(table.userId, table.claimType),
+}));
 
 export const insertCoinAdjustmentSchema = createInsertSchema(coinAdjustmentsTable).omit({ id: true, createdAt: true });
 export type InsertCoinAdjustment = z.infer<typeof insertCoinAdjustmentSchema>;

@@ -4,6 +4,7 @@ import {
   userStatsTable,
   walletTransactionsTable,
   contentUnlocksTable,
+  coinClaimsTable,
   lessonsTable,
   quizzesTable,
 } from "@workspace/db";
@@ -224,6 +225,64 @@ router.get("/paystack/verify/:reference", requireAuth(), async (req, res) => {
     }
     logger.error({ err }, "Failed to verify wallet purchase");
     res.status(500).json({ error: "Failed to verify payment" });
+  }
+});
+
+const FIRST_PRIZE_COINS = 5;
+const FIRST_PRIZE_CLAIM_TYPE = "first_prize";
+
+router.get("/claims/first-prize", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  const existing = await db
+    .select()
+    .from(coinClaimsTable)
+    .where(and(eq(coinClaimsTable.userId, userId), eq(coinClaimsTable.claimType, FIRST_PRIZE_CLAIM_TYPE)))
+    .limit(1);
+
+  res.json({ claimed: !!existing[0], coinsAvailable: FIRST_PRIZE_COINS });
+});
+
+router.post("/claims/first-prize", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  try {
+    const result = await db.transaction(async (tx) => {
+      // Insert the claim record first — the unique constraint prevents double claims.
+      const inserted = await tx
+        .insert(coinClaimsTable)
+        .values({ userId, claimType: FIRST_PRIZE_CLAIM_TYPE, coinsAwarded: FIRST_PRIZE_COINS })
+        .onConflictDoNothing()
+        .returning();
+
+      if (inserted.length === 0) {
+        return { alreadyClaimed: true, coinBalance: null as number | null };
+      }
+
+      // Credit the coins.
+      await tx
+        .insert(userStatsTable)
+        .values({ userId, displayName: "User", email: "", coinBalance: FIRST_PRIZE_COINS })
+        .onConflictDoUpdate({
+          target: userStatsTable.userId,
+          set: { coinBalance: sql`${userStatsTable.coinBalance} + ${FIRST_PRIZE_COINS}` },
+        });
+
+      const [stats] = await tx.select().from(userStatsTable).where(eq(userStatsTable.userId, userId)).limit(1);
+      return { alreadyClaimed: false, coinBalance: stats?.coinBalance ?? FIRST_PRIZE_COINS };
+    });
+
+    if (result.alreadyClaimed) {
+      res.status(409).json({ error: "You have already claimed this prize." });
+      return;
+    }
+
+    res.json({ success: true, coinsAwarded: FIRST_PRIZE_COINS, coinBalance: result.coinBalance });
+  } catch (err) {
+    logger.error({ err }, "Failed to claim first prize");
+    res.status(500).json({ error: "Failed to claim prize. Please try again." });
   }
 });
 
