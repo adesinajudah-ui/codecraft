@@ -63,10 +63,76 @@ import {
   Paperclip,
   Image as ImageIcon,
   FileText,
+  Mic,
+  Play,
+  Pause,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "🎉", "🤔", "🔥"];
+
+function formatDuration(seconds: number) {
+  if (!isFinite(seconds) || seconds < 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function VoicePlayer({ src, isMe }: { src: string; isMe: boolean }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onTime = () => setCurrentTime(audio.currentTime);
+    const onLoaded = () => setDuration(audio.duration || 0);
+    const onEnd = () => { setPlaying(false); setCurrentTime(0); };
+    audio.addEventListener("timeupdate", onTime);
+    audio.addEventListener("loadedmetadata", onLoaded);
+    audio.addEventListener("ended", onEnd);
+    return () => {
+      audio.removeEventListener("timeupdate", onTime);
+      audio.removeEventListener("loadedmetadata", onLoaded);
+      audio.removeEventListener("ended", onEnd);
+    };
+  }, []);
+
+  const toggle = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) audio.pause();
+    else audio.play();
+    setPlaying(!playing);
+  };
+
+  const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+
+  return (
+    <div className="flex items-center gap-2 min-w-[190px] py-0.5">
+      <audio ref={audioRef} src={src} preload="metadata" className="hidden" />
+      <button
+        type="button"
+        onClick={toggle}
+        className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${isMe ? "bg-primary-foreground/20" : "bg-primary/15"}`}
+      >
+        {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+      </button>
+      <div className="flex-1 flex items-center gap-1.5 min-w-0">
+        <Mic className="w-3 h-3 opacity-60 flex-shrink-0" />
+        <div className="flex-1 h-1 rounded-full bg-current/20 overflow-hidden">
+          <div className="h-full bg-current/70" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+      <span className="text-[10px] tabular-nums opacity-70 flex-shrink-0">
+        {formatDuration(currentTime > 0 ? currentTime : duration)}
+      </span>
+    </div>
+  );
+}
 
 function objectUrl(objectPath: string | null | undefined) {
   if (!objectPath) return undefined;
@@ -437,6 +503,8 @@ function MessageBubble({
                       <a key={i} href={objectUrl(a.objectPath)} target="_blank" rel="noreferrer" className="block">
                         <img src={objectUrl(a.objectPath)} alt={a.name} className="max-w-full max-h-56 rounded-lg border border-border/40" />
                       </a>
+                    ) : a.contentType.startsWith("audio/") ? (
+                      <VoicePlayer key={i} src={objectUrl(a.objectPath)!} isMe={isMe} />
                     ) : (
                       <a key={i} href={objectUrl(a.objectPath)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs underline opacity-90">
                         <FileText className="w-3.5 h-3.5 flex-shrink-0" /> {a.name} <span className="opacity-70">({formatFileSize(a.size)})</span>
@@ -506,6 +574,31 @@ export default function StudyGroupDetail() {
     basePath: `${(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}/api/storage`,
     onSuccess: (res) => setPendingAttachment({ objectPath: res.objectPath, name: res.metadata.name, size: res.metadata.size, contentType: res.metadata.contentType }),
     onError: () => toast({ title: "Couldn't upload file", variant: "destructive" }),
+  });
+
+  const { uploadFile: uploadVoiceNote, isUploading: sendingVoiceNote } = useUpload({
+    basePath: `${(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}/api/storage`,
+    onSuccess: (res) => {
+      sendMessage({
+        groupId,
+        data: {
+          content: "",
+          replyToId: replyTo?.id ?? null,
+          mentions: [],
+          attachments: [{ objectPath: res.objectPath, name: res.metadata.name, size: res.metadata.size, contentType: res.metadata.contentType }],
+        },
+      });
+    },
+    onError: () => toast({ title: "Couldn't send voice note", variant: "destructive" }),
+  });
+
+  const voiceRecorder = useVoiceRecorder({
+    onRecorded: (blob) => {
+      const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm";
+      const file = new File([blob], `voice-note-${Date.now()}.${ext}`, { type: blob.type || "audio/webm" });
+      uploadVoiceNote(file);
+    },
+    onError: (err) => toast({ title: err.message, variant: "destructive" }),
   });
 
   const messagesKey = getListStudyGroupMessagesQueryKey(groupId, {});
@@ -702,29 +795,57 @@ export default function StudyGroupDetail() {
             </div>
           )}
 
-          <div className="p-2.5 border-t border-border flex items-end gap-2 flex-shrink-0">
-            <input ref={attachmentInputRef} type="file" className="hidden" onChange={handleAttachmentPick} />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 flex-shrink-0"
-              disabled={uploadingAttachment || !!pendingAttachment}
-              onClick={() => attachmentInputRef.current?.click()}
-              title="Attach a picture or file"
-            >
-              <Paperclip className="w-4 h-4" />
-            </Button>
-            <Textarea
-              value={input}
-              onChange={(e) => { setInput(e.target.value); sendTypingPing(groupId); }}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder="Message... use @username or ```code```"
-              className="min-h-[38px] max-h-24 text-sm resize-none py-2"
-            />
-            <Button size="icon" className="h-9 w-9 flex-shrink-0" disabled={(!input.trim() && !pendingAttachment) || sending || uploadingAttachment} onClick={handleSend}>
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </Button>
-          </div>
+          {voiceRecorder.recording ? (
+            <div className="p-2.5 border-t border-border flex items-center gap-2 flex-shrink-0">
+              <Button size="icon" variant="ghost" className="h-9 w-9 flex-shrink-0 text-destructive" onClick={voiceRecorder.cancel} title="Discard">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+              <div className="flex-1 flex items-center gap-2 px-3 h-9 rounded-full bg-secondary/60">
+                <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">Recording...</span>
+                <span className="text-sm font-medium tabular-nums ml-auto">{formatDuration(voiceRecorder.seconds)}</span>
+              </div>
+              <Button size="icon" className="h-9 w-9 flex-shrink-0" onClick={voiceRecorder.send} title="Send voice note">
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="p-2.5 border-t border-border flex items-end gap-2 flex-shrink-0">
+              <input ref={attachmentInputRef} type="file" className="hidden" onChange={handleAttachmentPick} />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 flex-shrink-0"
+                disabled={uploadingAttachment || !!pendingAttachment || sendingVoiceNote}
+                onClick={() => attachmentInputRef.current?.click()}
+                title="Attach a picture or file"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              <Textarea
+                value={input}
+                onChange={(e) => { setInput(e.target.value); sendTypingPing(groupId); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Message... use @username or ```code```"
+                className="min-h-[38px] max-h-24 text-sm resize-none py-2"
+              />
+              {!input.trim() && !pendingAttachment ? (
+                <Button
+                  size="icon"
+                  className="h-9 w-9 flex-shrink-0"
+                  disabled={sendingVoiceNote || uploadingAttachment}
+                  onClick={voiceRecorder.start}
+                  title="Record a voice note"
+                >
+                  {sendingVoiceNote ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
+                </Button>
+              ) : (
+                <Button size="icon" className="h-9 w-9 flex-shrink-0" disabled={sending || uploadingAttachment} onClick={handleSend}>
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </Button>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="members" className="flex-1 overflow-y-auto p-2 mt-0 space-y-1">
