@@ -10,7 +10,8 @@ import {
 } from "@workspace/db";
 import { COIN_PACKAGES, type CoinPackageId } from "@workspace/db";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { requireAuth, getAuth, clerkClient } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
+import { requireApiAuth } from "../middlewares/requireApiAuth";
 import crypto from "node:crypto";
 import {
   initializeTransaction,
@@ -50,7 +51,7 @@ router.get("/packages", (_req, res) => {
   res.json(COIN_PACKAGES);
 });
 
-router.get("/balance", requireAuth(), async (req, res) => {
+router.get("/balance", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -58,7 +59,7 @@ router.get("/balance", requireAuth(), async (req, res) => {
   res.json({ coinBalance: stats[0]?.coinBalance ?? 0 });
 });
 
-router.get("/transactions", requireAuth(), async (req, res) => {
+router.get("/transactions", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -75,7 +76,7 @@ router.get("/transactions", requireAuth(), async (req, res) => {
   })));
 });
 
-router.get("/unlocked", requireAuth(), async (req, res) => {
+router.get("/unlocked", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -83,7 +84,7 @@ router.get("/unlocked", requireAuth(), async (req, res) => {
   res.json(rows.map((r) => ({ contentType: r.contentType, contentId: r.contentId })));
 });
 
-router.post("/paystack/initialize", requireAuth(), async (req, res) => {
+router.post("/paystack/initialize", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -137,7 +138,7 @@ router.post("/paystack/initialize", requireAuth(), async (req, res) => {
   }
 });
 
-router.get("/paystack/verify/:reference", requireAuth(), async (req, res) => {
+router.get("/paystack/verify/:reference", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -231,7 +232,7 @@ router.get("/paystack/verify/:reference", requireAuth(), async (req, res) => {
 const FIRST_PRIZE_COINS = 5;
 const FIRST_PRIZE_CLAIM_TYPE = "first_prize";
 
-router.get("/claims/first-prize", requireAuth(), async (req, res) => {
+router.get("/claims/first-prize", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -244,7 +245,7 @@ router.get("/claims/first-prize", requireAuth(), async (req, res) => {
   res.json({ claimed: !!existing[0], coinsAvailable: FIRST_PRIZE_COINS });
 });
 
-router.post("/claims/first-prize", requireAuth(), async (req, res) => {
+router.post("/claims/first-prize", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -288,7 +289,7 @@ router.post("/claims/first-prize", requireAuth(), async (req, res) => {
 
 const COMPETITION_CREATE_COST = 5;
 
-router.post("/charge-competition-create", requireAuth(), async (req, res) => {
+router.post("/charge-competition-create", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -323,7 +324,7 @@ router.post("/charge-competition-create", requireAuth(), async (req, res) => {
   }
 });
 
-router.post("/unlock", requireAuth(), async (req, res) => {
+router.post("/unlock", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
