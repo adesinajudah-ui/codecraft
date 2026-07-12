@@ -4,6 +4,7 @@ import {
   useGetQuizSession,
   useCreateQuizSession,
   useJoinQuizSession,
+  useStartQuizSession,
   useSubmitSessionAnswer,
   getGetQuizSessionQueryKey,
   useGetQuizByCourse,
@@ -150,6 +151,7 @@ export default function MultiplayerQuiz() {
 
   const createSession = useCreateQuizSession();
   const joinSession = useJoinQuizSession();
+  const startSession = useStartQuizSession();
   const submitAnswer = useSubmitSessionAnswer();
 
   const sessionQueryKey = getGetQuizSessionQueryKey(sessionCode);
@@ -287,6 +289,19 @@ export default function MultiplayerQuiz() {
     );
   };
 
+  const handleStart = () => {
+    if (!sessionCode) return;
+    startSession.mutate(
+      { code: sessionCode },
+      {
+        onSuccess: (data) => {
+          queryClient.setQueryData(sessionQueryKey, data);
+        },
+        onError: (err) => alert("Failed to start: " + (err as Error).message),
+      }
+    );
+  };
+
   const copyCode = () => {
     navigator.clipboard.writeText(sessionCode);
     setCopied(true);
@@ -301,7 +316,7 @@ export default function MultiplayerQuiz() {
           <div className="text-5xl mb-3">⚔️</div>
           <h1 className="text-3xl font-bold font-mono mb-2">Multiplayer Quiz</h1>
           <p className="text-muted-foreground text-sm">
-            Challenge a friend — quiz starts the moment they join
+            Host a room, share the code, then start when everyone's in
           </p>
         </div>
 
@@ -317,7 +332,7 @@ export default function MultiplayerQuiz() {
             ) : (
               <Crown className="w-5 h-5 text-yellow-400" />
             )}
-            Start Competition
+            Host a Competition
           </Button>
 
           <div className="relative flex items-center gap-3">
@@ -373,7 +388,9 @@ export default function MultiplayerQuiz() {
         <div className="text-4xl mb-4">⚔️</div>
         <h1 className="text-2xl font-bold font-mono mb-1">Room Ready!</h1>
         <p className="text-muted-foreground text-sm mb-6">
-          Share this code — the quiz starts automatically when your opponent joins
+          {isHost
+            ? "Share this code — anyone can join while the room is open. Start whenever you're ready."
+            : "Share this code with more friends — the host will start the competition when ready."}
         </p>
 
         {/* Live dashboard – waiting state */}
@@ -400,11 +417,10 @@ export default function MultiplayerQuiz() {
         <div className="bg-card border rounded-xl p-4 mb-6 text-left">
           <div className="flex items-center gap-2 mb-3 text-sm font-medium text-muted-foreground">
             <Users className="w-4 h-4" />
-            Players ({participants.length} / 2)
+            Players ({participants.length})
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
             {participants.map((p) => {
-              const lvl = getPlayerLevel(p.totalXp);
               return (
                 <div key={p.userId} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2">
                   <div className="flex items-center gap-2 min-w-0">
@@ -426,19 +442,36 @@ export default function MultiplayerQuiz() {
             {participants.length < 2 && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-2 border border-dashed rounded-lg">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Waiting for opponent…
+                Waiting for players to join…
               </div>
             )}
           </div>
         </div>
 
         {isHost ? (
-          <p className="text-sm text-muted-foreground">
-            🔗 Send the code above to your friend — they join, you both play!
-          </p>
+          <div className="space-y-3">
+            <Button
+              size="lg"
+              className="w-full h-14 text-base gap-3"
+              onClick={handleStart}
+              disabled={startSession.isPending || participants.length < 2}
+            >
+              {startSession.isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Swords className="w-5 h-5" />
+              )}
+              Start Competition
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {participants.length < 2
+                ? "Waiting for at least one more player before you can start"
+                : `Ready when you are — ${participants.length} players will compete`}
+            </p>
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground animate-pulse">
-            ⏳ Waiting for the room to fill up…
+            ⏳ Waiting for the host to start the competition…
           </p>
         )}
       </div>

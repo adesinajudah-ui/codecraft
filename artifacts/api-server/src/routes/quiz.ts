@@ -249,15 +249,12 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
       makeParticipant(userId, playerName, totalXp),
     ];
 
-    const autoStart = newParticipants.length >= 2;
-
+    // No auto-start and no participant cap: the room stays open in "waiting"
+    // status so any number of players can join. The host explicitly starts
+    // the competition via POST /sessions/:code/start when ready.
     const [updated] = await tx
       .update(quizSessionsTable)
-      .set({
-        participants: newParticipants,
-        status: autoStart ? "active" : "waiting",
-        currentQuestion: autoStart ? 0 : session.currentQuestion,
-      })
+      .set({ participants: newParticipants })
       .where(eq(quizSessionsTable.code, code))
       .returning();
 
@@ -273,11 +270,6 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
   if (result.justJoined) {
     broadcastToSession(code, "player_joined", { displayName: result.joinedName });
     broadcastToSession(code, "session_update", serializeSession(result.session));
-
-    // If the session just became active, record question start time
-    if (result.session.status === "active") {
-      questionStartTimes.set(code, Date.now());
-    }
   }
 
   res.json(serializeSession(result.session));
