@@ -8,11 +8,12 @@ import {
   coursesTable,
 } from "@workspace/db";
 import { eq, and, sql, inArray } from "drizzle-orm";
-import { requireAuth, getAuth } from "@clerk/express";
+import { getAuth } from "@clerk/express";
+import { requireApiAuth } from "../middlewares/requireApiAuth";
 
 const router = Router();
 
-router.get("/", requireAuth(), async (req, res) => {
+router.get("/", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -24,7 +25,7 @@ router.get("/", requireAuth(), async (req, res) => {
   res.json(progress.map((p) => ({ ...p, completedAt: p.completedAt?.toISOString() ?? null })));
 });
 
-router.post("/", requireAuth(), async (req, res) => {
+router.post("/", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -66,7 +67,7 @@ router.post("/", requireAuth(), async (req, res) => {
   res.json({ ...inserted, completedAt: inserted.completedAt?.toISOString() ?? null });
 });
 
-router.get("/summary", requireAuth(), async (req, res) => {
+router.get("/summary", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 

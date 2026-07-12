@@ -11,7 +11,8 @@ import {
   type SessionParticipant,
 } from "@workspace/db";
 import { eq, sql, desc, asc, and, inArray } from "drizzle-orm";
-import { requireAuth, getAuth } from "@clerk/express";
+import { getAuth } from "@clerk/express";
+import { requireApiAuth } from "../middlewares/requireApiAuth";
 import crypto from "crypto";
 import {
   getVoiceRoom,
@@ -151,7 +152,7 @@ router.get("/course/:courseId", async (req, res) => {
 });
 
 // GET /quiz/attempts/me
-router.get("/attempts/me", requireAuth(), async (req, res) => {
+router.get("/attempts/me", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -165,7 +166,7 @@ router.get("/attempts/me", requireAuth(), async (req, res) => {
 });
 
 // POST /quiz/attempts
-router.post("/attempts", requireAuth(), async (req, res) => {
+router.post("/attempts", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -208,7 +209,7 @@ router.post("/attempts", requireAuth(), async (req, res) => {
 
 // POST /quiz/sessions — create a competition session
 // Body: { languageSlug, questionCount?, difficulty?, displayName? }
-router.post("/sessions", requireAuth(), async (req, res) => {
+router.post("/sessions", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -321,7 +322,7 @@ router.get("/sessions/:code/questions", async (req, res) => {
 });
 
 // POST /quiz/sessions/:code/join
-router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
+router.post("/sessions/:code/join", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -384,7 +385,7 @@ router.post("/sessions/:code/join", requireAuth(), async (req, res) => {
 });
 
 // POST /quiz/sessions/:code/start — host only
-router.post("/sessions/:code/start", requireAuth(), async (req, res) => {
+router.post("/sessions/:code/start", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -407,7 +408,7 @@ router.post("/sessions/:code/start", requireAuth(), async (req, res) => {
 });
 
 // POST /quiz/sessions/:code/answer
-router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
+router.post("/sessions/:code/answer", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -602,7 +603,7 @@ router.get("/sessions/:code/voice/status", async (req, res) => {
 });
 
 // POST /quiz/sessions/:code/voice/start — host only
-router.post("/sessions/:code/voice/start", requireAuth(), async (req, res) => {
+router.post("/sessions/:code/voice/start", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -619,7 +620,7 @@ router.post("/sessions/:code/voice/start", requireAuth(), async (req, res) => {
 });
 
 // POST /quiz/sessions/:code/voice/end — host only
-router.post("/sessions/:code/voice/end", requireAuth(), async (req, res) => {
+router.post("/sessions/:code/voice/end", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -635,7 +636,7 @@ router.post("/sessions/:code/voice/end", requireAuth(), async (req, res) => {
 });
 
 // POST /quiz/sessions/:code/voice/token — any current participant
-router.post("/sessions/:code/voice/token", requireAuth(), async (req, res) => {
+router.post("/sessions/:code/voice/token", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 

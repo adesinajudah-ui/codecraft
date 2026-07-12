@@ -10,7 +10,8 @@ import {
   walletTransactionsTable,
   coinAdjustmentsTable,
 } from "@workspace/db";
-import { requireAuth, getAuth } from "@clerk/express";
+import { getAuth } from "@clerk/express";
+import { requireApiAuth } from "../middlewares/requireApiAuth";
 import { eq, sql, gte, ilike, or, and, desc } from "drizzle-orm";
 import { seedHtmlCompleteCourse } from "../seedHtmlComplete";
 import { seedHtmlLessons9to16 } from "../seedHtmlLessons9to16";
@@ -22,7 +23,7 @@ function isAdmin(req: import("express").Request) {
   return (auth?.sessionClaims?.publicMetadata as { role?: string } | undefined)?.role === "admin";
 }
 
-router.get("/stats", requireAuth(), async (req, res) => {
+router.get("/stats", requireApiAuth(), async (req, res) => {
   if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const totalUsers = await db.select({ count: sql<number>`count(*)::int` }).from(userStatsTable);
@@ -71,7 +72,7 @@ router.get("/stats", requireAuth(), async (req, res) => {
   });
 });
 
-router.get("/users", requireAuth(), async (req, res) => {
+router.get("/users", requireApiAuth(), async (req, res) => {
   if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
@@ -109,7 +110,7 @@ router.get("/users", requireAuth(), async (req, res) => {
   });
 });
 
-router.post("/seed-html-complete", requireAuth(), async (req, res) => {
+router.post("/seed-html-complete", requireApiAuth(), async (req, res) => {
   if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const result = await seedHtmlCompleteCourse();
@@ -119,7 +120,7 @@ router.post("/seed-html-complete", requireAuth(), async (req, res) => {
   }
 });
 
-router.post("/seed-html-9-16", requireAuth(), async (req, res) => {
+router.post("/seed-html-9-16", requireApiAuth(), async (req, res) => {
   if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const result = await seedHtmlLessons9to16();
@@ -131,7 +132,7 @@ router.post("/seed-html-9-16", requireAuth(), async (req, res) => {
 
 // ── Wallet / payments admin ─────────────────────────────────────────────────
 
-router.get("/wallet/stats", requireAuth(), async (req, res) => {
+router.get("/wallet/stats", requireApiAuth(), async (req, res) => {
   if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const successful = await db
@@ -156,7 +157,7 @@ router.get("/wallet/stats", requireAuth(), async (req, res) => {
   });
 });
 
-router.get("/wallet/transactions", requireAuth(), async (req, res) => {
+router.get("/wallet/transactions", requireApiAuth(), async (req, res) => {
   if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
@@ -202,7 +203,7 @@ router.get("/wallet/transactions", requireAuth(), async (req, res) => {
   });
 });
 
-router.get("/wallet/transactions/export", requireAuth(), async (req, res) => {
+router.get("/wallet/transactions/export", requireApiAuth(), async (req, res) => {
   if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const rows = await db.select().from(walletTransactionsTable).orderBy(desc(walletTransactionsTable.createdAt));
@@ -223,7 +224,7 @@ router.get("/wallet/transactions/export", requireAuth(), async (req, res) => {
   res.send([header, ...lines].join("\n"));
 });
 
-router.post("/wallet/adjust", requireAuth(), async (req, res) => {
+router.post("/wallet/adjust", requireApiAuth(), async (req, res) => {
   const { userId: adminUserId } = getAuth(req);
   if (!isAdmin(req) || !adminUserId) { res.status(403).json({ error: "Forbidden" }); return; }
 

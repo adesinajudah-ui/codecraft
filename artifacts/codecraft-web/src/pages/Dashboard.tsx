@@ -33,9 +33,14 @@ export default function Dashboard() {
     );
   }
 
-  const totalXp = summaries?.reduce((acc, curr) => acc + curr.xpEarned, 0) || 0;
-  const totalLessons = summaries?.reduce((acc, curr) => acc + curr.totalLessons, 0) || 0;
-  const completedLessons = summaries?.reduce((acc, curr) => acc + curr.completedLessons, 0) || 0;
+  // Guard: the API can transiently return non-array data (e.g. an HTML redirect
+  // page) if Clerk session verification fails mid-request. Treating it as an
+  // empty array prevents a crash and shows the user a blank-state dashboard
+  // instead of an unhandled "reduce is not a function" error.
+  const summaryList = Array.isArray(summaries) ? summaries : [];
+  const totalXp = summaryList.reduce((acc, curr) => acc + curr.xpEarned, 0);
+  const totalLessons = summaryList.reduce((acc, curr) => acc + curr.totalLessons, 0);
+  const completedLessons = summaryList.reduce((acc, curr) => acc + curr.completedLessons, 0);
   const overallProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
 
   return (
@@ -83,9 +88,9 @@ export default function Dashboard() {
 
       <h2 className="text-base font-semibold mb-3">Language Progress</h2>
 
-      {summaries && summaries.length > 0 ? (
+      {summaryList.length > 0 ? (
         <div className="space-y-3">
-          {summaries.map((summary, idx) => (
+          {summaryList.map((summary, idx) => (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

@@ -11,7 +11,8 @@ import {
   type MessageAttachment,
 } from "@workspace/db";
 import { eq, and, inArray, desc, lt, sql, isNull } from "drizzle-orm";
-import { requireAuth, getAuth } from "@clerk/express";
+import { getAuth } from "@clerk/express";
+import { requireApiAuth } from "../middlewares/requireApiAuth";
 import crypto from "node:crypto";
 
 const router = Router();
@@ -107,7 +108,7 @@ async function serializeGroupSummary(group: typeof studyGroupsTable.$inferSelect
 // ── SSE endpoint ──────────────────────────────────────────────────────────────
 
 // GET /study-groups/:groupId/events
-router.get("/:groupId/events", requireAuth(), async (req, res) => {
+router.get("/:groupId/events", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   if (!userId || isNaN(groupId)) { res.status(400).end(); return; }
@@ -150,7 +151,7 @@ router.get("/:groupId/events", requireAuth(), async (req, res) => {
 });
 
 // POST /study-groups/:groupId/typing — lightweight, not persisted, broadcast only
-router.post("/:groupId/typing", requireAuth(), async (req, res) => {
+router.post("/:groupId/typing", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   if (!userId || isNaN(groupId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -166,14 +167,14 @@ router.post("/:groupId/typing", requireAuth(), async (req, res) => {
 
 export const usersRouter = Router();
 
-usersRouter.get("/me/username", requireAuth(), async (req, res) => {
+usersRouter.get("/me/username", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
   const rows = await db.select().from(userStatsTable).where(eq(userStatsTable.userId, userId)).limit(1);
   res.json({ username: rows[0]?.username ?? null });
 });
 
-usersRouter.patch("/me/username", requireAuth(), async (req, res) => {
+usersRouter.patch("/me/username", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -197,7 +198,7 @@ usersRouter.patch("/me/username", requireAuth(), async (req, res) => {
   res.json({ username });
 });
 
-usersRouter.get("/search", requireAuth(), async (req, res) => {
+usersRouter.get("/search", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -219,7 +220,7 @@ usersRouter.get("/search", requireAuth(), async (req, res) => {
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 
-router.get("/notifications", requireAuth(), async (req, res) => {
+router.get("/notifications", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -254,7 +255,7 @@ router.get("/notifications", requireAuth(), async (req, res) => {
   );
 });
 
-router.post("/notifications/:notificationId/read", requireAuth(), async (req, res) => {
+router.post("/notifications/:notificationId/read", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const notificationId = parseInt(String(req.params.notificationId));
   if (!userId || isNaN(notificationId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -269,7 +270,7 @@ router.post("/notifications/:notificationId/read", requireAuth(), async (req, re
 
 // ── Groups ────────────────────────────────────────────────────────────────────
 
-router.get("/", requireAuth(), async (req, res) => {
+router.get("/", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -292,7 +293,7 @@ router.get("/", requireAuth(), async (req, res) => {
   res.json(summaries);
 });
 
-router.post("/", requireAuth(), async (req, res) => {
+router.post("/", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -320,7 +321,7 @@ router.post("/", requireAuth(), async (req, res) => {
   res.json(await serializeGroupSummary(group, "owner"));
 });
 
-router.get("/invites/pending", requireAuth(), async (req, res) => {
+router.get("/invites/pending", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -348,7 +349,7 @@ router.get("/invites/pending", requireAuth(), async (req, res) => {
   );
 });
 
-router.post("/invites/:membershipId/accept", requireAuth(), async (req, res) => {
+router.post("/invites/:membershipId/accept", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const membershipId = parseInt(String(req.params.membershipId));
   if (!userId || isNaN(membershipId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -372,7 +373,7 @@ router.post("/invites/:membershipId/accept", requireAuth(), async (req, res) => 
   res.json({ ...updated, createdAt: updated.createdAt?.toISOString() ?? new Date().toISOString() });
 });
 
-router.post("/invites/:membershipId/decline", requireAuth(), async (req, res) => {
+router.post("/invites/:membershipId/decline", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const membershipId = parseInt(String(req.params.membershipId));
   if (!userId || isNaN(membershipId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -395,7 +396,7 @@ router.post("/invites/:membershipId/decline", requireAuth(), async (req, res) =>
   res.json({ ...updated, createdAt: updated.createdAt?.toISOString() ?? new Date().toISOString() });
 });
 
-router.get("/:groupId", requireAuth(), async (req, res) => {
+router.get("/:groupId", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   if (!userId || isNaN(groupId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -433,7 +434,7 @@ router.get("/:groupId", requireAuth(), async (req, res) => {
   res.json({ ...summary, members: memberOut });
 });
 
-router.patch("/:groupId", requireAuth(), async (req, res) => {
+router.patch("/:groupId", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   if (!userId || isNaN(groupId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -458,7 +459,7 @@ router.patch("/:groupId", requireAuth(), async (req, res) => {
   res.json(await serializeGroupSummary(updated, "owner"));
 });
 
-router.delete("/:groupId", requireAuth(), async (req, res) => {
+router.delete("/:groupId", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   if (!userId || isNaN(groupId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -487,7 +488,7 @@ router.delete("/:groupId", requireAuth(), async (req, res) => {
 // ── Invite codes ──────────────────────────────────────────────────────────────
 
 // POST /study-groups/:groupId/invite-codes — generate a fresh single-use code (owner/admin only)
-router.post("/:groupId/invite-codes", requireAuth(), async (req, res) => {
+router.post("/:groupId/invite-codes", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   if (!userId || isNaN(groupId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -505,7 +506,7 @@ router.post("/:groupId/invite-codes", requireAuth(), async (req, res) => {
 });
 
 // GET /study-groups/join/:code — preview a group before joining. Any logged-in user.
-router.get("/join/:code", requireAuth(), async (req, res) => {
+router.get("/join/:code", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const code = String(req.params.code).trim().toUpperCase();
   if (!userId || !code) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -548,7 +549,7 @@ router.get("/join/:code", requireAuth(), async (req, res) => {
 });
 
 // POST /study-groups/join/:code — redeem a single-use invite code and join immediately.
-router.post("/join/:code", requireAuth(), async (req, res) => {
+router.post("/join/:code", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const code = String(req.params.code).trim().toUpperCase();
   if (!userId || !code) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -616,7 +617,7 @@ router.post("/join/:code", requireAuth(), async (req, res) => {
 
 // ── Members ───────────────────────────────────────────────────────────────────
 
-router.post("/:groupId/invites", requireAuth(), async (req, res) => {
+router.post("/:groupId/invites", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   if (!userId || isNaN(groupId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -647,7 +648,7 @@ router.post("/:groupId/invites", requireAuth(), async (req, res) => {
   res.json(created.map((m) => ({ ...m, createdAt: m.createdAt?.toISOString() ?? new Date().toISOString() })));
 });
 
-router.patch("/:groupId/members/:memberUserId", requireAuth(), async (req, res) => {
+router.patch("/:groupId/members/:memberUserId", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   const memberUserId = String(req.params.memberUserId);
@@ -672,7 +673,7 @@ router.patch("/:groupId/members/:memberUserId", requireAuth(), async (req, res) 
   res.json({ ...updated, createdAt: updated.createdAt?.toISOString() ?? new Date().toISOString() });
 });
 
-router.delete("/:groupId/members/:memberUserId", requireAuth(), async (req, res) => {
+router.delete("/:groupId/members/:memberUserId", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   const memberUserId = String(req.params.memberUserId);
@@ -731,7 +732,7 @@ async function serializeMessages(rows: (typeof studyGroupMessagesTable.$inferSel
   });
 }
 
-router.get("/:groupId/messages", requireAuth(), async (req, res) => {
+router.get("/:groupId/messages", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   if (!userId || isNaN(groupId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -757,7 +758,7 @@ router.get("/:groupId/messages", requireAuth(), async (req, res) => {
   res.json(serialized);
 });
 
-router.post("/:groupId/messages", requireAuth(), async (req, res) => {
+router.post("/:groupId/messages", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   if (!userId || isNaN(groupId)) { res.status(400).json({ error: "Invalid request" }); return; }
@@ -801,7 +802,7 @@ router.post("/:groupId/messages", requireAuth(), async (req, res) => {
   res.json(serialized);
 });
 
-router.delete("/:groupId/messages/:messageId", requireAuth(), async (req, res) => {
+router.delete("/:groupId/messages/:messageId", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   const messageId = parseInt(String(req.params.messageId));
@@ -817,7 +818,7 @@ router.delete("/:groupId/messages/:messageId", requireAuth(), async (req, res) =
   res.json({ ok: true });
 });
 
-router.post("/:groupId/messages/:messageId/reactions", requireAuth(), async (req, res) => {
+router.post("/:groupId/messages/:messageId/reactions", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   const groupId = parseInt(String(req.params.groupId));
   const messageId = parseInt(String(req.params.messageId));

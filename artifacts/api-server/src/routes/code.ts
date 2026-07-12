@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { requireAuth } from "@clerk/express";
+import { requireApiAuth } from "../middlewares/requireApiAuth";
 import vm from "vm";
 import { execSync } from "child_process";
 
 const router = Router();
 
-router.post("/run", requireAuth(), async (req, res) => {
+router.post("/run", requireApiAuth(), async (req, res) => {
   const { language, code } = req.body as { language: string; code: string };
 
   if (!language || !code) {
