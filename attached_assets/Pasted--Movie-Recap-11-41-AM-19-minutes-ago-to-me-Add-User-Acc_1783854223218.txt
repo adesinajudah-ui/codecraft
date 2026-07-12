@@ -1,0 +1,141 @@
+
+Movie Recap
+11:41 AM (19 minutes ago)
+to me
+
+Add User Account, Wallet & Paystack Payment System
+
+Create a professional Account & Wallet system for my coding learning app.
+
+Navigation
+
+- Add an Account option inside the hamburger (☰) menu.
+- When clicked, open a modern Account page.
+
+Account Page
+
+Display:
+
+- Profile Picture
+- Full Name
+- Username
+- Email Address
+- Current Coin Balance (large and attractive)
+- Member Since
+- Edit Profile
+- Settings
+- Logout
+
+Coin Wallet
+
+Create a Wallet section where users can purchase coins.
+
+Display the following coin packages as modern cards:
+
+Coins| Price
+10 Coins| ₦500
+20 Coins| ₦1,000
+30 Coins| ₦1,500
+40 Coins| ₦2,000
+50 Coins| ₦2,500
+60 Coins| ₦3,000
+65 Coins| ₦3,500
+
+Each package must have a Buy Now button.
+
+Paystack Integration
+
+Use Paystack as the only payment gateway.
+
+Requirements:
+
+- Integrate the official Paystack payment gateway.
+- Connect the payment system using my Paystack Public Key and Secret Key (I will provide the keys later).
+- Never expose the Secret Key on the frontend. Store it securely on the backend using environment variables.
+- Initialize payments securely.
+- Verify every payment on the backend before crediting coins.
+- Only add coins after Paystack confirms that the payment was successful.
+- Prevent duplicate payments by checking the Paystack transaction reference before crediting coins.
+- Save every successful transaction in the database.
+
+After Successful Payment
+
+Immediately:
+
+- Credit the purchased coins to the user's wallet.
+- Update the wallet balance instantly.
+- Display:
+  "Payment successful! Your coins have been added to your wallet."
+- Refresh the coin balance automatically without requiring the user to reload the app.
+
+If payment fails or is cancelled:
+
+- Do not add any coins.
+- Display an appropriate error or cancellation message.
+
+Coin Usage
+
+Coins can be used to unlock premium features, including:
+
+- Premium programming courses
+- Advanced quizzes
+- Coding competitions
+- AI coding assistant
+- Premium certificates
+- Exclusive coding projects
+- Downloadable resources
+
+When a premium feature requires coins:
+
+- Show the number of coins required.
+- If the user has enough coins, deduct the required coins automatically and unlock the feature.
+- If the user does not have enough coins, display:
+  "You don't have enough coins. Please purchase more coins to continue."
+
+Wallet History
+
+Create a Transaction History page showing:
+
+- Date
+- Coins Purchased
+- Amount Paid
+- Paystack Transaction Reference
+- Payment Status
+- Transaction ID
+
+Backend
+
+Store securely:
+
+- User coin balance
+- Wallet history
+- Payment history
+- Paystack transaction references
+- Purchase timestamps
+
+Prevent duplicate credits even if a user refreshes the page or retries a completed payment.
+
+Admin Panel
+
+Create an admin section where administrators can:
+
+- View all coin purchases.
+- Search transactions by username or email.
+- Filter by payment status.
+- View total revenue.
+- View total coins sold.
+- Manually credit or deduct coins if necessary.
+- Export transaction records.
+
+User Experience
+
+The wallet should look professional with:
+
+- Smooth animations
+- Modern rounded cards
+- Attractive icons
+- Responsive design for mobile and desktop
+- Fast loading
+- Real-time wallet balance updates after payment
+
+The final implementation should be secure, production-ready, and follow Paystack's best practices for payment verification and user wallet management.
