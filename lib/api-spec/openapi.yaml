@@ -380,6 +380,102 @@ paths:
         "401":
           description: Unauthorized
 
+  /quiz/sessions/{code}/voice/status:
+    get:
+      operationId: getVoiceStatus
+      tags: [quiz]
+      summary: Get the voice chat room status for a session
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Voice room status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceStatus"
+        "404":
+          description: Not found
+
+  /quiz/sessions/{code}/voice/start:
+    post:
+      operationId: startVoiceChat
+      tags: [quiz]
+      summary: Start the voice chat room for a session (host only)
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Voice chat started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceStatus"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not the host
+        "404":
+          description: Not found
+
+  /quiz/sessions/{code}/voice/end:
+    post:
+      operationId: endVoiceChat
+      tags: [quiz]
+      summary: End the voice chat room for a session (host only)
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Voice chat ended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceStatus"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not the host
+        "404":
+          description: Not found
+
+  /quiz/sessions/{code}/voice/token:
+    post:
+      operationId: getVoiceToken
+      tags: [quiz]
+      summary: Get a short-lived signaling token to join a session's voice room
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Voice signaling token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceTokenResponse"
+        "400":
+          description: Voice chat is not active, or user is not a participant
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+
   /code/run:
     post:
       operationId: runCode
@@ -1653,6 +1749,56 @@ components:
         - displayName
         - score
         - answeredCount
+
+    VoiceParticipant:
+      type: object
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+        muted:
+          type: boolean
+        speaking:
+          type: boolean
+      required:
+        - userId
+        - displayName
+        - muted
+        - speaking
+
+    VoiceStatus:
+      type: object
+      properties:
+        active:
+          type: boolean
+        hostUserId:
+          type: string
+        startedAt:
+          type: ["string", "null"]
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/VoiceParticipant"
+      required:
+        - active
+        - hostUserId
+        - startedAt
+        - participants
+
+    VoiceTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        socketPath:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - token
+        - socketPath
+        - expiresAt
 
     SessionAnswerInput:
       type: object

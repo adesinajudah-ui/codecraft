@@ -77,6 +77,8 @@ import type {
   UserSearchResult,
   UsernameResponse,
   VerifyPurchaseResponse,
+  VoiceStatus,
+  VoiceTokenResponse,
   WalletBalance,
   WalletConfig,
   WalletTransaction
@@ -1376,6 +1378,293 @@ export const useSubmitSessionAnswer = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSubmitSessionAnswerMutationOptions(options));
+    }
+
+export const getGetVoiceStatusUrl = (code: string,) => {
+
+
+
+
+  return `/api/quiz/sessions/${code}/voice/status`
+}
+
+/**
+ * @summary Get the voice chat room status for a session
+ */
+export const getVoiceStatus = async (code: string, options?: RequestInit): Promise<VoiceStatus> => {
+
+  return customFetch<VoiceStatus>(getGetVoiceStatusUrl(code),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVoiceStatusQueryKey = (code: string,) => {
+    return [
+    `/api/quiz/sessions/${code}/voice/status`
+    ] as const;
+    }
+
+
+export const getGetVoiceStatusQueryOptions = <TData = Awaited<ReturnType<typeof getVoiceStatus>>, TError = ErrorType<void>>(code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVoiceStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVoiceStatusQueryKey(code);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVoiceStatus>>> = ({ signal }) => getVoiceStatus(code, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: code !== null && code !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVoiceStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetVoiceStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getVoiceStatus>>>
+export type GetVoiceStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the voice chat room status for a session
+ */
+
+export function useGetVoiceStatus<TData = Awaited<ReturnType<typeof getVoiceStatus>>, TError = ErrorType<void>>(
+ code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVoiceStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetVoiceStatusQueryOptions(code,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartVoiceChatUrl = (code: string,) => {
+
+
+
+
+  return `/api/quiz/sessions/${code}/voice/start`
+}
+
+/**
+ * @summary Start the voice chat room for a session (host only)
+ */
+export const startVoiceChat = async (code: string, options?: RequestInit): Promise<VoiceStatus> => {
+
+  return customFetch<VoiceStatus>(getStartVoiceChatUrl(code),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartVoiceChatMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startVoiceChat>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startVoiceChat>>, TError,{code: string}, TContext> => {
+
+const mutationKey = ['startVoiceChat'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startVoiceChat>>, {code: string}> = (props) => {
+          const {code} = props ?? {};
+
+          return  startVoiceChat(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartVoiceChatMutationResult = NonNullable<Awaited<ReturnType<typeof startVoiceChat>>>
+
+    export type StartVoiceChatMutationError = ErrorType<void>
+
+    /**
+ * @summary Start the voice chat room for a session (host only)
+ */
+export const useStartVoiceChat = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startVoiceChat>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startVoiceChat>>,
+        TError,
+        {code: string},
+        TContext
+      > => {
+      return useMutation(getStartVoiceChatMutationOptions(options));
+    }
+
+export const getEndVoiceChatUrl = (code: string,) => {
+
+
+
+
+  return `/api/quiz/sessions/${code}/voice/end`
+}
+
+/**
+ * @summary End the voice chat room for a session (host only)
+ */
+export const endVoiceChat = async (code: string, options?: RequestInit): Promise<VoiceStatus> => {
+
+  return customFetch<VoiceStatus>(getEndVoiceChatUrl(code),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getEndVoiceChatMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof endVoiceChat>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof endVoiceChat>>, TError,{code: string}, TContext> => {
+
+const mutationKey = ['endVoiceChat'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof endVoiceChat>>, {code: string}> = (props) => {
+          const {code} = props ?? {};
+
+          return  endVoiceChat(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EndVoiceChatMutationResult = NonNullable<Awaited<ReturnType<typeof endVoiceChat>>>
+
+    export type EndVoiceChatMutationError = ErrorType<void>
+
+    /**
+ * @summary End the voice chat room for a session (host only)
+ */
+export const useEndVoiceChat = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof endVoiceChat>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof endVoiceChat>>,
+        TError,
+        {code: string},
+        TContext
+      > => {
+      return useMutation(getEndVoiceChatMutationOptions(options));
+    }
+
+export const getGetVoiceTokenUrl = (code: string,) => {
+
+
+
+
+  return `/api/quiz/sessions/${code}/voice/token`
+}
+
+/**
+ * @summary Get a short-lived signaling token to join a session's voice room
+ */
+export const getVoiceToken = async (code: string, options?: RequestInit): Promise<VoiceTokenResponse> => {
+
+  return customFetch<VoiceTokenResponse>(getGetVoiceTokenUrl(code),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getGetVoiceTokenMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getVoiceToken>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getVoiceToken>>, TError,{code: string}, TContext> => {
+
+const mutationKey = ['getVoiceToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getVoiceToken>>, {code: string}> = (props) => {
+          const {code} = props ?? {};
+
+          return  getVoiceToken(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetVoiceTokenMutationResult = NonNullable<Awaited<ReturnType<typeof getVoiceToken>>>
+
+    export type GetVoiceTokenMutationError = ErrorType<void>
+
+    /**
+ * @summary Get a short-lived signaling token to join a session's voice room
+ */
+export const useGetVoiceToken = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getVoiceToken>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getVoiceToken>>,
+        TError,
+        {code: string},
+        TContext
+      > => {
+      return useMutation(getGetVoiceTokenMutationOptions(options));
     }
 
 export const getRunCodeUrl = () => {

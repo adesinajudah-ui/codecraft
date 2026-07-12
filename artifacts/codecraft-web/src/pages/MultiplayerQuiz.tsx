@@ -7,12 +7,20 @@ import {
   useStartQuizSession,
   useSubmitSessionAnswer,
   useGetQuizByCourse,
+  useGetVoiceStatus,
+  useStartVoiceChat,
+  useEndVoiceChat,
   getGetQuizSessionQueryKey,
   getGetQuizByCourseQueryKey,
+  getGetVoiceStatusQueryKey,
   type QuizSessionInputLanguageSlug,
   type QuizSessionInputQuestionCount,
   type QuizSessionInputDifficulty,
+  type VoiceStatus,
 } from "@workspace/api-client-react";
+import { useVoiceChat } from "@/hooks/useVoiceChat";
+import { VoicePanel } from "@/components/quiz/VoicePanel";
+import { VoiceJoinPrompt } from "@/components/quiz/VoiceJoinPrompt";
 
 // ── Local question type (matches competition_questions row) ───────────────────
 type LocalQuestion = {
@@ -43,6 +51,8 @@ import {
   Target,
   Timer,
   Medal,
+  Mic,
+  PhoneOff,
 } from "lucide-react";
 import { useUser } from "@clerk/react";
 import { toast } from "sonner";
@@ -171,6 +181,44 @@ export default function MultiplayerQuiz() {
   const startSession = useStartQuizSession();
   const submitAnswer = useSubmitSessionAnswer();
 
+  // ── Voice chat ──────────────────────────────────────────────────────────────
+  const [voicePromptDismissed, setVoicePromptDismissed] = useState(false);
+  const startVoiceChatMutation = useStartVoiceChat();
+  const endVoiceChatMutation = useEndVoiceChat();
+  const voiceStatusQueryKey = getGetVoiceStatusQueryKey(sessionCode);
+  const { data: voiceStatus } = useGetVoiceStatus(sessionCode, {
+    query: { enabled: !!sessionCode, queryKey: voiceStatusQueryKey, refetchInterval: false },
+  });
+  const voiceChat = useVoiceChat({ courseId: courseId ?? "", sessionCode, selfUserId: user?.id });
+
+  const handleStartVoiceChat = () => {
+    if (!sessionCode) return;
+    startVoiceChatMutation.mutate(
+      { code: sessionCode },
+      {
+        onSuccess: (data) => {
+          queryClient.setQueryData(voiceStatusQueryKey, data);
+          void voiceChat.join();
+        },
+        onError: (err) => toast.error("Failed to start voice chat: " + (err as Error).message),
+      }
+    );
+  };
+
+  const handleEndVoiceChat = () => {
+    if (!sessionCode) return;
+    endVoiceChatMutation.mutate(
+      { code: sessionCode },
+      {
+        onSuccess: (data) => {
+          queryClient.setQueryData(voiceStatusQueryKey, data);
+          voiceChat.leave();
+        },
+        onError: (err) => toast.error("Failed to end voice chat: " + (err as Error).message),
+      }
+    );
+  };
+
   const sessionQueryKey = getGetQuizSessionQueryKey(sessionCode);
   const { data: session, isLoading: isSessionLoading } = useGetQuizSession(
     sessionCode,
@@ -236,6 +284,22 @@ export default function MultiplayerQuiz() {
       } catch { /* ignore */ }
     });
 
+    es.addEventListener("voice_started", (e) => {
+      try {
+        const data = JSON.parse(e.data) as VoiceStatus;
+        queryClient.setQueryData(voiceStatusQueryKey, data);
+        setVoicePromptDismissed(false);
+      } catch { /* ignore */ }
+    });
+
+    es.addEventListener("voice_ended", (e) => {
+      try {
+        const data = JSON.parse(e.data) as VoiceStatus;
+        queryClient.setQueryData(voiceStatusQueryKey, data);
+      } catch { /* ignore */ }
+      voiceChat.leave();
+    });
+
     es.onerror = () => {
       // EventSource will auto-reconnect; no action needed
     };
@@ -245,6 +309,12 @@ export default function MultiplayerQuiz() {
       esRef.current = null;
     };
   }, [sessionCode, session?.status]);
+
+  // Leave voice chat when the competition finishes or the page unmounts
+  useEffect(() => {
+    if (session?.status === "finished") voiceChat.leave();
+  }, [session?.status]);
+  useEffect(() => () => voiceChat.leave(), []);
 
   // Close SSE when session finishes
   useEffect(() => {
@@ -497,6 +567,38 @@ export default function MultiplayerQuiz() {
             ⏳ Waiting for the host to start the competition…
           </p>
         )}
+
+        {isHost && voiceChat.status !== "joined" && (
+          <Button
+            variant="outline"
+            className="w-full mt-3 gap-2"
+            onClick={handleStartVoiceChat}
+            disabled={startVoiceChatMutation.isPending || voiceStatus?.active}
+          >
+            <Mic className="w-4 h-4" />
+            {voiceStatus?.active ? "Voice chat active" : "Start Voice Chat"}
+          </Button>
+        )}
+
+        <VoiceJoinPrompt
+          open={Boolean(voiceStatus?.active) && !isHost && voiceChat.status === "idle" && !voicePromptDismissed}
+          onJoin={() => void voiceChat.join()}
+          onDismiss={() => setVoicePromptDismissed(true)}
+        />
+        {(voiceChat.status === "joined" || voiceChat.status === "connecting" || voiceChat.status === "requesting-mic") && (
+          <VoicePanel
+            status={voiceChat.status}
+            peers={voiceChat.peers}
+            selfDisplayName={displayName}
+            selfMuted={voiceChat.selfMuted}
+            selfSpeaking={voiceChat.selfSpeaking}
+            isHost={voiceChat.isHost}
+            elapsedSeconds={voiceChat.elapsedSeconds}
+            onToggleMute={voiceChat.toggleMute}
+            onLeave={isHost ? handleEndVoiceChat : voiceChat.leave}
+            onKick={voiceChat.kick}
+          />
+        )}
       </div>
     );
   }
@@ -651,9 +753,24 @@ export default function MultiplayerQuiz() {
             <Swords className="w-3.5 h-3.5 text-primary animate-pulse" />
             Live Competition Dashboard
           </h2>
-          <Badge variant="outline" className="text-xs text-green-400 border-green-500/30 bg-green-500/10">
-            ● LIVE
-          </Badge>
+          <div className="flex items-center gap-2">
+            {isHost && (
+              voiceChat.status === "joined" || voiceChat.status === "connecting" || voiceChat.status === "requesting-mic" ? (
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive" onClick={handleEndVoiceChat}>
+                  <PhoneOff className="w-3 h-3" />
+                  End Voice Chat
+                </Button>
+              ) : !voiceStatus?.active ? (
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={handleStartVoiceChat} disabled={startVoiceChatMutation.isPending}>
+                  <Mic className="w-3 h-3" />
+                  Start Voice Chat
+                </Button>
+              ) : null
+            )}
+            <Badge variant="outline" className="text-xs text-green-400 border-green-500/30 bg-green-500/10">
+              ● LIVE
+            </Badge>
+          </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatBox
@@ -818,6 +935,26 @@ export default function MultiplayerQuiz() {
           </Card>
         </div>
       </div>
+
+      <VoiceJoinPrompt
+        open={Boolean(voiceStatus?.active) && !isHost && voiceChat.status === "idle" && !voicePromptDismissed}
+        onJoin={() => void voiceChat.join()}
+        onDismiss={() => setVoicePromptDismissed(true)}
+      />
+      {(voiceChat.status === "joined" || voiceChat.status === "connecting" || voiceChat.status === "requesting-mic") && (
+        <VoicePanel
+          status={voiceChat.status}
+          peers={voiceChat.peers}
+          selfDisplayName={displayName}
+          selfMuted={voiceChat.selfMuted}
+          selfSpeaking={voiceChat.selfSpeaking}
+          isHost={voiceChat.isHost}
+          elapsedSeconds={voiceChat.elapsedSeconds}
+          onToggleMute={voiceChat.toggleMute}
+          onLeave={isHost ? handleEndVoiceChat : voiceChat.leave}
+          onKick={voiceChat.kick}
+        />
+      )}
     </div>
   );
 }

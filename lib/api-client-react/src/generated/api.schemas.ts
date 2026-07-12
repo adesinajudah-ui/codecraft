@@ -213,6 +213,27 @@ export interface QuizSession {
   createdAt: string;
 }
 
+export interface VoiceParticipant {
+  userId: string;
+  displayName: string;
+  muted: boolean;
+  speaking: boolean;
+}
+
+export interface VoiceStatus {
+  active: boolean;
+  hostUserId: string;
+  /** @nullable */
+  startedAt: string | null;
+  participants: VoiceParticipant[];
+}
+
+export interface VoiceTokenResponse {
+  token: string;
+  socketPath: string;
+  expiresAt: string;
+}
+
 export interface SessionAnswerInput {
   questionId: number;
   answerIndex: number;

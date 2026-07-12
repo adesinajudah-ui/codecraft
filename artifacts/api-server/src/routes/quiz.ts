@@ -13,6 +13,17 @@ import {
 import { eq, sql, desc, asc, and, inArray } from "drizzle-orm";
 import { requireAuth, getAuth } from "@clerk/express";
 import crypto from "crypto";
+import {
+  getVoiceRoom,
+  getOrCreateVoiceRoom,
+  startVoiceRoom,
+  endVoiceRoom,
+  serializeVoiceRoom,
+  emptyVoiceStatus,
+} from "../voice/voiceRoom";
+import { signVoiceToken } from "../voice/voiceToken";
+import { getVoiceIo } from "../voice/voiceIo";
+import { VOICE_SOCKET_PATH } from "../voice/constants";
 
 /** Fisher-Yates shuffle — returns a new shuffled array, never mutates input */
 function shuffleArray<T>(arr: T[]): T[] {
@@ -560,12 +571,87 @@ router.post("/sessions/:code/answer", requireAuth(), async (req, res) => {
   // Clean up start time when session finishes
   if (txResult.session.status === "finished") {
     questionStartTimes.delete(code);
+
+    // Voice chat rooms are scoped to the competition — close it automatically
+    // when the competition ends, same as the requirement dictates.
+    const room = getVoiceRoom(code);
+    if (room?.active) {
+      endVoiceRoom(code);
+      getVoiceIo()?.in(`voice:${code}`).disconnectSockets(true);
+      broadcastToSession(code, "voice_ended", { active: false });
+    }
   }
 
   // Broadcast updated session state to all connected clients
   broadcastToSession(code, "session_update", serializeSession(txResult.session));
 
   res.json(serializeSession(txResult.session));
+});
+
+// ── Voice chat ──────────────────────────────────────────────────────────────
+
+// GET /quiz/sessions/:code/voice/status
+router.get("/sessions/:code/voice/status", async (req, res) => {
+  const code = String(req.params.code).toUpperCase();
+  const sessions = await db.select().from(quizSessionsTable).where(eq(quizSessionsTable.code, code)).limit(1);
+  const session = sessions[0];
+  if (!session) { res.status(404).json({ error: "Session not found" }); return; }
+
+  const room = getVoiceRoom(code);
+  res.json(room ? serializeVoiceRoom(room) : emptyVoiceStatus(session.hostUserId));
+});
+
+// POST /quiz/sessions/:code/voice/start — host only
+router.post("/sessions/:code/voice/start", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  const code = String(req.params.code).toUpperCase();
+  const sessions = await db.select().from(quizSessionsTable).where(eq(quizSessionsTable.code, code)).limit(1);
+  const session = sessions[0];
+  if (!session) { res.status(404).json({ error: "Session not found" }); return; }
+  if (session.hostUserId !== userId) { res.status(403).json({ error: "Only the host can start voice chat" }); return; }
+  if (session.status === "finished") { res.status(400).json({ error: "Competition has ended" }); return; }
+
+  const room = startVoiceRoom(code, userId);
+  broadcastToSession(code, "voice_started", serializeVoiceRoom(room));
+  res.json(serializeVoiceRoom(room));
+});
+
+// POST /quiz/sessions/:code/voice/end — host only
+router.post("/sessions/:code/voice/end", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  const code = String(req.params.code).toUpperCase();
+  const room = getVoiceRoom(code);
+  if (!room) { res.status(404).json({ error: "Voice chat was never started for this session" }); return; }
+  if (room.hostUserId !== userId) { res.status(403).json({ error: "Only the host can end voice chat" }); return; }
+
+  const ended = endVoiceRoom(code)!;
+  getVoiceIo()?.in(`voice:${code}`).disconnectSockets(true);
+  broadcastToSession(code, "voice_ended", serializeVoiceRoom(ended));
+  res.json(serializeVoiceRoom(ended));
+});
+
+// POST /quiz/sessions/:code/voice/token — any current participant
+router.post("/sessions/:code/voice/token", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  const code = String(req.params.code).toUpperCase();
+  const sessions = await db.select().from(quizSessionsTable).where(eq(quizSessionsTable.code, code)).limit(1);
+  const session = sessions[0];
+  if (!session) { res.status(404).json({ error: "Session not found" }); return; }
+
+  const isParticipant = session.participants.some((p) => p.userId === userId);
+  if (!isParticipant) { res.status(400).json({ error: "You are not a participant in this session" }); return; }
+
+  const room = getOrCreateVoiceRoom(code, session.hostUserId);
+  if (!room.active) { res.status(400).json({ error: "Voice chat is not active for this session" }); return; }
+
+  const { token, expiresAt } = signVoiceToken({ userId, code });
+  res.json({ token, socketPath: VOICE_SOCKET_PATH, expiresAt: new Date(expiresAt).toISOString() });
 });
 
 export default router;

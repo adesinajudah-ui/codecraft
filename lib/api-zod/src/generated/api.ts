@@ -375,6 +375,80 @@ export const SubmitSessionAnswerResponse = zod.object({
 
 
 /**
+ * @summary Get the voice chat room status for a session
+ */
+export const GetVoiceStatusParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const GetVoiceStatusResponse = zod.object({
+  "active": zod.boolean(),
+  "hostUserId": zod.string(),
+  "startedAt": zod.string().nullable(),
+  "participants": zod.array(zod.object({
+  "userId": zod.string(),
+  "displayName": zod.string(),
+  "muted": zod.boolean(),
+  "speaking": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Start the voice chat room for a session (host only)
+ */
+export const StartVoiceChatParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const StartVoiceChatResponse = zod.object({
+  "active": zod.boolean(),
+  "hostUserId": zod.string(),
+  "startedAt": zod.string().nullable(),
+  "participants": zod.array(zod.object({
+  "userId": zod.string(),
+  "displayName": zod.string(),
+  "muted": zod.boolean(),
+  "speaking": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary End the voice chat room for a session (host only)
+ */
+export const EndVoiceChatParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const EndVoiceChatResponse = zod.object({
+  "active": zod.boolean(),
+  "hostUserId": zod.string(),
+  "startedAt": zod.string().nullable(),
+  "participants": zod.array(zod.object({
+  "userId": zod.string(),
+  "displayName": zod.string(),
+  "muted": zod.boolean(),
+  "speaking": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Get a short-lived signaling token to join a session's voice room
+ */
+export const GetVoiceTokenParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const GetVoiceTokenResponse = zod.object({
+  "token": zod.string(),
+  "socketPath": zod.string(),
+  "expiresAt": zod.string()
+})
+
+
+/**
  * @summary Execute code and return output
  */
 export const RunCodeBody = zod.object({
