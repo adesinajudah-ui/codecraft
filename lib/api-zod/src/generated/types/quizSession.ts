@@ -11,11 +11,16 @@ import type { SessionParticipant } from './sessionParticipant';
 export interface QuizSession {
   id: number;
   code: string;
-  quizId: number;
+  /** @nullable */
+  quizId?: number | null;
+  languageSlug?: string;
   status: QuizSessionStatus;
   hostUserId: string;
   participants: SessionParticipant[];
   /** @nullable */
   currentQuestion?: number | null;
+  questionCount: number;
+  difficulty: string;
+  questionOrder: number[];
   createdAt: string;
 }

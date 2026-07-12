@@ -29,6 +29,7 @@ import type {
   CodeRunInput,
   CodeRunResult,
   CoinPackage,
+  CompetitionQuestion,
   ContentUnlock,
   Course,
   CourseDetail,
@@ -1228,6 +1229,83 @@ export const useStartQuizSession = <TError = ErrorType<void>,
       > => {
       return useMutation(getStartQuizSessionMutationOptions(options));
     }
+
+export const getGetQuizSessionQuestionsUrl = (code: string,) => {
+
+
+
+
+  return `/api/quiz/sessions/${code}/questions`
+}
+
+/**
+ * @summary Get the ordered competition questions for a session
+ */
+export const getQuizSessionQuestions = async (code: string, options?: RequestInit): Promise<CompetitionQuestion[]> => {
+
+  return customFetch<CompetitionQuestion[]>(getGetQuizSessionQuestionsUrl(code),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQuizSessionQuestionsQueryKey = (code: string,) => {
+    return [
+    `/api/quiz/sessions/${code}/questions`
+    ] as const;
+    }
+
+
+export const getGetQuizSessionQuestionsQueryOptions = <TData = Awaited<ReturnType<typeof getQuizSessionQuestions>>, TError = ErrorType<void>>(code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuizSessionQuestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQuizSessionQuestionsQueryKey(code);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQuizSessionQuestions>>> = ({ signal }) => getQuizSessionQuestions(code, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: code !== null && code !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQuizSessionQuestions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQuizSessionQuestionsQueryResult = NonNullable<Awaited<ReturnType<typeof getQuizSessionQuestions>>>
+export type GetQuizSessionQuestionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the ordered competition questions for a session
+ */
+
+export function useGetQuizSessionQuestions<TData = Awaited<ReturnType<typeof getQuizSessionQuestions>>, TError = ErrorType<void>>(
+ code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuizSessionQuestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQuizSessionQuestionsQueryOptions(code,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getSubmitSessionAnswerUrl = (code: string,) => {
 

@@ -205,15 +205,21 @@ export const GetMyQuizAttemptsResponse = zod.array(GetMyQuizAttemptsResponseItem
 /**
  * @summary Create a multiplayer quiz session
  */
+export const createQuizSessionBodyQuestionCountDefault = 20;
+export const createQuizSessionBodyDifficultyDefault = `mixed`;
+
 export const CreateQuizSessionBody = zod.object({
-  "quizId": zod.number(),
+  "languageSlug": zod.enum(['html', 'css', 'javascript', 'python', 'java', 'c']),
+  "questionCount": zod.union([zod.literal(10),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(60),zod.literal(80),zod.literal(100)]).default(createQuizSessionBodyQuestionCountDefault),
+  "difficulty": zod.enum(['easy', 'medium', 'hard', 'mixed']).default(createQuizSessionBodyDifficultyDefault),
   "displayName": zod.string().optional()
 })
 
 export const CreateQuizSessionResponse = zod.object({
   "id": zod.number(),
   "code": zod.string(),
-  "quizId": zod.number(),
+  "quizId": zod.number().nullish(),
+  "languageSlug": zod.string().optional(),
   "status": zod.enum(['waiting', 'active', 'finished']),
   "hostUserId": zod.string(),
   "participants": zod.array(zod.object({
@@ -223,6 +229,9 @@ export const CreateQuizSessionResponse = zod.object({
   "answeredCount": zod.number()
 })),
   "currentQuestion": zod.number().nullish(),
+  "questionCount": zod.number(),
+  "difficulty": zod.string(),
+  "questionOrder": zod.array(zod.number()),
   "createdAt": zod.string()
 })
 
@@ -237,7 +246,8 @@ export const GetQuizSessionParams = zod.object({
 export const GetQuizSessionResponse = zod.object({
   "id": zod.number(),
   "code": zod.string(),
-  "quizId": zod.number(),
+  "quizId": zod.number().nullish(),
+  "languageSlug": zod.string().optional(),
   "status": zod.enum(['waiting', 'active', 'finished']),
   "hostUserId": zod.string(),
   "participants": zod.array(zod.object({
@@ -247,6 +257,9 @@ export const GetQuizSessionResponse = zod.object({
   "answeredCount": zod.number()
 })),
   "currentQuestion": zod.number().nullish(),
+  "questionCount": zod.number(),
+  "difficulty": zod.string(),
+  "questionOrder": zod.array(zod.number()),
   "createdAt": zod.string()
 })
 
@@ -265,7 +278,8 @@ export const JoinQuizSessionBody = zod.object({
 export const JoinQuizSessionResponse = zod.object({
   "id": zod.number(),
   "code": zod.string(),
-  "quizId": zod.number(),
+  "quizId": zod.number().nullish(),
+  "languageSlug": zod.string().optional(),
   "status": zod.enum(['waiting', 'active', 'finished']),
   "hostUserId": zod.string(),
   "participants": zod.array(zod.object({
@@ -275,6 +289,9 @@ export const JoinQuizSessionResponse = zod.object({
   "answeredCount": zod.number()
 })),
   "currentQuestion": zod.number().nullish(),
+  "questionCount": zod.number(),
+  "difficulty": zod.string(),
+  "questionOrder": zod.array(zod.number()),
   "createdAt": zod.string()
 })
 
@@ -289,7 +306,8 @@ export const StartQuizSessionParams = zod.object({
 export const StartQuizSessionResponse = zod.object({
   "id": zod.number(),
   "code": zod.string(),
-  "quizId": zod.number(),
+  "quizId": zod.number().nullish(),
+  "languageSlug": zod.string().optional(),
   "status": zod.enum(['waiting', 'active', 'finished']),
   "hostUserId": zod.string(),
   "participants": zod.array(zod.object({
@@ -299,8 +317,28 @@ export const StartQuizSessionResponse = zod.object({
   "answeredCount": zod.number()
 })),
   "currentQuestion": zod.number().nullish(),
+  "questionCount": zod.number(),
+  "difficulty": zod.string(),
+  "questionOrder": zod.array(zod.number()),
   "createdAt": zod.string()
 })
+
+
+/**
+ * @summary Get the ordered competition questions for a session
+ */
+export const GetQuizSessionQuestionsParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const GetQuizSessionQuestionsResponseItem = zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "options": zod.array(zod.string()),
+  "correctIndex": zod.number(),
+  "difficulty": zod.string()
+})
+export const GetQuizSessionQuestionsResponse = zod.array(GetQuizSessionQuestionsResponseItem)
 
 
 /**
@@ -318,7 +356,8 @@ export const SubmitSessionAnswerBody = zod.object({
 export const SubmitSessionAnswerResponse = zod.object({
   "id": zod.number(),
   "code": zod.string(),
-  "quizId": zod.number(),
+  "quizId": zod.number().nullish(),
+  "languageSlug": zod.string().optional(),
   "status": zod.enum(['waiting', 'active', 'finished']),
   "hostUserId": zod.string(),
   "participants": zod.array(zod.object({
@@ -328,6 +367,9 @@ export const SubmitSessionAnswerResponse = zod.object({
   "answeredCount": zod.number()
 })),
   "currentQuestion": zod.number().nullish(),
+  "questionCount": zod.number(),
+  "difficulty": zod.string(),
+  "questionOrder": zod.array(zod.number()),
   "createdAt": zod.string()
 })
 

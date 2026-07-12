@@ -5,8 +5,13 @@
  * CodeCraft API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { QuizSessionInputDifficulty } from './quizSessionInputDifficulty';
+import type { QuizSessionInputLanguageSlug } from './quizSessionInputLanguageSlug';
+import type { QuizSessionInputQuestionCount } from './quizSessionInputQuestionCount';
 
 export interface QuizSessionInput {
-  quizId: number;
+  languageSlug: QuizSessionInputLanguageSlug;
+  questionCount?: QuizSessionInputQuestionCount;
+  difficulty?: QuizSessionInputDifficulty;
   displayName?: string;
 }

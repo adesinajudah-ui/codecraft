@@ -126,13 +126,58 @@ export interface QuizAttempt {
   completedAt: string;
 }
 
+export type QuizSessionInputLanguageSlug = typeof QuizSessionInputLanguageSlug[keyof typeof QuizSessionInputLanguageSlug];
+
+
+export const QuizSessionInputLanguageSlug = {
+  html: 'html',
+  css: 'css',
+  javascript: 'javascript',
+  python: 'python',
+  java: 'java',
+  c: 'c',
+} as const;
+
+export type QuizSessionInputQuestionCount = typeof QuizSessionInputQuestionCount[keyof typeof QuizSessionInputQuestionCount];
+
+
+export const QuizSessionInputQuestionCount = {
+  NUMBER_10: 10,
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_40: 40,
+  NUMBER_60: 60,
+  NUMBER_80: 80,
+  NUMBER_100: 100,
+} as const;
+
+export type QuizSessionInputDifficulty = typeof QuizSessionInputDifficulty[keyof typeof QuizSessionInputDifficulty];
+
+
+export const QuizSessionInputDifficulty = {
+  easy: 'easy',
+  medium: 'medium',
+  hard: 'hard',
+  mixed: 'mixed',
+} as const;
+
 export interface QuizSessionInput {
-  quizId: number;
+  languageSlug: QuizSessionInputLanguageSlug;
+  questionCount?: QuizSessionInputQuestionCount;
+  difficulty?: QuizSessionInputDifficulty;
   displayName?: string;
 }
 
 export interface JoinSessionInput {
   displayName?: string;
+}
+
+export interface CompetitionQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  difficulty: string;
 }
 
 export type QuizSessionStatus = typeof QuizSessionStatus[keyof typeof QuizSessionStatus];
@@ -154,12 +199,17 @@ export interface SessionParticipant {
 export interface QuizSession {
   id: number;
   code: string;
-  quizId: number;
+  /** @nullable */
+  quizId?: number | null;
+  languageSlug?: string;
   status: QuizSessionStatus;
   hostUserId: string;
   participants: SessionParticipant[];
   /** @nullable */
   currentQuestion?: number | null;
+  questionCount: number;
+  difficulty: string;
+  questionOrder: number[];
   createdAt: string;
 }
 

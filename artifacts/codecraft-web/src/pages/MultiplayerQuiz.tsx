@@ -9,6 +9,9 @@ import {
   useGetQuizByCourse,
   getGetQuizSessionQueryKey,
   getGetQuizByCourseQueryKey,
+  type QuizSessionInputLanguageSlug,
+  type QuizSessionInputQuestionCount,
+  type QuizSessionInputDifficulty,
 } from "@workspace/api-client-react";
 
 // ── Local question type (matches competition_questions row) ───────────────────
@@ -141,7 +144,12 @@ export default function MultiplayerQuiz() {
   const queryClient = useQueryClient();
 
   // Pre-fill join code from ?join=CODE param (set by JoinRoomDialog)
-  const pendingJoin = new URLSearchParams(search).get("join") ?? "";
+  const searchParams = new URLSearchParams(search);
+  const pendingJoin = searchParams.get("join") ?? "";
+  // Competition settings passed from Competitions.tsx when hosting a new room
+  const langSlug = searchParams.get("lang") ?? "javascript";
+  const questionCountParam = parseInt(searchParams.get("count") || "20", 10);
+  const difficultyParam = searchParams.get("difficulty") ?? "mixed";
 
   const [sessionCode, setSessionCode] = useState<string>("");
   const [joinCode, setJoinCode] = useState(pendingJoin);
@@ -249,9 +257,15 @@ export default function MultiplayerQuiz() {
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleCreate = () => {
-    if (!quiz) return;
     createSession.mutate(
-      { data: { quizId: quiz.id, displayName } },
+      {
+        data: {
+          languageSlug: langSlug as QuizSessionInputLanguageSlug,
+          questionCount: questionCountParam as QuizSessionInputQuestionCount,
+          difficulty: difficultyParam as QuizSessionInputDifficulty,
+          displayName,
+        },
+      },
       {
         onSuccess: (data) => {
           setSessionCode(data.code);
