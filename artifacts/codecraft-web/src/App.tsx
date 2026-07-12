@@ -26,6 +26,9 @@ import Competitions from "./pages/Competitions";
 import MyCourses from "./pages/MyCourses";
 import StudyGroups from "./pages/StudyGroups";
 import StudyGroupDetail from "./pages/StudyGroupDetail";
+import Account from "./pages/Account";
+import WalletPage from "./pages/Wallet";
+import WalletHistory from "./pages/WalletHistory";
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
 // same build serves multiple Clerk custom domains. Do not inline the env var, leave
@@ -184,6 +187,9 @@ function Router() {
       <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
       <Route path="/certificates" component={() => <ProtectedRoute component={Certificates} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
+      <Route path="/account" component={() => <ProtectedRoute component={Account} />} />
+      <Route path="/wallet/history" component={() => <ProtectedRoute component={WalletHistory} />} />
+      <Route path="/wallet" component={() => <ProtectedRoute component={WalletPage} />} />
       <Route path="/competitions" component={() => <ProtectedRoute component={Competitions} />} />
       <Route path="/my-courses" component={() => <ProtectedRoute component={MyCourses} />} />
       <Route path="/study-groups" component={() => <ProtectedRoute component={StudyGroups} />} />

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -11,6 +11,8 @@ export const lessonsTable = pgTable("lessons", {
   language: text("language").notNull(),
   order: integer("order").notNull(),
   xpReward: integer("xp_reward").notNull().default(20),
+  isPremium: boolean("is_premium").notNull().default(false),
+  coinCost: integer("coin_cost").notNull().default(0),
 });
 
 export const insertLessonSchema = createInsertSchema(lessonsTable).omit({ id: true });

@@ -1,13 +1,77 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, Link } from "wouter";
-import { useGetLesson, useMarkLessonComplete, useRunCode, getGetLessonQueryKey } from "@workspace/api-client-react";
+import {
+  useGetLesson, useMarkLessonComplete, useRunCode, getGetLessonQueryKey,
+  useUnlockPremiumContent, useGetWalletBalance, getGetWalletBalanceQueryKey,
+} from "@workspace/api-client-react";
 import { Editor as MonacoEditor } from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Play, Copy, RotateCcw, CheckCircle2, Check, ChevronRight, Code2, BookOpen } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2, ArrowLeft, Play, Copy, RotateCcw, CheckCircle2, Check, ChevronRight, Code2, BookOpen, Lock, Coins } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { getGetUserProgressQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+function PremiumLessonLock({ lesson, courseId, onUnlocked }: { lesson: any; courseId: string | undefined; onUnlocked: () => void }) {
+  const { toast } = useToast();
+  const { data: balance } = useGetWalletBalance();
+  const unlock = useUnlockPremiumContent();
+
+  const canAfford = (balance?.coinBalance ?? 0) >= lesson.coinCost;
+
+  const handleUnlock = () => {
+    unlock.mutate({ data: { contentType: "lesson", contentId: lesson.id } }, {
+      onSuccess: (res) => {
+        queryClient.invalidateQueries({ queryKey: getGetWalletBalanceQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetLessonQueryKey(lesson.id) });
+        toast({ title: "Lesson unlocked! 🔓", description: `${lesson.coinCost} coins deducted.` });
+        onUnlocked();
+      },
+      onError: (err: any) => {
+        if (err?.status === 402) {
+          toast({ title: "Not enough coins", description: `You need ${lesson.coinCost} coins but only have ${balance?.coinBalance ?? 0}.`, variant: "destructive" });
+        } else {
+          toast({ title: "Couldn't unlock lesson", description: "Please try again.", variant: "destructive" });
+        }
+      },
+    });
+  };
+
+  return (
+    <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+      <Link href={`/learn/${courseId}`}>
+        <Button variant="ghost" size="sm" className="absolute top-3 left-3 text-muted-foreground gap-1.5 h-8 px-2">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Button>
+      </Link>
+      <Card className="max-w-sm w-full border-yellow-500/30">
+        <CardContent className="p-6 flex flex-col items-center">
+          <div className="w-14 h-14 rounded-full bg-yellow-500/15 flex items-center justify-center mb-3">
+            <Lock className="w-7 h-7 text-yellow-500" />
+          </div>
+          <h2 className="text-lg font-bold mb-1">{lesson.title}</h2>
+          <p className="text-sm text-muted-foreground mb-4">This is a premium lesson. Unlock it to view the content and code example.</p>
+          <Button
+            className="gap-1.5 w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+            disabled={unlock.isPending}
+            onClick={handleUnlock}
+          >
+            {unlock.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Coins className="w-4 h-4" />}
+            Unlock for {lesson.coinCost} coins
+          </Button>
+          {!canAfford && (
+            <Link href="/wallet" className="w-full mt-2">
+              <Button variant="outline" size="sm" className="w-full gap-1.5">
+                <Coins className="w-3.5 h-3.5" /> Not enough coins — Buy more
+              </Button>
+            </Link>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function LessonPage() {
   const { courseId, lessonId } = useParams();
@@ -88,6 +152,14 @@ export default function LessonPage() {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if ((lesson as any).locked) {
+    return (
+      <div className="relative h-full">
+        <PremiumLessonLock lesson={lesson} courseId={courseId} onUnlocked={() => {}} />
       </div>
     );
   }

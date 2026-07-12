@@ -16,4 +16,7 @@ export interface Lesson {
   language: string;
   order: number;
   xpReward: number;
+  isPremium: boolean;
+  coinCost: number;
+  locked?: boolean;
 }

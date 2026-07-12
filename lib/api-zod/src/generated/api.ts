@@ -72,7 +72,10 @@ export const GetCourseResponse = zod.object({
   "codeExample": zod.string().nullish(),
   "language": zod.string(),
   "order": zod.number(),
-  "xpReward": zod.number()
+  "xpReward": zod.number(),
+  "isPremium": zod.boolean(),
+  "coinCost": zod.number(),
+  "locked": zod.boolean().optional()
 }))
 })
 
@@ -92,7 +95,10 @@ export const GetLessonResponse = zod.object({
   "codeExample": zod.string().nullish(),
   "language": zod.string(),
   "order": zod.number(),
-  "xpReward": zod.number()
+  "xpReward": zod.number(),
+  "isPremium": zod.boolean(),
+  "coinCost": zod.number(),
+  "locked": zod.boolean().optional()
 })
 
 
@@ -155,7 +161,10 @@ export const GetQuizByCourseResponse = zod.object({
   "question": zod.string(),
   "options": zod.array(zod.string()),
   "correctIndex": zod.number()
-}))
+})),
+  "isPremium": zod.boolean(),
+  "coinCost": zod.number(),
+  "locked": zod.boolean().optional()
 })
 
 
@@ -547,7 +556,7 @@ export const DeclineStudyGroupInviteResponse = zod.object({
  */
 export const ListNotificationsResponseItem = zod.object({
   "id": zod.number(),
-  "type": zod.enum(['group_invite', 'invite_accepted', 'invite_declined', 'mention', 'member_removed', 'role_changed']),
+  "type": zod.enum(['group_invite', 'invite_accepted', 'invite_declined', 'joined_via_code', 'mention', 'member_removed', 'role_changed']),
   "groupId": zod.number(),
   "groupName": zod.string().nullish(),
   "actorId": zod.string(),
@@ -874,6 +883,164 @@ export const RequestStudyGroupUploadUrlBody = zod.object({
 export const RequestStudyGroupUploadUrlResponse = zod.object({
   "uploadURL": zod.string(),
   "objectPath": zod.string()
+})
+
+
+/**
+ * @summary Check whether Paystack is configured
+ */
+export const GetWalletConfigResponse = zod.object({
+  "paystackConfigured": zod.boolean()
+})
+
+
+/**
+ * @summary List purchasable coin packages
+ */
+export const ListCoinPackagesResponseItem = zod.object({
+  "id": zod.string(),
+  "coins": zod.number(),
+  "priceNaira": zod.number()
+})
+export const ListCoinPackagesResponse = zod.array(ListCoinPackagesResponseItem)
+
+
+/**
+ * @summary Get the authenticated user's coin balance
+ */
+export const GetWalletBalanceResponse = zod.object({
+  "coinBalance": zod.number()
+})
+
+
+/**
+ * @summary Get the authenticated user's wallet transaction history
+ */
+export const GetMyWalletTransactionsResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "coins": zod.number(),
+  "amountNaira": zod.number(),
+  "paystackReference": zod.string(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "createdAt": zod.string().nullish(),
+  "verifiedAt": zod.string().nullish()
+})
+export const GetMyWalletTransactionsResponse = zod.array(GetMyWalletTransactionsResponseItem)
+
+
+/**
+ * @summary List premium content the authenticated user has unlocked
+ */
+export const GetMyUnlockedContentResponseItem = zod.object({
+  "contentType": zod.enum(['lesson', 'quiz']),
+  "contentId": zod.number()
+})
+export const GetMyUnlockedContentResponse = zod.array(GetMyUnlockedContentResponseItem)
+
+
+/**
+ * @summary Initialize a Paystack transaction for a coin package purchase
+ */
+export const InitializeCoinPurchaseBody = zod.object({
+  "packageId": zod.string(),
+  "returnUrl": zod.string().optional().describe('Base-path-aware URL the frontend wants Paystack to redirect back to after checkout.')
+})
+
+export const InitializeCoinPurchaseResponse = zod.object({
+  "authorizationUrl": zod.string(),
+  "reference": zod.string()
+})
+
+
+/**
+ * @summary Verify a Paystack transaction and credit coins if successful
+ */
+export const VerifyCoinPurchaseParams = zod.object({
+  "reference": zod.coerce.string()
+})
+
+export const VerifyCoinPurchaseResponse = zod.object({
+  "status": zod.enum(['success', 'failed', 'pending']),
+  "coinBalance": zod.number().nullable()
+})
+
+
+/**
+ * @summary Spend coins to unlock a premium lesson or quiz
+ */
+export const UnlockPremiumContentBody = zod.object({
+  "contentType": zod.enum(['lesson', 'quiz']),
+  "contentId": zod.number()
+})
+
+export const UnlockPremiumContentResponse = zod.object({
+  "success": zod.boolean(),
+  "alreadyUnlocked": zod.boolean().optional(),
+  "coinBalance": zod.number().nullish()
+})
+
+
+/**
+ * @summary Get wallet revenue stats (admin only)
+ */
+export const GetAdminWalletStatsResponse = zod.object({
+  "totalRevenueNaira": zod.number(),
+  "totalCoinsSold": zod.number(),
+  "successfulTransactions": zod.number(),
+  "pendingTransactions": zod.number()
+})
+
+
+/**
+ * @summary List/search/filter wallet transactions (admin only)
+ */
+export const listAdminWalletTransactionsQueryPageDefault = 1;
+export const listAdminWalletTransactionsQueryLimitDefault = 20;
+
+export const ListAdminWalletTransactionsQueryParams = zod.object({
+  "page": zod.coerce.number().default(listAdminWalletTransactionsQueryPageDefault),
+  "limit": zod.coerce.number().default(listAdminWalletTransactionsQueryLimitDefault),
+  "status": zod.coerce.string().nullish(),
+  "search": zod.coerce.string().nullish()
+})
+
+export const ListAdminWalletTransactionsResponse = zod.object({
+  "transactions": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "displayName": zod.string(),
+  "email": zod.string(),
+  "coins": zod.number(),
+  "amountNaira": zod.number(),
+  "paystackReference": zod.string(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "createdAt": zod.string().nullish(),
+  "verifiedAt": zod.string().nullish()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "limit": zod.number()
+})
+
+
+/**
+ * @summary Export all wallet transactions as CSV (admin only)
+ */
+export const ExportAdminWalletTransactionsResponse = zod.unknown()
+
+
+/**
+ * @summary Manually credit or debit a user's coin balance (admin only)
+ */
+export const AdjustUserCoinsBody = zod.object({
+  "userId": zod.string(),
+  "amount": zod.number(),
+  "reason": zod.string()
+})
+
+export const AdjustUserCoinsResponse = zod.object({
+  "coinBalance": zod.number()
 })
 
 

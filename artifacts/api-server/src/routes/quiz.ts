@@ -6,9 +6,10 @@ import {
   quizAttemptsTable,
   quizSessionsTable,
   userStatsTable,
+  contentUnlocksTable,
   type SessionParticipant,
 } from "@workspace/db";
-import { eq, sql, desc, asc } from "drizzle-orm";
+import { eq, sql, desc, asc, and } from "drizzle-orm";
 import { requireAuth, getAuth } from "@clerk/express";
 import crypto from "crypto";
 
@@ -99,12 +100,32 @@ router.get("/course/:courseId", async (req, res) => {
   const quiz = await db.select().from(quizzesTable).where(eq(quizzesTable.courseId, courseId)).limit(1);
   if (!quiz[0]) { res.status(404).json({ error: "Quiz not found" }); return; }
 
+  if (quiz[0].isPremium) {
+    const { userId } = getAuth(req);
+    const unlocked = userId
+      ? await db
+          .select()
+          .from(contentUnlocksTable)
+          .where(and(
+            eq(contentUnlocksTable.userId, userId),
+            eq(contentUnlocksTable.contentType, "quiz"),
+            eq(contentUnlocksTable.contentId, quiz[0].id),
+          ))
+          .limit(1)
+      : [];
+
+    if (unlocked.length === 0) {
+      res.json({ ...quiz[0], questions: [], locked: true });
+      return;
+    }
+  }
+
   const questions = await db
     .select()
     .from(quizQuestionsTable)
     .where(eq(quizQuestionsTable.quizId, quiz[0].id))
     .orderBy(asc(quizQuestionsTable.id));
-  res.json({ ...quiz[0], questions });
+  res.json({ ...quiz[0], questions, locked: false });
 });
 
 // GET /quiz/attempts/me

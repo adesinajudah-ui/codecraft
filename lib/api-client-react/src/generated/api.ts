@@ -20,16 +20,24 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdjustCoinsInput,
+  AdjustCoinsResponse,
   AdminStats,
   AdminUserList,
+  AdminWalletStats,
+  AdminWalletTransactionList,
   CodeRunInput,
   CodeRunResult,
+  CoinPackage,
+  ContentUnlock,
   Course,
   CourseDetail,
   CreateStudyGroupInput,
   CreateStudyGroupMessageInput,
   GetLeaderboardParams,
   HealthStatus,
+  InitializePurchaseInput,
+  InitializePurchaseResponse,
   InviteCodeOut,
   InviteMembersInput,
   JoinCodePreview,
@@ -38,6 +46,7 @@ import type {
   LeaderboardEntry,
   Lesson,
   ListAdminUsersParams,
+  ListAdminWalletTransactionsParams,
   ListStudyGroupMessagesParams,
   PendingInvite,
   ProgressInput,
@@ -59,11 +68,17 @@ import type {
   StudyGroupNotification,
   StudyGroupSummary,
   ToggleReactionInput,
+  UnlockContentInput,
+  UnlockContentResponse,
   UpdateMemberRoleInput,
   UpdateStudyGroupInput,
   UserProgress,
   UserSearchResult,
-  UsernameResponse
+  UsernameResponse,
+  VerifyPurchaseResponse,
+  WalletBalance,
+  WalletConfig,
+  WalletTransaction
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -3366,5 +3381,915 @@ export const useRequestStudyGroupUploadUrl = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRequestStudyGroupUploadUrlMutationOptions(options));
+    }
+
+export const getGetWalletConfigUrl = () => {
+
+
+
+
+  return `/api/wallet/config`
+}
+
+/**
+ * @summary Check whether Paystack is configured
+ */
+export const getWalletConfig = async ( options?: RequestInit): Promise<WalletConfig> => {
+
+  return customFetch<WalletConfig>(getGetWalletConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWalletConfigQueryKey = () => {
+    return [
+    `/api/wallet/config`
+    ] as const;
+    }
+
+
+export const getGetWalletConfigQueryOptions = <TData = Awaited<ReturnType<typeof getWalletConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWalletConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWalletConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWalletConfig>>> = ({ signal }) => getWalletConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWalletConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWalletConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getWalletConfig>>>
+export type GetWalletConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check whether Paystack is configured
+ */
+
+export function useGetWalletConfig<TData = Awaited<ReturnType<typeof getWalletConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWalletConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWalletConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListCoinPackagesUrl = () => {
+
+
+
+
+  return `/api/wallet/packages`
+}
+
+/**
+ * @summary List purchasable coin packages
+ */
+export const listCoinPackages = async ( options?: RequestInit): Promise<CoinPackage[]> => {
+
+  return customFetch<CoinPackage[]>(getListCoinPackagesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCoinPackagesQueryKey = () => {
+    return [
+    `/api/wallet/packages`
+    ] as const;
+    }
+
+
+export const getListCoinPackagesQueryOptions = <TData = Awaited<ReturnType<typeof listCoinPackages>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCoinPackages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCoinPackagesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCoinPackages>>> = ({ signal }) => listCoinPackages({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCoinPackages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCoinPackagesQueryResult = NonNullable<Awaited<ReturnType<typeof listCoinPackages>>>
+export type ListCoinPackagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List purchasable coin packages
+ */
+
+export function useListCoinPackages<TData = Awaited<ReturnType<typeof listCoinPackages>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCoinPackages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCoinPackagesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWalletBalanceUrl = () => {
+
+
+
+
+  return `/api/wallet/balance`
+}
+
+/**
+ * @summary Get the authenticated user's coin balance
+ */
+export const getWalletBalance = async ( options?: RequestInit): Promise<WalletBalance> => {
+
+  return customFetch<WalletBalance>(getGetWalletBalanceUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWalletBalanceQueryKey = () => {
+    return [
+    `/api/wallet/balance`
+    ] as const;
+    }
+
+
+export const getGetWalletBalanceQueryOptions = <TData = Awaited<ReturnType<typeof getWalletBalance>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWalletBalance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWalletBalanceQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWalletBalance>>> = ({ signal }) => getWalletBalance({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWalletBalance>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWalletBalanceQueryResult = NonNullable<Awaited<ReturnType<typeof getWalletBalance>>>
+export type GetWalletBalanceQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the authenticated user's coin balance
+ */
+
+export function useGetWalletBalance<TData = Awaited<ReturnType<typeof getWalletBalance>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWalletBalance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWalletBalanceQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyWalletTransactionsUrl = () => {
+
+
+
+
+  return `/api/wallet/transactions`
+}
+
+/**
+ * @summary Get the authenticated user's wallet transaction history
+ */
+export const getMyWalletTransactions = async ( options?: RequestInit): Promise<WalletTransaction[]> => {
+
+  return customFetch<WalletTransaction[]>(getGetMyWalletTransactionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyWalletTransactionsQueryKey = () => {
+    return [
+    `/api/wallet/transactions`
+    ] as const;
+    }
+
+
+export const getGetMyWalletTransactionsQueryOptions = <TData = Awaited<ReturnType<typeof getMyWalletTransactions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyWalletTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyWalletTransactionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyWalletTransactions>>> = ({ signal }) => getMyWalletTransactions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyWalletTransactions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyWalletTransactionsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyWalletTransactions>>>
+export type GetMyWalletTransactionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the authenticated user's wallet transaction history
+ */
+
+export function useGetMyWalletTransactions<TData = Awaited<ReturnType<typeof getMyWalletTransactions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyWalletTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyWalletTransactionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyUnlockedContentUrl = () => {
+
+
+
+
+  return `/api/wallet/unlocked`
+}
+
+/**
+ * @summary List premium content the authenticated user has unlocked
+ */
+export const getMyUnlockedContent = async ( options?: RequestInit): Promise<ContentUnlock[]> => {
+
+  return customFetch<ContentUnlock[]>(getGetMyUnlockedContentUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyUnlockedContentQueryKey = () => {
+    return [
+    `/api/wallet/unlocked`
+    ] as const;
+    }
+
+
+export const getGetMyUnlockedContentQueryOptions = <TData = Awaited<ReturnType<typeof getMyUnlockedContent>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyUnlockedContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyUnlockedContentQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyUnlockedContent>>> = ({ signal }) => getMyUnlockedContent({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyUnlockedContent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyUnlockedContentQueryResult = NonNullable<Awaited<ReturnType<typeof getMyUnlockedContent>>>
+export type GetMyUnlockedContentQueryError = ErrorType<void>
+
+
+/**
+ * @summary List premium content the authenticated user has unlocked
+ */
+
+export function useGetMyUnlockedContent<TData = Awaited<ReturnType<typeof getMyUnlockedContent>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyUnlockedContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyUnlockedContentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getInitializeCoinPurchaseUrl = () => {
+
+
+
+
+  return `/api/wallet/paystack/initialize`
+}
+
+/**
+ * @summary Initialize a Paystack transaction for a coin package purchase
+ */
+export const initializeCoinPurchase = async (initializePurchaseInput: InitializePurchaseInput, options?: RequestInit): Promise<InitializePurchaseResponse> => {
+
+  return customFetch<InitializePurchaseResponse>(getInitializeCoinPurchaseUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(initializePurchaseInput)
+  }
+);}
+
+
+
+
+export const getInitializeCoinPurchaseMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initializeCoinPurchase>>, TError,{data: BodyType<InitializePurchaseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof initializeCoinPurchase>>, TError,{data: BodyType<InitializePurchaseInput>}, TContext> => {
+
+const mutationKey = ['initializeCoinPurchase'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof initializeCoinPurchase>>, {data: BodyType<InitializePurchaseInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  initializeCoinPurchase(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InitializeCoinPurchaseMutationResult = NonNullable<Awaited<ReturnType<typeof initializeCoinPurchase>>>
+    export type InitializeCoinPurchaseMutationBody = BodyType<InitializePurchaseInput>
+    export type InitializeCoinPurchaseMutationError = ErrorType<void>
+
+    /**
+ * @summary Initialize a Paystack transaction for a coin package purchase
+ */
+export const useInitializeCoinPurchase = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initializeCoinPurchase>>, TError,{data: BodyType<InitializePurchaseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof initializeCoinPurchase>>,
+        TError,
+        {data: BodyType<InitializePurchaseInput>},
+        TContext
+      > => {
+      return useMutation(getInitializeCoinPurchaseMutationOptions(options));
+    }
+
+export const getVerifyCoinPurchaseUrl = (reference: string,) => {
+
+
+
+
+  return `/api/wallet/paystack/verify/${reference}`
+}
+
+/**
+ * @summary Verify a Paystack transaction and credit coins if successful
+ */
+export const verifyCoinPurchase = async (reference: string, options?: RequestInit): Promise<VerifyPurchaseResponse> => {
+
+  return customFetch<VerifyPurchaseResponse>(getVerifyCoinPurchaseUrl(reference),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getVerifyCoinPurchaseQueryKey = (reference: string,) => {
+    return [
+    `/api/wallet/paystack/verify/${reference}`
+    ] as const;
+    }
+
+
+export const getVerifyCoinPurchaseQueryOptions = <TData = Awaited<ReturnType<typeof verifyCoinPurchase>>, TError = ErrorType<void>>(reference: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifyCoinPurchase>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getVerifyCoinPurchaseQueryKey(reference);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof verifyCoinPurchase>>> = ({ signal }) => verifyCoinPurchase(reference, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: reference !== null && reference !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof verifyCoinPurchase>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type VerifyCoinPurchaseQueryResult = NonNullable<Awaited<ReturnType<typeof verifyCoinPurchase>>>
+export type VerifyCoinPurchaseQueryError = ErrorType<void>
+
+
+/**
+ * @summary Verify a Paystack transaction and credit coins if successful
+ */
+
+export function useVerifyCoinPurchase<TData = Awaited<ReturnType<typeof verifyCoinPurchase>>, TError = ErrorType<void>>(
+ reference: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifyCoinPurchase>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getVerifyCoinPurchaseQueryOptions(reference,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUnlockPremiumContentUrl = () => {
+
+
+
+
+  return `/api/wallet/unlock`
+}
+
+/**
+ * @summary Spend coins to unlock a premium lesson or quiz
+ */
+export const unlockPremiumContent = async (unlockContentInput: UnlockContentInput, options?: RequestInit): Promise<UnlockContentResponse> => {
+
+  return customFetch<UnlockContentResponse>(getUnlockPremiumContentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(unlockContentInput)
+  }
+);}
+
+
+
+
+export const getUnlockPremiumContentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlockPremiumContent>>, TError,{data: BodyType<UnlockContentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlockPremiumContent>>, TError,{data: BodyType<UnlockContentInput>}, TContext> => {
+
+const mutationKey = ['unlockPremiumContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlockPremiumContent>>, {data: BodyType<UnlockContentInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  unlockPremiumContent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlockPremiumContentMutationResult = NonNullable<Awaited<ReturnType<typeof unlockPremiumContent>>>
+    export type UnlockPremiumContentMutationBody = BodyType<UnlockContentInput>
+    export type UnlockPremiumContentMutationError = ErrorType<void>
+
+    /**
+ * @summary Spend coins to unlock a premium lesson or quiz
+ */
+export const useUnlockPremiumContent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlockPremiumContent>>, TError,{data: BodyType<UnlockContentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlockPremiumContent>>,
+        TError,
+        {data: BodyType<UnlockContentInput>},
+        TContext
+      > => {
+      return useMutation(getUnlockPremiumContentMutationOptions(options));
+    }
+
+export const getGetAdminWalletStatsUrl = () => {
+
+
+
+
+  return `/api/admin/wallet/stats`
+}
+
+/**
+ * @summary Get wallet revenue stats (admin only)
+ */
+export const getAdminWalletStats = async ( options?: RequestInit): Promise<AdminWalletStats> => {
+
+  return customFetch<AdminWalletStats>(getGetAdminWalletStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminWalletStatsQueryKey = () => {
+    return [
+    `/api/admin/wallet/stats`
+    ] as const;
+    }
+
+
+export const getGetAdminWalletStatsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminWalletStats>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminWalletStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminWalletStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminWalletStats>>> = ({ signal }) => getAdminWalletStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminWalletStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminWalletStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminWalletStats>>>
+export type GetAdminWalletStatsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get wallet revenue stats (admin only)
+ */
+
+export function useGetAdminWalletStats<TData = Awaited<ReturnType<typeof getAdminWalletStats>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminWalletStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminWalletStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminWalletTransactionsUrl = (params?: ListAdminWalletTransactionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/wallet/transactions?${stringifiedParams}` : `/api/admin/wallet/transactions`
+}
+
+/**
+ * @summary List/search/filter wallet transactions (admin only)
+ */
+export const listAdminWalletTransactions = async (params?: ListAdminWalletTransactionsParams, options?: RequestInit): Promise<AdminWalletTransactionList> => {
+
+  return customFetch<AdminWalletTransactionList>(getListAdminWalletTransactionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminWalletTransactionsQueryKey = (params?: ListAdminWalletTransactionsParams,) => {
+    return [
+    `/api/admin/wallet/transactions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminWalletTransactionsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminWalletTransactions>>, TError = ErrorType<void>>(params?: ListAdminWalletTransactionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminWalletTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminWalletTransactionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminWalletTransactions>>> = ({ signal }) => listAdminWalletTransactions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminWalletTransactions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminWalletTransactionsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminWalletTransactions>>>
+export type ListAdminWalletTransactionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List/search/filter wallet transactions (admin only)
+ */
+
+export function useListAdminWalletTransactions<TData = Awaited<ReturnType<typeof listAdminWalletTransactions>>, TError = ErrorType<void>>(
+ params?: ListAdminWalletTransactionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminWalletTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminWalletTransactionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportAdminWalletTransactionsUrl = () => {
+
+
+
+
+  return `/api/admin/wallet/transactions/export`
+}
+
+/**
+ * @summary Export all wallet transactions as CSV (admin only)
+ */
+export const exportAdminWalletTransactions = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getExportAdminWalletTransactionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportAdminWalletTransactionsQueryKey = () => {
+    return [
+    `/api/admin/wallet/transactions/export`
+    ] as const;
+    }
+
+
+export const getExportAdminWalletTransactionsQueryOptions = <TData = Awaited<ReturnType<typeof exportAdminWalletTransactions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAdminWalletTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportAdminWalletTransactionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAdminWalletTransactions>>> = ({ signal }) => exportAdminWalletTransactions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportAdminWalletTransactions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportAdminWalletTransactionsQueryResult = NonNullable<Awaited<ReturnType<typeof exportAdminWalletTransactions>>>
+export type ExportAdminWalletTransactionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Export all wallet transactions as CSV (admin only)
+ */
+
+export function useExportAdminWalletTransactions<TData = Awaited<ReturnType<typeof exportAdminWalletTransactions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAdminWalletTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportAdminWalletTransactionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdjustUserCoinsUrl = () => {
+
+
+
+
+  return `/api/admin/wallet/adjust`
+}
+
+/**
+ * @summary Manually credit or debit a user's coin balance (admin only)
+ */
+export const adjustUserCoins = async (adjustCoinsInput: AdjustCoinsInput, options?: RequestInit): Promise<AdjustCoinsResponse> => {
+
+  return customFetch<AdjustCoinsResponse>(getAdjustUserCoinsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adjustCoinsInput)
+  }
+);}
+
+
+
+
+export const getAdjustUserCoinsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adjustUserCoins>>, TError,{data: BodyType<AdjustCoinsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adjustUserCoins>>, TError,{data: BodyType<AdjustCoinsInput>}, TContext> => {
+
+const mutationKey = ['adjustUserCoins'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adjustUserCoins>>, {data: BodyType<AdjustCoinsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adjustUserCoins(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdjustUserCoinsMutationResult = NonNullable<Awaited<ReturnType<typeof adjustUserCoins>>>
+    export type AdjustUserCoinsMutationBody = BodyType<AdjustCoinsInput>
+    export type AdjustUserCoinsMutationError = ErrorType<void>
+
+    /**
+ * @summary Manually credit or debit a user's coin balance (admin only)
+ */
+export const useAdjustUserCoins = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adjustUserCoins>>, TError,{data: BodyType<AdjustCoinsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adjustUserCoins>>,
+        TError,
+        {data: BodyType<AdjustCoinsInput>},
+        TContext
+      > => {
+      return useMutation(getAdjustUserCoinsMutationOptions(options));
     }
 

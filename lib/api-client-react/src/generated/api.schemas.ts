@@ -48,6 +48,9 @@ export interface Lesson {
   language: string;
   order: number;
   xpReward: number;
+  isPremium: boolean;
+  coinCost: number;
+  locked?: boolean;
 }
 
 export type CourseDetailLevel = typeof CourseDetailLevel[keyof typeof CourseDetailLevel];
@@ -103,6 +106,9 @@ export interface Quiz {
   courseId: number;
   title: string;
   questions: QuizQuestion[];
+  isPremium: boolean;
+  coinCost: number;
+  locked?: boolean;
 }
 
 export interface QuizAttemptInput {
@@ -469,6 +475,7 @@ export const StudyGroupNotificationType = {
   group_invite: 'group_invite',
   invite_accepted: 'invite_accepted',
   invite_declined: 'invite_declined',
+  joined_via_code: 'joined_via_code',
   mention: 'mention',
   member_removed: 'member_removed',
   role_changed: 'role_changed',
@@ -501,6 +508,149 @@ export interface RequestUploadUrlResponse {
   objectPath: string;
 }
 
+export interface WalletConfig {
+  paystackConfigured: boolean;
+}
+
+export interface CoinPackage {
+  id: string;
+  coins: number;
+  priceNaira: number;
+}
+
+export interface WalletBalance {
+  coinBalance: number;
+}
+
+export type WalletTransactionStatus = typeof WalletTransactionStatus[keyof typeof WalletTransactionStatus];
+
+
+export const WalletTransactionStatus = {
+  pending: 'pending',
+  success: 'success',
+  failed: 'failed',
+} as const;
+
+export interface WalletTransaction {
+  id: number;
+  userId: string;
+  coins: number;
+  amountNaira: number;
+  paystackReference: string;
+  status: WalletTransactionStatus;
+  /** @nullable */
+  createdAt?: string | null;
+  /** @nullable */
+  verifiedAt?: string | null;
+}
+
+export type ContentUnlockContentType = typeof ContentUnlockContentType[keyof typeof ContentUnlockContentType];
+
+
+export const ContentUnlockContentType = {
+  lesson: 'lesson',
+  quiz: 'quiz',
+} as const;
+
+export interface ContentUnlock {
+  contentType: ContentUnlockContentType;
+  contentId: number;
+}
+
+export interface InitializePurchaseInput {
+  packageId: string;
+  /** Base-path-aware URL the frontend wants Paystack to redirect back to after checkout. */
+  returnUrl?: string;
+}
+
+export interface InitializePurchaseResponse {
+  authorizationUrl: string;
+  reference: string;
+}
+
+export type VerifyPurchaseResponseStatus = typeof VerifyPurchaseResponseStatus[keyof typeof VerifyPurchaseResponseStatus];
+
+
+export const VerifyPurchaseResponseStatus = {
+  success: 'success',
+  failed: 'failed',
+  pending: 'pending',
+} as const;
+
+export interface VerifyPurchaseResponse {
+  status: VerifyPurchaseResponseStatus;
+  /** @nullable */
+  coinBalance: number | null;
+}
+
+export type UnlockContentInputContentType = typeof UnlockContentInputContentType[keyof typeof UnlockContentInputContentType];
+
+
+export const UnlockContentInputContentType = {
+  lesson: 'lesson',
+  quiz: 'quiz',
+} as const;
+
+export interface UnlockContentInput {
+  contentType: UnlockContentInputContentType;
+  contentId: number;
+}
+
+export interface UnlockContentResponse {
+  success: boolean;
+  alreadyUnlocked?: boolean;
+  /** @nullable */
+  coinBalance?: number | null;
+}
+
+export interface AdminWalletStats {
+  totalRevenueNaira: number;
+  totalCoinsSold: number;
+  successfulTransactions: number;
+  pendingTransactions: number;
+}
+
+export type AdminWalletTransactionStatus = typeof AdminWalletTransactionStatus[keyof typeof AdminWalletTransactionStatus];
+
+
+export const AdminWalletTransactionStatus = {
+  pending: 'pending',
+  success: 'success',
+  failed: 'failed',
+} as const;
+
+export interface AdminWalletTransaction {
+  id: number;
+  userId: string;
+  displayName: string;
+  email: string;
+  coins: number;
+  amountNaira: number;
+  paystackReference: string;
+  status: AdminWalletTransactionStatus;
+  /** @nullable */
+  createdAt?: string | null;
+  /** @nullable */
+  verifiedAt?: string | null;
+}
+
+export interface AdminWalletTransactionList {
+  transactions: AdminWalletTransaction[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdjustCoinsInput {
+  userId: string;
+  amount: number;
+  reason: string;
+}
+
+export interface AdjustCoinsResponse {
+  coinBalance: number;
+}
+
 export type GetLeaderboardParams = {
 limit?: number;
 /**
@@ -528,5 +678,18 @@ export type ListStudyGroupMessagesParams = {
  */
 before?: number;
 limit?: number;
+};
+
+export type ListAdminWalletTransactionsParams = {
+page?: number;
+limit?: number;
+/**
+ * @nullable
+ */
+status?: string | null;
+/**
+ * @nullable
+ */
+search?: string | null;
 };
 

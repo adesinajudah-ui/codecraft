@@ -12,4 +12,7 @@ export interface Quiz {
   courseId: number;
   title: string;
   questions: QuizQuestion[];
+  isPremium: boolean;
+  coinCost: number;
+  locked?: boolean;
 }

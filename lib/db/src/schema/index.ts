@@ -4,3 +4,4 @@ export * from "./lessons";
 export * from "./progress";
 export * from "./quiz";
 export * from "./studyGroups";
+export * from "./wallet";

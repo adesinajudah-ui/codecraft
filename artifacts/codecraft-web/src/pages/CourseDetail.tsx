@@ -2,7 +2,8 @@ import { useGetCourse, useGetUserProgress, getGetCourseQueryKey, getGetUserProgr
 import { useParams, Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, Circle, ArrowLeft, PlayCircle, Trophy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, CheckCircle2, Circle, ArrowLeft, PlayCircle, Trophy, Lock, Coins } from "lucide-react";
 
 export default function CourseDetail() {
   const { courseId } = useParams();
@@ -65,18 +66,26 @@ export default function CourseDetail() {
       <div className="space-y-2 mb-6">
         {course.lessons.map((lesson, idx) => {
           const isCompleted = completedLessonIds.has(lesson.id);
+          const isPremium = (lesson as any).isPremium;
           return (
             <Card key={lesson.id} className={`transition-colors ${isCompleted ? "bg-secondary/20" : ""}`}>
               <CardContent className="p-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {isCompleted ? (
                     <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  ) : isPremium ? (
+                    <Lock className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                   ) : (
                     <Circle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <div className="font-medium text-sm truncate">
+                    <div className="font-medium text-sm truncate flex items-center gap-1.5">
                       {idx + 1}. {lesson.title}
+                      {isPremium && (
+                        <Badge variant="outline" className="border-yellow-500/40 text-yellow-500 text-[10px] gap-0.5 px-1.5 py-0">
+                          <Coins className="w-2.5 h-2.5" />{(lesson as any).coinCost}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-xs font-mono text-muted-foreground">
                       {lesson.xpReward} XP
@@ -85,7 +94,7 @@ export default function CourseDetail() {
                 </div>
                 <Link href={`/learn/${course.id}/lesson/${lesson.id}`} className="flex-shrink-0">
                   <Button size="sm" variant={isCompleted ? "outline" : "default"} className="h-8 text-xs px-3">
-                    {isCompleted ? "Review" : "Start"}
+                    {isCompleted ? "Review" : isPremium ? "Unlock" : "Start"}
                   </Button>
                 </Link>
               </CardContent>

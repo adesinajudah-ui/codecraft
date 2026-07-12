@@ -20,6 +20,7 @@ export const userStatsTable = pgTable("user_stats", {
   username: text("username").unique(),
   avatarUrl: text("avatar_url"),
   xp: integer("xp").notNull().default(0),
+  coinBalance: integer("coin_balance").notNull().default(0),
   lessonsCompleted: integer("lessons_completed").notNull().default(0),
   quizzesPassed: integer("quizzes_passed").notNull().default(0),
   joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow(),

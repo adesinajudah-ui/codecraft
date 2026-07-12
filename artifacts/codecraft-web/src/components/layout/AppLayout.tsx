@@ -21,15 +21,18 @@ import {
   GraduationCap,
   Menu,
   UsersRound,
+  UserCircle,
+  Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useListPendingInvites } from "@workspace/api-client-react";
+import { useListPendingInvites, useGetWalletBalance } from "@workspace/api-client-react";
 import { useIsDesktop } from "@/hooks/use-desktop";
 
 const drawerNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/account", label: "Account", icon: UserCircle },
   { href: "/learn", label: "Learn", icon: BookOpen },
   { href: "/my-courses", label: "My Courses", icon: BookMarked },
   { href: "/editor", label: "Practice", icon: TerminalSquare },
@@ -39,6 +42,18 @@ const drawerNavItems = [
   { href: "/certificates", label: "Certificates", icon: Award },
   { href: "/community", label: "Community", icon: Users },
 ];
+
+function CoinBalanceBadge() {
+  const { data } = useGetWalletBalance();
+  return (
+    <Link href="/wallet">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-500 cursor-pointer hover:bg-yellow-500/25 transition-colors">
+        <Coins className="w-3.5 h-3.5" />
+        <span className="text-xs font-bold font-mono">{data?.coinBalance ?? 0}</span>
+      </div>
+    </Link>
+  );
+}
 
 const bottomNavItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -159,7 +174,8 @@ function DesktopShell({ children, allNavItems, pendingCount, location }: {
     <div className="min-h-screen flex bg-background">
       <DesktopSidebar allNavItems={allNavItems} pendingCount={pendingCount} location={location} />
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="flex items-center justify-end px-6 py-3 border-b border-border bg-card flex-shrink-0">
+        <header className="flex items-center justify-end gap-3 px-6 py-3 border-b border-border bg-card flex-shrink-0">
+          <CoinBalanceBadge />
           <ThemeToggle />
         </header>
         <main className="flex-1 overflow-y-auto">
@@ -207,7 +223,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <GraduationCap className="w-5 h-5 text-primary" />
             <span className="font-bold font-mono text-primary">CodeCraft</span>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <CoinBalanceBadge />
+            <ThemeToggle />
+          </div>
         </header>
 
         {/* Drawer Overlay */}

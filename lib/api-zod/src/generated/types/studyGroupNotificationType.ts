@@ -13,6 +13,7 @@ export const StudyGroupNotificationType = {
   group_invite: 'group_invite',
   invite_accepted: 'invite_accepted',
   invite_declined: 'invite_declined',
+  joined_via_code: 'joined_via_code',
   mention: 'mention',
   member_removed: 'member_removed',
   role_changed: 'role_changed',

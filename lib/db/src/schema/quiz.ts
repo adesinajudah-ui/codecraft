@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -20,6 +20,8 @@ export const quizzesTable = pgTable("quizzes", {
   id: serial("id").primaryKey(),
   courseId: integer("course_id").notNull(),
   title: text("title").notNull(),
+  isPremium: boolean("is_premium").notNull().default(false),
+  coinCost: integer("coin_cost").notNull().default(0),
 });
 
 export const quizQuestionsTable = pgTable("quiz_questions", {

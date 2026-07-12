@@ -10,6 +10,7 @@ import leaderboardRouter from "./leaderboard";
 import adminRouter from "./admin";
 import studyGroupsRouter, { usersRouter } from "./studyGroups";
 import storageRouter from "./storage";
+import walletRouter from "./wallet";
 
 const router: IRouter = Router();
 
@@ -24,6 +25,7 @@ router.use("/leaderboard", leaderboardRouter);
 router.use("/admin", adminRouter);
 router.use("/study-groups", studyGroupsRouter);
 router.use("/users", usersRouter);
+router.use("/wallet", walletRouter);
 router.use(storageRouter);
 
 export default router;

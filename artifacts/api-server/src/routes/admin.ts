@@ -7,9 +7,11 @@ import {
   languagesTable,
   lessonsTable,
   coursesTable,
+  walletTransactionsTable,
+  coinAdjustmentsTable,
 } from "@workspace/db";
 import { requireAuth, getAuth } from "@clerk/express";
-import { eq, sql, gte, ilike, or } from "drizzle-orm";
+import { eq, sql, gte, ilike, or, and, desc } from "drizzle-orm";
 import { seedHtmlCompleteCourse } from "../seedHtmlComplete";
 import { seedHtmlLessons9to16 } from "../seedHtmlLessons9to16";
 
@@ -125,6 +127,123 @@ router.post("/seed-html-9-16", requireAuth(), async (req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── Wallet / payments admin ─────────────────────────────────────────────────
+
+router.get("/wallet/stats", requireAuth(), async (req, res) => {
+  if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const successful = await db
+    .select({
+      totalRevenueNaira: sql<number>`coalesce(sum(${walletTransactionsTable.amountNaira}), 0)::int`,
+      totalCoinsSold: sql<number>`coalesce(sum(${walletTransactionsTable.coins}), 0)::int`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(walletTransactionsTable)
+    .where(eq(walletTransactionsTable.status, "success"));
+
+  const pending = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(walletTransactionsTable)
+    .where(eq(walletTransactionsTable.status, "pending"));
+
+  res.json({
+    totalRevenueNaira: successful[0]?.totalRevenueNaira ?? 0,
+    totalCoinsSold: successful[0]?.totalCoinsSold ?? 0,
+    successfulTransactions: successful[0]?.count ?? 0,
+    pendingTransactions: pending[0]?.count ?? 0,
+  });
+});
+
+router.get("/wallet/transactions", requireAuth(), async (req, res) => {
+  if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, parseInt(req.query.limit as string) || 20);
+  const status = req.query.status as string | undefined;
+  const search = req.query.search as string | undefined;
+  const offset = (page - 1) * limit;
+
+  const conditions = [];
+  if (status && ["pending", "success", "failed"].includes(status)) {
+    conditions.push(eq(walletTransactionsTable.status, status));
+  }
+  if (search) {
+    conditions.push(or(
+      ilike(walletTransactionsTable.userId, `%${search}%`),
+      ilike(walletTransactionsTable.paystackReference, `%${search}%`),
+    ));
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [rows, total] = await Promise.all([
+    db.select().from(walletTransactionsTable).where(where).orderBy(desc(walletTransactionsTable.createdAt)).limit(limit).offset(offset),
+    db.select({ count: sql<number>`count(*)::int` }).from(walletTransactionsTable).where(where),
+  ]);
+
+  const userIds = [...new Set(rows.map((r) => r.userId))];
+  const users = userIds.length > 0
+    ? await db.select().from(userStatsTable).where(sql`${userStatsTable.userId} = ANY(${userIds})`)
+    : [];
+  const userMap = new Map(users.map((u) => [u.userId, u]));
+
+  res.json({
+    transactions: rows.map((r) => ({
+      ...r,
+      createdAt: r.createdAt?.toISOString() ?? null,
+      verifiedAt: r.verifiedAt?.toISOString() ?? null,
+      displayName: userMap.get(r.userId)?.displayName ?? "Unknown",
+      email: userMap.get(r.userId)?.email ?? "",
+    })),
+    total: total[0]?.count ?? 0,
+    page,
+    limit,
+  });
+});
+
+router.get("/wallet/transactions/export", requireAuth(), async (req, res) => {
+  if (!isAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const rows = await db.select().from(walletTransactionsTable).orderBy(desc(walletTransactionsTable.createdAt));
+  const header = "id,userId,coins,amountNaira,reference,status,createdAt,verifiedAt";
+  const lines = rows.map((r) => [
+    r.id,
+    r.userId,
+    r.coins,
+    r.amountNaira,
+    r.paystackReference,
+    r.status,
+    r.createdAt?.toISOString() ?? "",
+    r.verifiedAt?.toISOString() ?? "",
+  ].join(","));
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", "attachment; filename=wallet-transactions.csv");
+  res.send([header, ...lines].join("\n"));
+});
+
+router.post("/wallet/adjust", requireAuth(), async (req, res) => {
+  const { userId: adminUserId } = getAuth(req);
+  if (!isAdmin(req) || !adminUserId) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const { userId, amount, reason } = req.body as { userId?: string; amount?: number; reason?: string };
+  if (!userId || !Number.isInteger(amount) || !amount || !reason) {
+    res.status(400).json({ error: "userId, non-zero integer amount, and reason are required" });
+    return;
+  }
+
+  const updated = await db
+    .update(userStatsTable)
+    .set({ coinBalance: sql`greatest(${userStatsTable.coinBalance} + ${amount}, 0)` })
+    .where(eq(userStatsTable.userId, userId))
+    .returning();
+
+  if (!updated[0]) { res.status(404).json({ error: "User not found" }); return; }
+
+  await db.insert(coinAdjustmentsTable).values({ userId, amount, reason, adminUserId });
+
+  res.json({ coinBalance: updated[0].coinBalance });
 });
 
 export default router;

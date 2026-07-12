@@ -1,10 +1,75 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useGetQuizByCourse, useSubmitQuizAttempt, getGetQuizByCourseQueryKey } from "@workspace/api-client-react";
+import {
+  useGetQuizByCourse, useSubmitQuizAttempt, getGetQuizByCourseQueryKey,
+  useUnlockPremiumContent, useGetWalletBalance, getGetWalletBalanceQueryKey,
+} from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Trophy, CheckCircle2, XCircle, ChevronRight, RotateCcw } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2, ArrowLeft, Trophy, CheckCircle2, XCircle, ChevronRight, RotateCcw, Lock, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
+
+function PremiumQuizLock({ quiz, courseId, onUnlocked }: { quiz: any; courseId: string | undefined; onUnlocked: () => void }) {
+  const { toast } = useToast();
+  const { data: balance } = useGetWalletBalance();
+  const unlock = useUnlockPremiumContent();
+  const canAfford = (balance?.coinBalance ?? 0) >= quiz.coinCost;
+
+  const handleUnlock = () => {
+    unlock.mutate({ data: { contentType: "quiz", contentId: quiz.id } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetWalletBalanceQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetQuizByCourseQueryKey(courseId ? parseInt(courseId, 10) : 0) });
+        toast({ title: "Quiz unlocked! 🔓", description: `${quiz.coinCost} coins deducted.` });
+        onUnlocked();
+      },
+      onError: (err: any) => {
+        if (err?.status === 402) {
+          toast({ title: "Not enough coins", description: `You need ${quiz.coinCost} coins but only have ${balance?.coinBalance ?? 0}.`, variant: "destructive" });
+        } else {
+          toast({ title: "Couldn't unlock quiz", description: "Please try again.", variant: "destructive" });
+        }
+      },
+    });
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center p-6 text-center min-h-[60vh] relative">
+      <Link href={`/learn/${courseId}`}>
+        <Button variant="ghost" size="sm" className="absolute top-0 left-0 text-muted-foreground gap-1.5 h-8 px-2">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Button>
+      </Link>
+      <Card className="max-w-sm w-full border-yellow-500/30">
+        <CardContent className="p-6 flex flex-col items-center">
+          <div className="w-14 h-14 rounded-full bg-yellow-500/15 flex items-center justify-center mb-3">
+            <Lock className="w-7 h-7 text-yellow-500" />
+          </div>
+          <h2 className="text-lg font-bold mb-1">{quiz.title}</h2>
+          <p className="text-sm text-muted-foreground mb-4">This is a premium quiz. Unlock it to answer the questions.</p>
+          <Button
+            className="gap-1.5 w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+            disabled={unlock.isPending}
+            onClick={handleUnlock}
+          >
+            {unlock.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Coins className="w-4 h-4" />}
+            Unlock for {quiz.coinCost} coins
+          </Button>
+          {!canAfford && (
+            <Link href="/wallet" className="w-full mt-2">
+              <Button variant="outline" size="sm" className="w-full gap-1.5">
+                <Coins className="w-3.5 h-3.5" /> Not enough coins — Buy more
+              </Button>
+            </Link>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function QuizPage() {
   const { courseId } = useParams();
@@ -44,6 +109,10 @@ export default function QuizPage() {
 
   if (!quiz) {
     return <div className="p-8 text-center text-muted-foreground">Quiz not found for this course.</div>;
+  }
+
+  if ((quiz as any).locked) {
+    return <PremiumQuizLock quiz={quiz} courseId={courseId} onUnlocked={() => {}} />;
   }
 
   const totalQuestions = quiz.questions.length;
