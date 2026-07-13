@@ -3,687 +3,743 @@ import type { Lesson } from "./types";
 export const lesson4: Lesson = {
   id: "lesson-4",
   title: "Lesson 4 – Functions, Arrays, Pointers, and Structs",
-  description: "Master the core building blocks of C: writing reusable functions, storing collections of data in arrays, understanding memory addresses with pointers, and grouping related data into structs.",
+  description: "Build the essential building blocks of real C programs: write reusable functions, store collections in arrays, navigate memory with pointers, and group related data into structs.",
   topics: [
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-1: Functions
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-1",
       title: "Functions — Declaration, Definition, and Calling",
       estimatedReadingTime: 10,
-      explanation: `A function is a named, self-contained block of code that performs a specific task. Instead of copying the same logic everywhere you need it, you write it once as a function and call it by name whenever needed. This is the single most powerful tool for managing complexity in C programs. Good C code is a collection of well-named, single-purpose functions working together.
+      explanation: `A function is a named, reusable block of code that performs a specific task. Instead of writing the same logic over and over in different parts of a program, you write it once as a function and call it as many times as you need. This is one of the most important ideas in programming: breaking a large problem into small, well-named pieces that are each easy to understand and test on their own.
 
-Every function in C has three parts: a declaration (also called a prototype), a definition (the actual implementation), and zero or more call sites (the places in code where the function is invoked). The declaration tells the compiler the function's name, what it returns, and what arguments it accepts — all before the compiler sees the definition. This allows you to call a function before its body appears in the source file.
+Every C function has four essential parts. The return type says what kind of value the function sends back to its caller — it could be int, double, char, or void if it sends nothing back. The function name is an identifier you choose; by convention, function names use lowercase letters with underscores between words, like compute_area or print_greeting. The parameter list, enclosed in parentheses, declares what information the function needs to do its job. And the function body, enclosed in curly braces, contains the statements that implement the logic.
 
-A function prototype looks like this: return_type function_name(parameter_types);. For example, int add(int a, int b); declares a function that takes two ints and returns an int. The parameter names in a prototype are optional; only the types matter for the compiler. Placing prototypes near the top of a file (or in a header) is standard practice.
+The distinction between a function declaration (also called a prototype) and a function definition is important in C. A declaration tells the compiler the function's name, return type, and parameter types so that the compiler can type-check calls to it even before seeing the full definition. A definition provides the actual body. If you define a function before main, the definition also serves as its own declaration. If you define it after main — which is common — you must provide a prototype above main so the compiler knows the function exists when it sees the call.
 
-The function definition provides the body: the actual statements that run when the function is called. It looks identical to the prototype except the semicolon is replaced by a block enclosed in curly braces. Inside the body you can declare local variables, perform computations, and use a return statement to send a value back to the caller.
+The syntax of a function prototype is simply the first line of the function followed by a semicolon: return_type function_name(parameter_types);. Parameter names are optional in prototypes (only types are required), but including names makes the prototype self-documenting. The definition is the same first line followed by the full body in braces.
 
-Calling a function is as simple as writing its name followed by parentheses containing any required arguments: int result = add(3, 7);. The program pauses the current function, jumps to the called function's body, executes it, then resumes right after the call site with the returned value substituted in.
+Calling a function means writing its name followed by parentheses containing any arguments. The arguments are the actual values you pass; the parameters are the variables inside the function that receive those values. After the function executes its body (and optionally a return statement), control returns to the exact point in the caller where the call was made, carrying back the return value if there is one.
 
-Functions that do not return a meaningful value use the return type void. A void function still uses a return statement to exit early, but the statement has no expression: return;. Functions with a non-void return type must return a value on every path; failing to do so is undefined behaviour.
-
-Keeping functions short, focused, and well-named makes programs dramatically easier to read, test, and maintain. Aim for each function to do one thing and do it clearly.`,
+The void return type is used for functions that do not send a value back. Such functions are called for their side effects — printing output, modifying global state, or doing I/O. A function with a non-void return type must have a return statement that provides a value of the correct type.`,
       codeExample: `#include <stdio.h>
 
-/* --- Function prototypes (declarations) --- */
-int add(int a, int b);
-double average(int x, int y, int z);
-void greet(void);
+/* Function prototypes (declarations) */
+double circle_area(double radius);
+void print_separator(void);
+int max(int a, int b);
 
-/* --- main calls the functions --- */
 int main(void) {
-    greet();
+    /* Calling functions */
+    double area = circle_area(5.0);
+    printf("Area of circle with radius 5: %.2f\\n", area);
 
-    int sum = add(10, 25);
-    printf("10 + 25 = %d\\n", sum);
+    print_separator();
 
-    double avg = average(4, 8, 12);
-    printf("Average of 4, 8, 12 = %.2f\\n", avg);
+    int bigger = max(17, 42);
+    printf("max(17, 42) = %d\\n", bigger);
 
-    /* Functions can be used directly in expressions */
-    printf("5 + 7 = %d\\n", add(5, 7));
+    print_separator();
+
+    /* Functions can be called inside expressions */
+    printf("max(max(3,7), max(1,9)) = %d\\n", max(max(3, 7), max(1, 9)));
 
     return 0;
 }
 
-/* --- Function definitions --- */
-void greet(void) {
-    printf("Hello from a function!\\n");
+/* Function definitions */
+double circle_area(double radius) {
+    return 3.14159 * radius * radius;
 }
 
-int add(int a, int b) {
-    return a + b;
+void print_separator(void) {
+    printf("--------------------\\n");
 }
 
-double average(int x, int y, int z) {
-    return (x + y + z) / 3.0;
+int max(int a, int b) {
+    if (a > b) {
+        return a;
+    }
+    return b;
 }`,
-      expectedOutput: `Hello from a function!
-10 + 25 = 35
-Average of 4, 8, 12 = 8.00
-5 + 7 = 12`,
+      expectedOutput: `Area of circle with radius 5: 78.54
+--------------------
+max(17, 42) = 42
+--------------------
+max(max(3,7), max(1,9)) = 9`,
       keyTakeaways: [
-        "A function encapsulates a reusable block of logic under a single name.",
-        "A prototype declares the return type and parameter types so the compiler knows the function's signature before its definition.",
-        "The definition provides the actual body enclosed in curly braces.",
-        "Call a function by writing its name with arguments in parentheses.",
-        "void functions return no value; non-void functions must return the declared type.",
-        "Functions improve readability, reusability, and testability of code."
+        "A function groups reusable logic under a meaningful name, reducing duplication.",
+        "A prototype (declaration) tells the compiler the function's signature before its definition.",
+        "The return type specifies what kind of value the function sends back; void means nothing.",
+        "Arguments are the actual values passed at the call site; parameters receive them inside the function.",
+        "A return statement ends the function and sends a value back to the caller.",
+        "Functions should do one thing well — the single-responsibility principle makes code easier to test."
       ],
       commonMistakes: [
-        "Forgetting the function prototype causes a compiler warning or error when the function is called before its definition.",
-        "Mismatching the return type in the prototype and the definition causes undefined behaviour.",
-        "Returning a value from a void function or forgetting to return a value from a non-void function.",
-        "Using the same name as a standard library function, silently shadowing it.",
-        "Assuming that calling a function with the wrong number of arguments will be caught at runtime — it should be caught at compile time when prototypes are used."
+        "Forgetting the function prototype when the definition appears after main — the compiler sees an undeclared function call.",
+        "Mismatching the return type in the prototype versus the definition, causing compiler warnings or errors.",
+        "Omitting the return statement in a non-void function — the return value is undefined.",
+        "Using the same name for a parameter and a local variable inside the function body, causing confusion.",
+        "Calling a function with the wrong number of arguments — C will not automatically supply missing ones."
       ],
       bestPractices: [
-        "Always write function prototypes at the top of the file or in a header before main.",
-        "Keep each function focused on a single, clearly named task.",
-        "Name functions with verbs (compute_area, print_report) to make their purpose obvious.",
-        "Keep function bodies short — if a function exceeds 30-40 lines, consider splitting it.",
-        "Document non-obvious parameters and the return value with a brief comment above the prototype."
+        "Place all function prototypes at the top of the file, just after the #include directives.",
+        "Keep each function focused on a single, clearly described task.",
+        "Name functions with a verb-noun style (compute_area, print_report) to make calls read like sentences.",
+        "Always write the return statement explicitly, even at the end where it might be optional.",
+        "Use const in parameter declarations to signal that a parameter will not be modified inside the function."
       ],
       exercises: [
         {
-          title: "Exercise 1 – Square and Cube",
-          description: "Write two functions: int square(int n) that returns n*n, and int cube(int n) that returns n*n*n. In main, read an integer from the user and print its square and cube using these functions.",
-          hint: "Write prototypes above main and definitions below. Call each function with the user-supplied value."
+          title: "Exercise 1 – Power Function",
+          description: "Write a function int power(int base, int exp) that returns base raised to the non-negative integer exponent exp. Use a loop inside the function. Call it from main with several different pairs and print the results.",
+          hint: "Start with result = 1 and multiply by base in a loop that runs exp times. The function must have a prototype above main."
         },
         {
-          title: "Exercise 2 – Max of Three",
-          description: "Write a function int max3(int a, int b, int c) that returns the largest of the three integers. Test it in main with at least three different sets of values, printing the result each time.",
-          hint: "Use if-else or the ternary operator inside the function. You can find the max of a and b first, then compare that with c."
+          title: "Exercise 2 – Celsius to Fahrenheit",
+          description: "Write a function double to_fahrenheit(double celsius) that converts a Celsius temperature to Fahrenheit using the formula F = C * 9/5 + 32. In main, call it for 0, 100, and -40 and print each result with one decimal place.",
+          hint: "Use 9.0/5.0 (not 9/5) in the formula to avoid integer division truncation."
         },
         {
-          title: "Exercise 3 – Celsius to Fahrenheit",
-          description: "Write a function double celsius_to_fahrenheit(double c) that converts a Celsius temperature to Fahrenheit using the formula F = (C * 9.0/5.0) + 32. In main, call it for 0, 100, and -40 and print the results.",
-          hint: "Use 9.0/5.0 (floating-point division) rather than 9/5 (integer division which would equal 1)."
+          title: "Exercise 3 – Is Prime",
+          description: "Write a function int is_prime(int n) that returns 1 if n is prime and 0 otherwise. In main, loop from 2 to 30 and use is_prime to print only the prime numbers.",
+          hint: "A number is prime if no integer from 2 up to its square root divides it evenly. Use the modulo operator % to check divisibility."
         }
       ],
       challenge: {
-        title: "Challenge – Mini Calculator",
-        description: "Write four functions: add, subtract, multiply, and divide (all taking two doubles and returning a double). Handle division by zero in the divide function by printing an error message and returning 0.0. In main, present a simple menu that reads two numbers and an operator (+, -, *, /) from the user and calls the appropriate function.",
-        hint: "Use a switch on the operator character. For divide, check if the second argument is 0.0 before dividing."
+        title: "Challenge – Menu-Driven Unit Converter",
+        description: "Write a program with separate functions for at least four unit conversions (e.g., km-to-miles, kg-to-pounds, Celsius-to-Fahrenheit, hours-to-minutes). Each conversion function takes a double and returns a double. In main, display a menu in a loop, read the user's choice, call the matching function, and print the result. Use a switch statement for dispatch and a sentinel value to quit.",
+        hint: "Declare all four conversion function prototypes at the top. The menu loop should use a do-while so it always shows at least once. Pass the numeric value to convert as the function argument."
       },
       quiz: [
         {
           question: "What is the purpose of a function prototype in C?",
           options: [
-            "To define the function body before main",
-            "To inform the compiler of the function's name, return type, and parameter types before the definition appears",
-            "To allocate memory for the function's local variables",
-            "To prevent the function from being called more than once"
+            "To allocate memory for the function.",
+            "To tell the compiler the function's name, return type, and parameter types before the full definition.",
+            "To execute the function immediately when the file is loaded.",
+            "To prevent other files from calling the function."
           ],
           correctIndex: 1,
-          explanation: "A prototype gives the compiler the function's signature (return type and parameter types) so it can validate calls before seeing the full definition."
+          explanation: "A prototype gives the compiler enough information to type-check calls to the function even before the definition has been seen."
         },
         {
-          question: "What return type should a function have if it performs an action but does not return a value?",
-          options: ["int", "null", "void", "empty"],
+          question: "Which return type should a function have if it does not send any value back to the caller?",
+          options: ["int", "null", "void", "0"],
           correctIndex: 2,
-          explanation: "The void return type indicates the function does not produce a value. It still executes its body normally."
+          explanation: "void is the return type for functions that perform a task but do not return a value. Calling such a function cannot be used in an expression."
         },
         {
-          question: "Where in the program does the return statement send control?",
+          question: "Where does execution continue after a called function returns?",
           options: [
-            "To the beginning of main",
-            "To the statement immediately after the function call in the caller",
-            "To the next function in the file",
-            "To the operating system"
-          ],
-          correctIndex: 1,
-          explanation: "return exits the current function and resumes execution at the call site — the line in the caller right after where the function was invoked."
-        },
-        {
-          question: "Which of these is a valid function prototype?",
-          options: [
-            "int multiply(int a, int b)",
-            "int multiply(int a, int b);",
-            "function int multiply(int, int);",
-            "def multiply(a, b) -> int:"
-          ],
-          correctIndex: 1,
-          explanation: "A prototype ends with a semicolon. The version without the semicolon begins a definition (expecting a body in braces)."
-        },
-        {
-          question: "What happens if a non-void function reaches the end of its body without a return statement?",
-          options: [
-            "It returns 0 automatically",
-            "It causes a compile error in all cases",
-            "It causes undefined behaviour",
-            "It returns the value of the last expression evaluated"
+            "At the beginning of main.",
+            "At the top of the called function.",
+            "At the statement immediately after the call site in the caller.",
+            "At the last return statement of any function."
           ],
           correctIndex: 2,
-          explanation: "Falling off the end of a non-void function without returning is undefined behaviour in C. The caller receives a garbage value."
+          explanation: "When a function returns, control resumes at the point in the calling code immediately after the function call expression."
+        },
+        {
+          question: "What is the difference between an argument and a parameter?",
+          options: [
+            "They are the same thing.",
+            "A parameter is the actual value passed at the call site; an argument is the variable inside the function.",
+            "An argument is the actual value at the call site; a parameter is the variable inside the function that receives it.",
+            "Arguments are only used with void functions."
+          ],
+          correctIndex: 2,
+          explanation: "Arguments are the values you provide when calling a function. Parameters are the variable declarations in the function's definition that receive those values."
+        },
+        {
+          question: "What happens if a non-void function has no return statement?",
+          options: [
+            "It automatically returns 0.",
+            "It returns the last computed value.",
+            "The return value is undefined — this is a bug.",
+            "The compiler refuses to compile the program."
+          ],
+          correctIndex: 2,
+          explanation: "Omitting a return statement in a non-void function causes undefined behaviour for the return value. Most compilers issue a warning but still compile."
         }
       ]
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-2: Parameters, Return Values, and Pass-by-Value
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-2",
-      title: "Parameters, Return Values, and Pass-by-Value Semantics",
-      estimatedReadingTime: 8,
-      explanation: `Understanding how data moves into and out of functions is essential for writing correct C programs. C uses a mechanism called pass-by-value for all its basic types: when you call a function and pass an argument, C copies the value of the argument into the function's local parameter variable. The function works on this copy — the original variable in the caller is untouched.
+      title: "Parameters, Return Values, and Pass-by-Value",
+      estimatedReadingTime: 9,
+      explanation: `When you call a function in C, the values you pass as arguments are copied into the function's parameters. This means that whatever the function does to its parameters has absolutely no effect on the original variables back in the caller. This is called pass-by-value semantics, and understanding it deeply is essential for writing correct C programs.
 
-Think of it like handing someone a photocopy of a document. They can scribble all over their copy; your original remains unchanged. This means that if a function modifies its parameter, that change is invisible to the caller. This is a safety property — functions cannot accidentally alter your variables — but it also means that to "return" multiple values or to modify the caller's variables, you need pointers (covered in topic 4-8).
+Think of it like photocopying a document and handing someone the copy. They can scribble all over it, tear it up, or rewrite it completely — your original document is untouched. The function receives its own private copies of the argument values, housed in fresh local variables (the parameters) that are created when the function is called and destroyed when it returns.
 
-A function's return value is how it hands a single result back to the caller. The return statement evaluates an expression and sends the result to the call site. The caller can capture the returned value in a variable, use it in another expression, or ignore it entirely. Ignoring the return value of a function that signals errors (like scanf) is a common mistake.
+This behavior has an important consequence: if you write a function intended to swap two integers by modifying two parameters, it will not work — the swaps happen on the copies, and the caller never sees the change. The solution (which leads directly into the topic of pointers) is to pass the addresses of the variables instead. But for now, understanding why the swap fails is just as valuable as knowing how to fix it.
 
-You can pass multiple arguments to a function by listing them in the parameter list, separated by commas. Each parameter acts like a local variable initialized to the copy of the caller's argument. The order of arguments must match the order of parameters in the prototype exactly.
+Return values are the only direct way for a function to send information back to its caller. A return statement carries one value out of the function. If you need to "return" multiple results, you can use pointers (to write into caller-provided memory), use a struct, or use global variables — but global variables are generally discouraged.
 
-Parameters and return values together form a function's interface — the contract between the function and its callers. A well-designed interface accepts exactly the information needed and returns exactly the information produced. Keep this interface minimal: functions that require ten arguments are often a sign that the function is doing too much.
+Functions can also call other functions, including themselves (recursion, covered next). A function that calls another function must have that other function's prototype visible at the point of the call, just as main does. This rule applies consistently throughout C regardless of how deeply functions are nested in their calling chain.
 
-Local variables declared inside a function exist only for the duration of that function call. They are created on the stack when the function is called and destroyed when it returns. They have no existence between calls — every new call starts with fresh, uninitialized local variables.`,
+Local variables declared inside a function exist only for the duration of that function's execution. They are allocated on the stack when the function is called and released automatically when it returns. This means you should never return the address of a local variable — the memory it occupied will be reused by the next function call and the pointer becomes dangling.`,
       codeExample: `#include <stdio.h>
 
-/* Demonstrates that modifying a parameter does NOT affect the caller's variable */
-void try_to_modify(int x) {
-    x = 999;  /* Only the local copy changes */
-    printf("Inside try_to_modify: x = %d\\n", x);
+/* Demonstrates pass-by-value: the caller's variable is NOT modified */
+void try_to_double(int x) {
+    x = x * 2;  /* modifies the local copy only */
+    printf("Inside try_to_double: x = %d\\n", x);
 }
 
-/* Returns the larger of two doubles */
-double max_double(double a, double b) {
-    if (a > b) {
-        return a;
-    }
-    return b;
+/* The only way out of a function is a return value */
+int actual_double(int x) {
+    return x * 2;
 }
 
-/* Multiple parameters — computes area of a rectangle */
-double rectangle_area(double width, double height) {
-    double area = width * height;  /* local variable */
-    return area;
+/* Multiple parameters, each passed by value */
+double weighted_average(double a, double b, double w) {
+    /* w is the weight for a; (1-w) is the weight for b */
+    return a * w + b * (1.0 - w);
+}
+
+/* Local variable lifetime demonstration */
+int make_value(void) {
+    int local = 99;   /* exists only inside this call */
+    return local;     /* copy of the value is returned */
 }
 
 int main(void) {
-    int original = 42;
-    printf("Before call: original = %d\\n", original);
-    try_to_modify(original);
-    printf("After call:  original = %d\\n", original);  /* unchanged */
+    int n = 10;
 
-    double bigger = max_double(3.14, 2.71);
-    printf("Max of 3.14 and 2.71 = %.2f\\n", bigger);
+    try_to_double(n);
+    printf("After try_to_double: n = %d\\n", n); /* still 10 */
 
-    double area = rectangle_area(5.0, 3.5);
-    printf("Area of 5.0 x 3.5 rectangle = %.2f\\n", area);
+    int result = actual_double(n);
+    printf("actual_double(%d) = %d\\n", n, result);
+
+    double avg = weighted_average(80.0, 60.0, 0.7);
+    printf("Weighted average: %.1f\\n", avg);
+
+    int v = make_value();
+    printf("make_value returned: %d\\n", v);
 
     return 0;
 }`,
-      expectedOutput: `Before call: original = 42
-Inside try_to_modify: x = 999
-After call:  original = 42
-Max of 3.14 and 2.71 = 3.14
-Area of 5.0 x 3.5 rectangle = 17.50`,
+      expectedOutput: `Inside try_to_double: x = 20
+After try_to_double: n = 10
+actual_double(10) = 20
+Weighted average: 74.0
+make_value returned: 99`,
       keyTakeaways: [
-        "C passes function arguments by value — a copy of the argument is made for the parameter.",
-        "Modifying a parameter inside a function has no effect on the caller's original variable.",
-        "The return statement sends one value back to the call site.",
-        "Local variables in a function exist only for the duration of that call.",
-        "To modify a caller's variable from a function, you must pass a pointer to it.",
-        "Keep function parameter lists minimal — functions with too many parameters often have design issues."
+        "C is strictly pass-by-value: function parameters are independent copies of the arguments.",
+        "Modifying a parameter inside a function does not affect the caller's original variable.",
+        "The return statement is the standard mechanism for a function to send one value back to the caller.",
+        "Local variables are created on the stack when a function is called and destroyed when it returns.",
+        "Never return the address of a local variable — it becomes dangling after the function exits.",
+        "To modify the caller's variables from within a function, pass pointers (addresses) instead of values."
       ],
       commonMistakes: [
-        "Expecting that changing a parameter inside a function will change the caller's variable — it will not because of pass-by-value.",
-        "Forgetting that local variables are not preserved between calls — they start uninitialized each time.",
-        "Ignoring the return value of functions that signal success or failure (like scanf or fopen).",
-        "Returning a pointer to a local variable — the local variable is destroyed when the function returns, leaving a dangling pointer.",
-        "Mixing up the order of arguments when calling a function, causing silent type coercion bugs."
+        "Expecting a function to modify a caller's variable through a value parameter — it only modifies the copy.",
+        "Writing a swap function using value parameters and being surprised it does not work.",
+        "Returning a pointer to a local variable — the memory is freed when the function returns, making the pointer dangling.",
+        "Forgetting that each function call gets its own separate set of parameter copies, even for recursive calls.",
+        "Relying on side effects to return multiple values instead of using structs or output pointers."
       ],
       bestPractices: [
-        "Use the return value to communicate the single primary result of a function.",
-        "Check the return values of library functions that can fail, like scanf and malloc.",
-        "Do not return pointers to local (stack) variables — they become invalid after the function returns.",
-        "Prefer passing values rather than globals to keep functions independent and testable.",
-        "Name parameters clearly in the definition to serve as inline documentation for callers."
+        "Design functions to communicate results through return values rather than relying on global state.",
+        "Mark parameters that should not be modified with const to document and enforce read-only intent.",
+        "If a function needs to produce multiple outputs, consider using a struct as the return type.",
+        "Keep parameter lists short (ideally fewer than five); if you need more, group related parameters into a struct.",
+        "Document the units, valid ranges, and expected values of each parameter in a comment above the prototype."
       ],
       exercises: [
         {
-          title: "Exercise 1 – Swap Attempt",
-          description: "Write a function void swap_attempt(int a, int b) that swaps the values of a and b inside the function and prints them. Call it from main with two variables and print those variables before and after the call. Observe that the caller's variables are unchanged.",
-          hint: "Use a temporary variable: int temp = a; a = b; b = temp; inside the function. This demonstrates pass-by-value."
+          title: "Exercise 1 – Failed Swap",
+          description: "Write a function void swap(int a, int b) that tries to swap a and b inside the function body. Call it from main with two different integers, print the values before and after calling swap, and observe that the original variables are unchanged. Write a comment explaining why the swap did not work.",
+          hint: "This is intentionally broken. Inside swap, use a temporary variable: int temp = a; a = b; b = temp; — but print a and b inside swap too, to confirm the copies were swapped."
         },
         {
-          title: "Exercise 2 – Power Function",
-          description: "Write a function double power(double base, int exp) that computes base raised to the power exp using a loop (do not use the math library). Handle negative exponents by returning 1.0/power(base, -exp). Test with 2.0^10, 3.0^3, and 2.0^-3.",
-          hint: "Use a loop that multiplies an accumulator by base, exp times. For negative exponents, invert the result."
+          title: "Exercise 2 – Clamp Function",
+          description: "Write a function int clamp(int value, int low, int high) that returns value if it is between low and high inclusive, returns low if value is below low, and returns high if value is above high. Test it in main with several values and print the results.",
+          hint: "Use two if statements or the ternary operator. Remember the function returns, not modifies, so the caller must store the result."
         },
         {
-          title: "Exercise 3 – Clamp",
-          description: "Write a function int clamp(int value, int min_val, int max_val) that returns value if it is between min_val and max_val, returns min_val if value is too small, and returns max_val if value is too large. Test it with several values.",
-          hint: "Use if-else: first check value < min_val, then value > max_val, otherwise return value unchanged."
+          title: "Exercise 3 – Hypotenuse",
+          description: "Write a function double hypotenuse(double a, double b) that computes and returns the length of the hypotenuse of a right triangle using the Pythagorean theorem. Use sqrt from <math.h>. Call it from main with three different pairs of side lengths.",
+          hint: "Include <math.h> and link with -lm if needed. The formula is sqrt(a*a + b*b). Return the result directly."
         }
       ],
       challenge: {
         title: "Challenge – Statistics Functions",
-        description: "Write three functions: double compute_min(double a, double b, double c), double compute_max(double a, double b, double c), and double compute_mean(double a, double b, double c). In main, read three floating-point numbers from the user and call all three functions, printing the minimum, maximum, and mean with two decimal places.",
-        hint: "For min and max, chain comparisons. For mean, sum the three values and divide by 3.0."
+        description: "Write four separate functions: double sum_of(double a, double b, double c), double average_of(double a, double b, double c), double maximum_of(double a, double b, double c), and double minimum_of(double a, double b, double c). In main, read three floating-point numbers from the user and call all four functions, printing each result on its own line with a descriptive label. average_of should call sum_of rather than repeating the addition.",
+        hint: "Declare all four prototypes first. average_of can call sum_of(a,b,c) / 3.0. For max/min, chain two comparisons using your earlier max/min logic or the ternary operator."
       },
       quiz: [
         {
           question: "What does pass-by-value mean in C?",
           options: [
-            "The function receives the original variable and can modify it directly",
-            "A copy of the argument's value is passed to the function's parameter",
-            "The value is passed via a global variable",
-            "The function's return value is passed back by reference"
+            "The function receives a reference to the original variable.",
+            "The function receives a copy of the argument; changes to it do not affect the original.",
+            "The caller's variable is passed directly into the function's memory.",
+            "Values are passed on the heap."
           ],
           correctIndex: 1,
-          explanation: "Pass-by-value means the function receives a copy. Changes to the parameter have no effect on the original variable in the caller."
+          explanation: "Pass-by-value means the function gets its own copy of each argument. Modifying a parameter inside the function has no effect on the caller's variable."
         },
         {
-          question: "What happens to a function's local variables after it returns?",
+          question: "Why does a simple swap(int a, int b) function that swaps a and b not work?",
           options: [
-            "They are preserved for the next call to the same function",
-            "They are stored in global memory",
-            "They are destroyed — they only exist for the duration of the call",
-            "They are automatically returned to the caller"
+            "Because integers cannot be swapped in C.",
+            "Because the function swaps copies, not the caller's actual variables.",
+            "Because swap is a reserved keyword in C.",
+            "Because C does not allow two parameters of the same type."
+          ],
+          correctIndex: 1,
+          explanation: "a and b are local copies. Swapping them inside the function has no effect on the variables passed by the caller."
+        },
+        {
+          question: "What is the lifetime of a local variable declared inside a function?",
+          options: [
+            "For the entire duration of the program.",
+            "Until the next function is called.",
+            "Only for the duration of that specific function call.",
+            "Until the variable is explicitly deleted."
           ],
           correctIndex: 2,
-          explanation: "Local variables live on the stack and are destroyed when the function returns. Each new call creates fresh, uninitialized local variables."
+          explanation: "Local variables live on the stack and are created when the function is called and destroyed when it returns."
         },
         {
-          question: "What is wrong with: int *get_local(void) { int x = 5; return &x; }?",
+          question: "What is wrong with: int *bad(void) { int x = 5; return &x; }?",
           options: [
-            "You cannot return a pointer from a function",
-            "It returns a pointer to a local variable that no longer exists after the function returns",
-            "int cannot be used with the address-of operator",
-            "The function should be void"
+            "int * is not a valid return type.",
+            "x must be declared static to return its address.",
+            "Returning the address of a local variable creates a dangling pointer after the function returns.",
+            "The & operator cannot be used on function parameters."
           ],
-          correctIndex: 1,
-          explanation: "Local variable x is destroyed when the function returns. The returned pointer is dangling — accessing it is undefined behaviour."
+          correctIndex: 2,
+          explanation: "x is a local variable; its memory is released when bad() returns. The returned pointer points to freed stack memory, which is undefined behaviour."
         },
         {
-          question: "If a function's return type is double but you do: return 3; what happens?",
+          question: "How can a function effectively return two separate integer results to the caller?",
           options: [
-            "A compile error occurs",
-            "The integer 3 is implicitly converted to 3.0 and returned",
-            "The function returns 0.0 instead",
-            "Undefined behaviour always results"
+            "Use two return statements.",
+            "Print the values inside the function.",
+            "Pass two pointer parameters and write results through them, or return a struct.",
+            "Declare both integers as global variables."
           ],
-          correctIndex: 1,
-          explanation: "C performs implicit type conversion: the integer 3 is promoted to the double 3.0 to match the declared return type."
+          correctIndex: 2,
+          explanation: "A function can only return one value directly. To return two values, use pointer parameters (output parameters) or package both values in a struct."
         }
       ]
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-3: Recursion
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-3",
       title: "Recursion",
       estimatedReadingTime: 9,
-      explanation: `Recursion is a technique where a function calls itself to solve a smaller version of the same problem. It sounds circular, but it works because every recursive call makes progress toward a simpler case that can be solved directly — called the base case. Once the base case is reached, the chain of calls unwinds and the results are combined back up to the original call.
+      explanation: `Recursion is a technique where a function calls itself to solve a smaller version of the same problem. It might sound circular, but it works because each call handles a slightly smaller (or simpler) input, and eventually the problem is simple enough to solve directly without calling itself again. That simplest case is called the base case, and every correct recursive function must have at least one.
 
-The classic example is factorial: n! = n × (n-1)!. To compute 5!, you compute 5 × 4!. To compute 4!, you compute 4 × 3!. This continues until you reach 1! = 1, the base case. Then 2! = 2 × 1 = 2, 3! = 3 × 2 = 6, and so on back up.
+The general pattern of a recursive function has two parts. The base case checks whether the input is simple enough to answer directly, and if so, returns the answer without making another recursive call. The recursive case breaks the problem into a smaller sub-problem, calls the function on that sub-problem, and combines the result with some additional work to produce the answer for the current call.
 
-Every recursive function must have two essential ingredients. First, a base case: a condition under which the function returns a result directly without making another recursive call. Second, a recursive case: logic that breaks the problem into a simpler subproblem and calls itself with that simpler input. Without the base case, the function recurses forever until the stack overflows and the program crashes.
+Consider computing the factorial of a non-negative integer n (written n!). Factorial is defined as n multiplied by (n-1) multiplied by (n-2) down to 1, with 0! defined as 1. Recursively: if n is 0, return 1 (base case); otherwise, return n multiplied by factorial(n-1) (recursive case). Each call reduces n by one until n reaches 0.
 
-Each recursive call creates a new stack frame — a block of memory containing the function's parameters and local variables for that particular call. The stack frames pile up until the base case is reached, then they are popped off one by one as each call returns. This means recursion uses stack memory proportional to the depth of the recursion, which can be a limitation for very large inputs.
+Every recursive call uses stack space for its own local variables and return address. This means that very deep recursion — for example, computing factorial(100000) — can exhaust the call stack and cause a stack overflow crash. For problems where the depth could be large, an iterative solution using a loop is often preferable. A rule of thumb: use recursion when it makes the code significantly clearer and the depth is bounded to a few thousand calls at most.
 
-Many problems that are naturally recursive — traversing trees, exploring nested structures, implementing divide-and-conquer algorithms — are much cleaner to express recursively than iteratively. For simple cases like factorial or Fibonacci however, an iterative approach is usually more efficient because it avoids the overhead of function calls.
+Recursion naturally expresses algorithms that work on hierarchical or self-similar structures — traversing trees, parsing nested expressions, computing Fibonacci numbers, performing binary search, or implementing merge sort. In those contexts, the recursive version often reads like a direct translation of the mathematical definition, making it much clearer than an equivalent loop-based version.
 
-Debugging recursive functions can be tricky. A good strategy is to add printf calls showing the function's argument at each level, so you can trace the call chain and verify the base case is being reached.`,
+One important concept is the state of each call frame. Each recursive invocation has its own private copies of all local variables. Changes in one call frame do not affect another. Understanding this — and tracing through a small example by hand, tracking what each frame holds — is the best way to develop intuition for recursion.`,
       codeExample: `#include <stdio.h>
 
-/* Factorial: n! = n * (n-1)! with base case 0! = 1 */
+/* Recursive factorial */
 long long factorial(int n) {
-    if (n <= 0) {          /* base case */
+    if (n == 0) {          /* base case */
         return 1;
     }
     return n * factorial(n - 1);  /* recursive case */
 }
 
-/* Fibonacci: fib(n) = fib(n-1) + fib(n-2), fib(0)=0, fib(1)=1 */
+/* Recursive Fibonacci (illustrative; exponential time) */
 int fibonacci(int n) {
-    if (n == 0) return 0;  /* base case */
-    if (n == 1) return 1;  /* base case */
-    return fibonacci(n - 1) + fibonacci(n - 2);  /* recursive case */
+    if (n <= 1) {          /* base cases: fib(0)=0, fib(1)=1 */
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
 }
 
-/* Sum of digits: sum_digits(123) = 3 + sum_digits(12) */
+/* Recursive sum of digits */
 int sum_digits(int n) {
-    if (n < 10) return n;             /* base case: single digit */
-    return (n % 10) + sum_digits(n / 10);  /* recursive case */
+    if (n < 10) {
+        return n;          /* single digit: it is its own sum */
+    }
+    return (n % 10) + sum_digits(n / 10);
+}
+
+/* Recursive power function */
+double power(double base, int exp) {
+    if (exp == 0) {
+        return 1.0;
+    }
+    return base * power(base, exp - 1);
 }
 
 int main(void) {
-    printf("5! = %lld\\n", factorial(5));
-    printf("10! = %lld\\n", factorial(10));
+    printf("factorial(6)  = %lld\\n", factorial(6));
+    printf("factorial(10) = %lld\\n", factorial(10));
 
-    printf("Fibonacci(7) = %d\\n", fibonacci(7));
+    printf("\\nFibonacci sequence (0-9):\\n");
+    for (int i = 0; i < 10; i++) {
+        printf("fib(%d) = %d\\n", i, fibonacci(i));
+    }
 
-    printf("Sum of digits of 4823 = %d\\n", sum_digits(4823));
+    printf("\\nsum_digits(12345) = %d\\n", sum_digits(12345));
+    printf("power(2.0, 8)     = %.0f\\n", power(2.0, 8));
 
     return 0;
 }`,
-      expectedOutput: `5! = 120
-10! = 3628800
-Fibonacci(7) = 13
-Sum of digits of 4823 = 17`,
+      expectedOutput: `factorial(6)  = 720
+factorial(10) = 3628800
+
+Fibonacci sequence (0-9):
+fib(0) = 0
+fib(1) = 1
+fib(2) = 1
+fib(3) = 2
+fib(4) = 3
+fib(5) = 5
+fib(6) = 8
+fib(7) = 13
+fib(8) = 21
+fib(9) = 34
+
+sum_digits(12345) = 15
+power(2.0, 8)     = 256`,
       keyTakeaways: [
-        "A recursive function calls itself with a simpler argument, making progress toward the base case.",
-        "Every recursive function must have at least one base case to prevent infinite recursion.",
-        "Each recursive call creates a new stack frame; deep recursion can overflow the stack.",
-        "Recursion is elegant for problems that are naturally self-similar (trees, divide-and-conquer).",
-        "Iterative solutions are often more efficient for simple sequences like factorial or Fibonacci.",
-        "Trace the call chain with print statements to debug recursive functions."
+        "Every recursive function needs a base case that stops the recursion and a recursive case that reduces the problem.",
+        "Each recursive call gets its own private stack frame with its own copies of local variables.",
+        "Recursion is elegant for naturally hierarchical problems but can cause stack overflow with very deep inputs.",
+        "The Fibonacci example is a classic illustration, though its naive recursive version has exponential time complexity.",
+        "Tracing recursion by hand — writing out each call and its return value — is the best way to understand it.",
+        "An iterative solution using a loop is often more efficient when the recursion depth could be large."
       ],
       commonMistakes: [
-        "Forgetting the base case — the function calls itself infinitely until the stack overflows.",
-        "Not making progress toward the base case — the argument does not change in the right direction.",
-        "Using recursion for very large inputs (e.g., fibonacci(50)) without memoization — exponential time.",
-        "Returning the recursive call result without combining it correctly with the current step.",
-        "Confusing the call stack depth with the actual value being computed."
+        "Forgetting the base case, causing infinite recursion and a stack overflow crash.",
+        "Writing a base case that is never actually reached because the recursive case does not approach it.",
+        "Thinking that modifying a local variable in one recursive call affects the variable in the caller's frame — it does not.",
+        "Using recursion for problems with potentially enormous depth (like computing fibonacci(100)) without memoization.",
+        "Not understanding that each function call has its own n — each frame is independent."
       ],
       bestPractices: [
-        "Always define and check the base case first in the function body.",
-        "Ensure every recursive call moves closer to the base case (smaller n, reduced input).",
-        "Consider an iterative approach when recursion depth could be large (thousands of levels).",
-        "Use recursion where it genuinely simplifies the code; do not force it on inherently iterative problems.",
-        "Add assertions or bounds checks to catch unexpectedly deep recursion during development."
+        "Always define the base case first, at the top of the function, before the recursive case.",
+        "Ensure the recursive case always moves toward the base case with each call.",
+        "Add a comment describing the base case and the recursive relationship.",
+        "Prefer iteration over recursion when the recursion depth could be proportional to the input size.",
+        "Use memoization or dynamic programming to optimise recursive functions with overlapping sub-problems."
       ],
       exercises: [
         {
-          title: "Exercise 1 – Power via Recursion",
-          description: "Write a recursive function int power(int base, int exp) that computes base raised to exp using recursion. Base case: power(base, 0) = 1. Recursive case: power(base, exp) = base * power(base, exp-1). Test with several values.",
-          hint: "When exp reaches 0, return 1. Otherwise return base multiplied by the recursive call with exp-1."
+          title: "Exercise 1 – Recursive Sum",
+          description: "Write a recursive function int recursive_sum(int n) that returns the sum of all integers from 1 to n. The base case is n == 1 returning 1. Test it for n = 1, 5, and 10 and verify against the formula n*(n+1)/2.",
+          hint: "The recursive case returns n + recursive_sum(n - 1). Make sure n == 1 is the base case, not n == 0, to avoid a negative-n infinite loop."
         },
         {
-          title: "Exercise 2 – Countdown",
-          description: "Write a recursive function void countdown(int n) that prints the numbers from n down to 0, one per line, using recursion (no loops). After 0, print 'Blast off!'.",
-          hint: "Print n, then call countdown(n-1). Base case: when n is negative, just return (or when n == 0, print 0 and 'Blast off!' and return)."
+          title: "Exercise 2 – Count Down, Count Up",
+          description: "Write a recursive function void countdown(int n) that prints the numbers from n down to 1, then prints 'Go!'. Use recursion — do not use a loop. Then write void countup(int n, int max) that prints from n up to max using recursion.",
+          hint: "For countdown, the base case is n == 0 (print 'Go!' and return). For the recursive case, print n then call countdown(n-1). Swap the print and call order for countup."
         },
         {
-          title: "Exercise 3 – String Length Recursively",
-          description: "Without using strlen, write a recursive function int my_strlen(const char *s) that returns the length of the string. Base case: if *s is the null terminator (value 0), return 0. Recursive case: return 1 + my_strlen(s+1).",
-          hint: "Check if the character at the current pointer is '\\0'. If so, return 0. Otherwise return 1 plus the length of the rest of the string."
+          title: "Exercise 3 – Recursive Reverse Digits",
+          description: "Write a recursive function that prints the digits of a positive integer in reverse order. For example, reverse_print(12345) should print 5 4 3 2 1. The base case is when n < 10 — print it. The recursive case prints n % 10, then recurses on n / 10.",
+          hint: "Print the last digit (n % 10) before making the recursive call, which handles the remaining digits. This naturally reverses the order."
         }
       ],
       challenge: {
-        title: "Challenge – Binary Search Recursively",
-        description: "Write a recursive function int binary_search(int arr[], int low, int high, int target) that searches a sorted array for target. If low > high, return -1 (not found). Compute mid = (low+high)/2. If arr[mid] equals target, return mid. If arr[mid] < target, search the right half; otherwise search the left half. Test it on a sorted array of 10 integers.",
-        hint: "This is a classic divide-and-conquer algorithm. Each recursive call halves the search space. Make sure to pass the adjusted low or high, not the full array bounds."
+        title: "Challenge – Binary Search (Recursive)",
+        description: "Implement recursive binary search: write int binary_search(int arr[], int low, int high, int target) that returns the index of target in the sorted array arr, or -1 if not found. The base case is low > high (not found). The recursive case computes mid = (low + high) / 2, returns mid if arr[mid] == target, searches the left half if target < arr[mid], or searches the right half otherwise. Test it on a sorted array of 10 elements.",
+        hint: "The left half call uses binary_search(arr, low, mid - 1, target). The right half uses binary_search(arr, mid + 1, high, target). Initialise with low=0 and high=n-1 in main."
       },
       quiz: [
         {
           question: "What is the base case in a recursive function?",
           options: [
-            "The first call to the function from main",
-            "The condition under which the function returns directly without recursing further",
-            "The largest input the function can handle",
-            "The return type of the recursive call"
+            "The first recursive call made.",
+            "The condition under which the function calls itself.",
+            "The simplest input for which the function returns a result directly without recursing.",
+            "The last line of the function body."
           ],
-          correctIndex: 1,
-          explanation: "The base case is the stopping condition. When reached, the function returns a result immediately instead of calling itself again."
+          correctIndex: 2,
+          explanation: "The base case handles the simplest version of the problem and stops the recursion by returning a direct answer."
         },
         {
           question: "What happens if a recursive function has no base case?",
           options: [
-            "It returns 0 automatically",
-            "It loops forever safely",
-            "It calls itself indefinitely until the stack overflows, causing a crash",
-            "The compiler catches it at compile time"
-          ],
-          correctIndex: 2,
-          explanation: "Without a base case, recursion never terminates. Stack frames accumulate until the stack is exhausted, causing a stack overflow crash."
-        },
-        {
-          question: "What does each recursive call create on the call stack?",
-          options: [
-            "A new global variable",
-            "A new stack frame with its own local variables and parameters",
-            "A copy of the entire program",
-            "A heap allocation for the return value"
+            "It returns 0 by default.",
+            "The program compiles but recursion continues until the call stack overflows, crashing the program.",
+            "The compiler detects the error and refuses to compile.",
+            "The function runs exactly once."
           ],
           correctIndex: 1,
-          explanation: "Each function call (including recursive calls) pushes a new stack frame onto the call stack containing that call's parameters and local variables."
+          explanation: "Without a base case, the function keeps calling itself indefinitely. The stack fills up and the program crashes with a stack overflow."
         },
         {
-          question: "For computing factorial(5) recursively, which call reaches the base case first?",
-          options: ["factorial(5)", "factorial(3)", "factorial(1) or factorial(0)", "factorial(2)"],
-          correctIndex: 2,
-          explanation: "Recursion descends through factorial(5) → (4) → (3) → (2) → (1) or (0), and the base case is n <= 0 or n == 1, which is reached last in the descent."
-        },
-        {
-          question: "Why is the naive recursive Fibonacci function slow for large n?",
+          question: "Do local variables in one recursive call share memory with variables in another call of the same function?",
           options: [
-            "Because recursion is always slower than loops",
-            "Because it recomputes the same subproblems exponentially many times",
-            "Because it uses too much heap memory",
-            "Because it requires floating-point arithmetic"
+            "Yes, all calls share the same local variables.",
+            "Only if they have the same name.",
+            "No, each call gets its own independent stack frame with separate copies of all local variables.",
+            "Only the return value is shared."
+          ],
+          correctIndex: 2,
+          explanation: "Each recursive call creates a new stack frame. The local variables in one call are completely independent from those in any other call."
+        },
+        {
+          question: "What is the result of factorial(0) if defined as: if (n==0) return 1; else return n * factorial(n-1);?",
+          options: ["0", "1", "Infinite recursion", "-1"],
+          correctIndex: 1,
+          explanation: "n == 0 triggers the base case immediately, returning 1. This matches the mathematical definition that 0! = 1."
+        },
+        {
+          question: "Why is the naive recursive Fibonacci implementation inefficient for large inputs?",
+          options: [
+            "Because it uses too many local variables.",
+            "Because it recomputes the same sub-problems exponentially many times.",
+            "Because recursion is always slower than iteration.",
+            "Because Fibonacci numbers overflow int quickly."
           ],
           correctIndex: 1,
-          explanation: "The naive recursive Fibonacci recalculates fibonacci(n-2) and fibonacci(n-1) repeatedly, resulting in exponential time complexity."
+          explanation: "fibonacci(n) calls fibonacci(n-1) and fibonacci(n-2), both of which call two more, leading to an exponential number of redundant computations."
         }
       ]
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-4: Arrays
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-4",
-      title: "Arrays — Declaration, Initialization, Indexing, and Traversal",
-      estimatedReadingTime: 9,
-      explanation: `An array is a fixed-size, ordered collection of elements all of the same type, stored consecutively in memory. Instead of declaring ten separate integer variables (score1, score2, ..., score10), you declare one array and access each element by its position index. Arrays are the simplest and most widely used data structure in C.
+      title: "Arrays — Declaration, Initialization, and Traversal",
+      estimatedReadingTime: 10,
+      explanation: `An array is a collection of elements that all have the same type, stored in a contiguous block of memory and accessed by an integer index. Arrays are the most fundamental data structure in C. Instead of declaring fifty separate integer variables named score1, score2, score3, ..., score50, you declare a single array int scores[50] and refer to each element as scores[0] through scores[49].
 
-You declare an array with a type, a name, and a size in square brackets: int scores[10]; declares an array of 10 integers. The size must be a compile-time constant in standard C (before C99 Variable Length Arrays). Memory for the array is allocated on the stack as a single contiguous block.
+The declaration syntax is: type name[size]; where type is the element type, name is the array's identifier, and size is the number of elements — a positive integer constant. In C99 and later, you can use a variable for the size, creating a variable-length array (VLA), but for portability and clarity, compile-time constants are preferred.
 
-Array indices in C always start at zero. The first element is scores[0], the second is scores[1], and the last element of a 10-element array is scores[9]. This off-by-one reality is crucial to remember — accessing scores[10] on a 10-element array is out of bounds and causes undefined behaviour (often a crash or corruption).
+Array indexing in C is zero-based: the first element is always at index 0 and the last element is at index size - 1. This is a consistent rule with no exceptions. One of the most common beginners' bugs in C is an off-by-one error — accessing index size instead of size - 1, which reads or writes memory beyond the end of the array. C does not check array bounds at runtime, so this causes silent undefined behaviour, not a helpful error message.
 
-You can initialize an array at declaration time using a brace-enclosed list: int scores[5] = {90, 85, 78, 92, 88};. If you provide fewer initializers than the array size, the remaining elements are automatically zero-initialized: int counts[5] = {1, 2}; gives {1, 2, 0, 0, 0}. If you provide no size but give an initializer list, the compiler deduces the size: int primes[] = {2, 3, 5, 7, 11}; creates an array of 5 elements.
+Initialization can happen at the point of declaration. You provide a comma-separated list of values inside curly braces: int primes[5] = {2, 3, 5, 7, 11};. If you provide fewer values than the declared size, the remaining elements are zero-initialized. If you provide exactly the right number of values, you can omit the size: int primes[] = {2, 3, 5, 7, 11}; and the compiler counts the elements automatically.
 
-Traversing an array — visiting each element — is almost always done with a for loop. The loop variable acts as the index, starting at 0 and going up to (but not including) the array size. The pattern int arr[N]; for (int i = 0; i < N; i++) { ... arr[i] ... } is so fundamental in C that you will write it dozens of times in any real program.
+Traversal means visiting every element in sequence. The idiomatic C pattern uses a for loop: for (int i = 0; i < SIZE; i++) { ... arr[i] ... }. The loop counter i starts at 0 (matching the first index) and runs while i < SIZE (stopping before the one-past-last index). This pattern appears so frequently that recognizing and writing it immediately becomes second nature.
 
-C does not check array bounds at runtime. Accessing an element outside the declared size silently reads or writes whatever happens to be in adjacent memory, which causes unpredictable and hard-to-debug bugs. You are responsible for ensuring your indices are always in the valid range [0, size-1].`,
+When you pass an array to a function, C does not copy all the elements. Instead, the function receives a pointer to the first element. This means functions that receive arrays can — and often do — modify the original elements. We will explore this connection between arrays and pointers in detail in a later topic.`,
       codeExample: `#include <stdio.h>
 
-#define SIZE 6
+#define SIZE 8
 
 int main(void) {
-    /* Declaration and full initialization */
-    int scores[SIZE] = {72, 88, 95, 61, 83, 77};
+    /* Declaration and zero-initialization */
+    int counts[SIZE] = {0};  /* all elements initialized to 0 */
+    printf("After zero-init: counts[0]=%d, counts[7]=%d\\n",
+           counts[0], counts[7]);
 
-    /* Traversal: print all elements */
-    printf("Scores: ");
+    /* Declaration with explicit initializer list */
+    int primes[] = {2, 3, 5, 7, 11, 13, 17, 19};  /* compiler counts: 8 */
+
+    /* Traversal with a for loop */
+    printf("Primes: ");
     for (int i = 0; i < SIZE; i++) {
-        printf("%d ", scores[i]);
+        printf("%d ", primes[i]);
     }
     printf("\\n");
 
-    /* Compute the sum and average */
+    /* Computing the sum and finding the maximum */
     int sum = 0;
+    int max = primes[0];
     for (int i = 0; i < SIZE; i++) {
-        sum += scores[i];
-    }
-    printf("Sum = %d, Average = %.1f\\n", sum, (double)sum / SIZE);
-
-    /* Find the maximum */
-    int max = scores[0];
-    for (int i = 1; i < SIZE; i++) {
-        if (scores[i] > max) {
-            max = scores[i];
+        sum += primes[i];
+        if (primes[i] > max) {
+            max = primes[i];
         }
     }
-    printf("Maximum = %d\\n", max);
+    printf("Sum = %d, Max = %d\\n", sum, max);
 
-    /* Partial initialization: remaining elements are 0 */
-    int counts[5] = {10, 20};
-    printf("counts: ");
-    for (int i = 0; i < 5; i++) {
-        printf("%d ", counts[i]);
+    /* Modifying array elements */
+    int squares[6];
+    for (int i = 0; i < 6; i++) {
+        squares[i] = (i + 1) * (i + 1);
+    }
+    printf("Squares: ");
+    for (int i = 0; i < 6; i++) {
+        printf("%d ", squares[i]);
     }
     printf("\\n");
 
-    /* Modify an element */
-    scores[2] = 100;
-    printf("After updating index 2: scores[2] = %d\\n", scores[2]);
+    /* Partial initialization: rest becomes 0 */
+    int partial[5] = {10, 20};
+    printf("Partial: ");
+    for (int i = 0; i < 5; i++) {
+        printf("%d ", partial[i]);
+    }
+    printf("\\n");
 
     return 0;
 }`,
-      expectedOutput: `Scores: 72 88 95 61 83 77 
-Sum = 476, Average = 79.3
-Maximum = 95
-counts: 10 20 0 0 0 
-After updating index 2: scores[2] = 100`,
+      expectedOutput: `After zero-init: counts[0]=0, counts[7]=0
+Primes: 2 3 5 7 11 13 17 19 
+Sum = 77, Max = 19
+Squares: 1 4 9 16 25 36 
+Partial: 10 20 0 0 0 `,
       keyTakeaways: [
-        "An array stores elements of the same type in a contiguous block of memory.",
-        "Array indices start at 0; the last valid index is size-1.",
-        "Declare with type name[size]; initialize with = {v1, v2, ...};.",
-        "Unspecified initializer elements are zero-initialized.",
-        "Use a for loop from 0 to size-1 to traverse all elements.",
-        "C does not check bounds — out-of-bounds access is undefined behaviour."
+        "An array stores multiple values of the same type in contiguous memory, accessed by a zero-based index.",
+        "The first element is at index 0; the last is at index size - 1. Going to index size is out of bounds.",
+        "C does not perform bounds checking at runtime — accessing out-of-bounds indices causes undefined behaviour.",
+        "Initialize arrays at declaration with {0} for all zeros, or with a brace-enclosed value list.",
+        "The standard traversal pattern is a for loop from i=0 while i < size.",
+        "When fewer initializers are provided than the declared size, remaining elements are zero."
       ],
       commonMistakes: [
-        "Using size as the last valid index — the last valid index is size-1, not size.",
-        "Forgetting that arrays start at index 0, leading to off-by-one errors in loops.",
-        "Accessing beyond the array bounds silently corrupts memory instead of giving an error.",
-        "Comparing arrays with == — this compares pointers, not element-by-element contents.",
-        "Using an uninitialized array element — the value is garbage until explicitly set."
+        "Using index size instead of size-1 for the last element — classic off-by-one, reads beyond the array.",
+        "Forgetting that arrays are zero-indexed and starting loops at i=1, missing the first element.",
+        "Declaring an array but not initializing it, then reading values that contain garbage memory.",
+        "Using = to copy one array to another — you must copy element by element (or use memcpy).",
+        "Passing the array 'by value' to a function expecting to get an independent copy — arrays decay to pointers."
       ],
       bestPractices: [
-        "Always use a named constant or macro for the array size to keep loops and declarations in sync.",
-        "Initialize arrays at declaration time when possible to avoid garbage values.",
-        "Loop from 0 to size-1 inclusive; never use <= size as the loop condition.",
-        "Pass the array size alongside the array to every function that receives the array.",
-        "Use sizeof(arr)/sizeof(arr[0]) to compute the number of elements if the size is not stored separately."
+        "Always define the array size as a named constant (#define SIZE 8 or const int size = 8) and use it in loops.",
+        "Initialize arrays explicitly at declaration, especially before reading them in functions.",
+        "Use int arr[] = {...} with an explicit initializer list rather than separately declaring size when practical.",
+        "Prefer iterating with i < SIZE (strict less-than) rather than i <= SIZE-1 to avoid the risk of unsigned wrap-around.",
+        "Use sizeof(arr)/sizeof(arr[0]) to compute the element count when the array size is not explicitly named."
       ],
       exercises: [
         {
           title: "Exercise 1 – Array Statistics",
-          description: "Declare an array of 8 integers and initialize it with any values. Write a loop to compute and print the minimum value, maximum value, sum, and average of the array.",
-          hint: "Initialize min and max to the first element (index 0) before the loop, then update them as you iterate."
+          description: "Declare an integer array of 10 elements and initialize it with values of your choice. Write a program that computes and prints the sum, average (as a float), minimum, and maximum of the array.",
+          hint: "Use four separate variables: sum, min, max, and average. Initialize min and max to arr[0] before the loop, then update them as you traverse."
         },
         {
           title: "Exercise 2 – Reverse an Array",
-          description: "Declare an array of 5 integers. Write code to reverse the array in-place (swap the first and last, then the second and second-to-last, etc.) and print the reversed array.",
-          hint: "Use two indices: one starting at 0 and one at size-1, moving toward each other. Swap arr[i] and arr[j] using a temporary variable."
+          description: "Read 5 integers into an array from the user, then print them in reverse order. Do not use a second array — just loop from index 4 down to 0.",
+          hint: "Use scanf in a loop to fill the array first. Then use a separate for loop counting down from SIZE-1 to 0 inclusive."
         },
         {
           title: "Exercise 3 – Count Occurrences",
-          description: "Initialize an array of 10 integers. Read a target integer from the user and count how many times it appears in the array. Print the count.",
-          hint: "Use a counter variable, loop through the array, and increment the counter whenever arr[i] equals the target."
+          description: "Declare an integer array of 10 elements. Read a target integer from the user and count how many times that value appears in the array. Print the count.",
+          hint: "Traverse the array with a for loop and increment a counter variable each time arr[i] == target."
         }
       ],
       challenge: {
         title: "Challenge – Bubble Sort",
-        description: "Implement bubble sort: repeatedly pass through an array, comparing adjacent elements and swapping them if they are in the wrong order. Continue until no swaps occur in a full pass. Print the array before and after sorting. Aim for the optimized version that stops early when no swaps occur.",
-        hint: "Use a boolean flag 'swapped'. At the start of each pass set it to 0 (false). If any swap occurs, set it to 1 (true). After the pass, if swapped is still 0, break out of the outer loop."
+        description: "Implement the bubble sort algorithm to sort an integer array of 10 user-supplied elements in ascending order. Bubble sort works by repeatedly stepping through the array, comparing adjacent elements, and swapping them if they are in the wrong order. Repeat passes until no swaps occur. Print the array before and after sorting.",
+        hint: "Use a nested loop: the outer loop runs up to SIZE-1 times, the inner loop runs from 0 to SIZE-2. Swap arr[j] and arr[j+1] when arr[j] > arr[j+1]. Use an int swapped flag to stop early if a pass makes no swaps."
       },
       quiz: [
         {
-          question: "What is the index of the first element of an array in C?",
-          options: ["1", "-1", "0", "Depends on the type"],
-          correctIndex: 2,
-          explanation: "C arrays are zero-indexed. The first element is always at index 0, and the last element of a size-N array is at index N-1."
+          question: "If an array is declared as int arr[10], what is the index of the last valid element?",
+          options: ["10", "9", "11", "0"],
+          correctIndex: 1,
+          explanation: "Arrays are zero-indexed in C. With 10 elements, valid indices run from 0 to 9. Index 10 is one past the end and out of bounds."
         },
         {
-          question: "What is the last valid index of an array declared as int arr[8]?",
-          options: ["8", "9", "7", "6"],
-          correctIndex: 2,
-          explanation: "With 8 elements at indices 0 through 7, the last valid index is 7. Accessing arr[8] is out of bounds."
-        },
-        {
-          question: "What value do unspecified elements get when an array is partially initialized?",
-          options: ["Random garbage", "The value of the last specified element", "Zero", "Negative one"],
-          correctIndex: 2,
-          explanation: "When you provide fewer initializers than the array size, C zero-initializes the remaining elements."
-        },
-        {
-          question: "What happens when you access arr[10] on a 10-element array?",
+          question: "What happens when you access arr[size] (one past the last index) in C?",
           options: [
-            "C returns 0 safely",
-            "A compile error occurs",
-            "Undefined behaviour — reading or writing memory outside the array",
-            "The program prints an error and continues"
+            "C automatically returns 0.",
+            "A runtime bounds-check error is printed.",
+            "Undefined behaviour — C does not check bounds.",
+            "The program terminates gracefully."
           ],
           correctIndex: 2,
-          explanation: "C does not perform bounds checking at runtime. Accessing out-of-bounds memory is undefined behaviour and typically causes corruption or crashes."
+          explanation: "C performs no runtime bounds checking. Accessing out-of-bounds memory is undefined behaviour and can corrupt data, crash the program, or silently return garbage."
         },
         {
-          question: "How do you determine the number of elements in an array arr of type int?",
+          question: "What does int arr[5] = {1, 2}; do to the remaining three elements?",
           options: [
-            "arr.length",
-            "sizeof(arr)",
-            "sizeof(arr) / sizeof(arr[0])",
-            "strlen(arr)"
+            "Leaves them with random garbage values.",
+            "Sets them to -1.",
+            "Sets them to 0.",
+            "Causes a compile error because sizes must match."
           ],
           correctIndex: 2,
-          explanation: "sizeof(arr) gives the total bytes of the array; dividing by sizeof(arr[0]) (bytes per element) yields the element count."
+          explanation: "When an initializer list has fewer elements than the declared size, the remaining elements are zero-initialized."
+        },
+        {
+          question: "What is the idiomatic loop to traverse all elements of int arr[N]?",
+          options: [
+            "for (int i = 1; i <= N; i++)",
+            "for (int i = 0; i < N; i++)",
+            "for (int i = 0; i <= N; i++)",
+            "for (int i = 1; i < N; i++)"
+          ],
+          correctIndex: 1,
+          explanation: "Start at 0 (first element) and continue while i < N (stopping before index N, which is out of bounds)."
+        },
+        {
+          question: "What does int arr[] = {3, 1, 4, 1, 5}; do regarding size?",
+          options: [
+            "Creates an array of unspecified size that grows dynamically.",
+            "Creates an array of exactly 5 elements; the compiler counts the initializers.",
+            "Creates an array of 6 elements with an extra 0 at the end.",
+            "This is a syntax error in C."
+          ],
+          correctIndex: 1,
+          explanation: "When you omit the size but provide an initializer list, the compiler counts the values and sets the array size accordingly — here, 5."
         }
       ]
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-5: Multi-dimensional Arrays
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-5",
       title: "Multi-dimensional Arrays",
       estimatedReadingTime: 8,
-      explanation: `A multi-dimensional array is essentially an array of arrays. The most common case is a two-dimensional (2D) array, which you can think of as a grid or table with rows and columns. A 2D array is declared with two size specifiers: int matrix[3][4]; declares a 3-row, 4-column grid of integers — 12 elements total.
+      explanation: `A multi-dimensional array is an array of arrays. The most common form is the two-dimensional (2D) array, which models a grid, table, or matrix of values organized into rows and columns. You declare a 2D array as type name[rows][cols]; where rows is the number of rows and cols is the number of columns. The total number of elements is rows multiplied by cols, and they are all stored contiguously in memory in row-major order — the first row's elements come first, then the second row's, and so on.
 
-Internally, C stores all elements of a 2D array in a single contiguous block of memory in row-major order: all elements of row 0 come first, then row 1, then row 2, and so on. This means matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3] are stored in sequence, followed by matrix[1][0], and so on. Understanding this layout matters for performance: iterating by row (varying the column index in the inner loop) accesses memory sequentially, which is cache-friendly and fast.
+Accessing an element uses two indices: name[row][col]. Both are zero-based. Think of the first index as selecting which row (like selecting a shelf) and the second as selecting which column within that row (like selecting a book on that shelf). The valid row indices run from 0 to rows-1 and the valid column indices from 0 to cols-1.
 
-You access an element in a 2D array with two index expressions: matrix[row][col]. Both indices are zero-based. So matrix[0][0] is the top-left corner and matrix[2][3] is the bottom-right of a 3×4 matrix.
+Initialization of a 2D array can use nested brace lists to visually mirror the grid structure: int matrix[2][3] = { {1, 2, 3}, {4, 5, 6} };. This is easier to read than a flat list, though a flat list is also valid. Partial initialization (fewer values than elements) zero-fills the remaining elements, just as with 1D arrays.
 
-Initializing a 2D array at declaration uses nested brace lists: int grid[2][3] = {{1, 2, 3}, {4, 5, 6}};. Each inner list initializes one row. Like 1D arrays, any omitted elements are zero-initialized.
+Traversal of a 2D array uses nested for loops. The outer loop iterates over rows and the inner loop iterates over columns. This is the canonical pattern that appears in matrix arithmetic, image processing, game boards, and tabular data everywhere in C programming.
 
-Traversal of a 2D array uses nested loops — the outer loop iterates over rows, the inner loop over columns. This is the standard pattern: for (int r = 0; r < ROWS; r++) { for (int c = 0; c < COLS; c++) { ... grid[r][c] ... } }.
+Higher-dimensional arrays (3D, 4D) follow the same pattern: add another pair of brackets and another nested for loop per dimension. In practice, 3D arrays appear in some scientific computing and graphics contexts (think: frames of video, or a 3D grid of voxels), but beyond three dimensions, C programmers typically prefer dynamically allocated structures or arrays of pointers for flexibility.
 
-C supports arrays with more than two dimensions, but 3D and higher arrays are rarely needed and can quickly become confusing. Most problems that seem to require 3D arrays are better solved with arrays of structs or dynamically allocated structures.`,
+When passing a 2D array to a function, you must specify all dimension sizes except the first (outermost). The function parameter is declared as void func(int arr[][COLS], int rows) — the number of columns must be known at compile time so the compiler can calculate the offset for each row.`,
       codeExample: `#include <stdio.h>
 
 #define ROWS 3
 #define COLS 4
 
-int main(void) {
-    /* Declare and initialize a 3x4 integer matrix */
-    int matrix[ROWS][COLS] = {
-        { 1,  2,  3,  4},
-        { 5,  6,  7,  8},
-        { 9, 10, 11, 12}
-    };
-
-    /* Print the matrix row by row */
-    printf("Matrix:\\n");
-    for (int r = 0; r < ROWS; r++) {
+void print_matrix(int m[][COLS], int rows) {
+    for (int r = 0; r < rows; r++) {
         for (int c = 0; c < COLS; c++) {
-            printf("%4d", matrix[r][c]);
+            printf("%4d", m[r][c]);
         }
         printf("\\n");
     }
+}
 
-    /* Compute the sum of all elements */
-    int total = 0;
+int main(void) {
+    /* Declare and initialize a 3x4 matrix */
+    int matrix[ROWS][COLS] = {
+        {  1,  2,  3,  4 },
+        {  5,  6,  7,  8 },
+        {  9, 10, 11, 12 }
+    };
+
+    printf("Original matrix:\\n");
+    print_matrix(matrix, ROWS);
+
+    /* Multiply each element by 2 */
     for (int r = 0; r < ROWS; r++) {
         for (int c = 0; c < COLS; c++) {
-            total += matrix[r][c];
+            matrix[r][c] *= 2;
         }
     }
-    printf("Sum of all elements: %d\\n", total);
 
-    /* Print the diagonal elements (only valid for square sub-region) */
-    printf("Diagonal: ");
-    for (int i = 0; i < ROWS; i++) {
-        printf("%d ", matrix[i][i]);
+    printf("\\nAfter doubling:\\n");
+    print_matrix(matrix, ROWS);
+
+    /* Compute column sums */
+    printf("\\nColumn sums: ");
+    for (int c = 0; c < COLS; c++) {
+        int colsum = 0;
+        for (int r = 0; r < ROWS; r++) {
+            colsum += matrix[r][c];
+        }
+        printf("%d ", colsum);
     }
     printf("\\n");
 
-    /* Identity-like: a 3x3 zero-initialized then set diagonal */
-    int identity[3][3] = {0};
-    for (int i = 0; i < 3; i++) {
-        identity[i][i] = 1;
-    }
-    printf("Identity matrix:\\n");
+    /* 3x3 identity matrix */
+    int identity[3][3] = {
+        {1, 0, 0},
+        {0, 1, 0},
+        {0, 0, 1}
+    };
+    printf("\\nIdentity matrix:\\n");
     for (int r = 0; r < 3; r++) {
         for (int c = 0; c < 3; c++) {
             printf("%d ", identity[r][c]);
@@ -693,956 +749,1042 @@ int main(void) {
 
     return 0;
 }`,
-      expectedOutput: `Matrix:
+      expectedOutput: `Original matrix:
    1   2   3   4
    5   6   7   8
    9  10  11  12
-Sum of all elements: 78
-Diagonal: 1 6 11 
+
+After doubling:
+   2   4   6   8
+  10  12  14  16
+  18  20  22  24
+
+Column sums: 30 36 42 48 
+
 Identity matrix:
 1 0 0 
 0 1 0 
 0 0 1 `,
       keyTakeaways: [
-        "A 2D array is declared as type name[ROWS][COLS] and accessed with two indices.",
-        "C stores 2D arrays in row-major order — all elements of row 0, then row 1, and so on.",
-        "Both indices are zero-based; valid row indices are 0 to ROWS-1.",
-        "Use nested loops to traverse a 2D array: outer loop for rows, inner for columns.",
-        "Iterate in row-major order (inner loop over columns) for cache-friendly access.",
-        "Partial initializer lists zero-initialize the remaining elements."
+        "A 2D array is declared as type name[rows][cols] and stored in row-major order in memory.",
+        "Elements are accessed with two zero-based indices: arr[row][col].",
+        "Nested for loops (outer for rows, inner for columns) are the standard traversal pattern.",
+        "Initialize with nested brace lists to visually reflect the grid structure.",
+        "When passing a 2D array to a function, all dimensions except the first must be specified.",
+        "Row-major storage means arr[r][c] and arr[r][c+1] are adjacent in memory; arr[r][c] and arr[r+1][c] are COLS elements apart."
       ],
       commonMistakes: [
-        "Swapping row and column indices, causing incorrect element access.",
-        "Using the same loop variable for both the row and column loops — always use distinct variables.",
-        "Exceeding either dimension's bound — out-of-bounds access is undefined behaviour.",
-        "Confusing matrix[r][c] with matrix[r,c] — the comma form is a comma expression, not 2D indexing.",
-        "Iterating column-major (outer loop over columns) for large matrices — this is cache-inefficient."
+        "Confusing [row][col] order — the first index is always the row, the second is the column.",
+        "Forgetting to specify the column count in a function parameter for a 2D array.",
+        "Accessing arr[ROWS][0] or arr[0][COLS] — both are out of bounds.",
+        "Initializing a 2D array with a flat list and getting the row boundaries wrong.",
+        "Using nested loops with the row and column counters swapped, transposing the access pattern."
       ],
       bestPractices: [
-        "Define ROWS and COLS as named constants or macros to keep declarations and loops synchronized.",
-        "Always iterate in row-major order (varying the column index in the inner loop) for best cache performance.",
-        "Initialize 2D arrays with brace-enclosed inner lists for clarity even when all zeros are desired.",
-        "When passing 2D arrays to functions, specify all dimensions except the first in the parameter declaration.",
-        "Consider using a 1D array with manual index arithmetic (row*COLS + col) for more flexible 2D data."
+        "Define row and column sizes as named constants and use them consistently in declarations and loops.",
+        "Use the nested brace initialization style for 2D arrays to visually reflect the grid layout.",
+        "Print a 2D array in a helper function to keep main clean and to make the print logic reusable.",
+        "Remember that passing a 2D array to a function requires specifying all but the first dimension.",
+        "Use r for the row loop variable and c for the column variable to make nested loops readable at a glance."
       ],
       exercises: [
         {
-          title: "Exercise 1 – Matrix Transpose",
-          description: "Declare a 3×3 integer matrix, initialize it with any values, and print it. Then compute its transpose into a second 3×3 matrix (swap rows and columns: transposed[c][r] = original[r][c]) and print the transposed matrix.",
-          hint: "Use a nested loop where the outer index goes over rows (0 to 2) and the inner over columns (0 to 2), assigning transposed[c][r] = original[r][c]."
+          title: "Exercise 1 – Row Sums",
+          description: "Declare a 3x4 integer array with values of your choice. Write nested loops to compute the sum of each row and print it. Then compute the grand total of all elements.",
+          hint: "Use a separate inner loop per row, accumulating into a rowsum variable that is reset to 0 at the start of each outer iteration."
         },
         {
-          title: "Exercise 2 – Row Sums",
-          description: "Declare a 4×5 integer matrix with any initial values. For each row, compute and print the sum of that row's elements. Also compute and print the grand total.",
-          hint: "For each row r, use an inner loop over columns to accumulate the row sum. Reset the row sum to 0 at the start of each outer iteration."
+          title: "Exercise 2 – Matrix Transpose",
+          description: "Declare a 3x3 integer matrix and compute its transpose into a second 3x3 array. The transpose of element [r][c] goes to [c][r] in the new matrix. Print both the original and the transposed matrix.",
+          hint: "transposed[c][r] = original[r][c]. Use nested loops with r and c going from 0 to 2."
         },
         {
           title: "Exercise 3 – Multiplication Table",
-          description: "Use a 10×10 2D array to store the multiplication table (table[i][j] = (i+1)*(j+1)). Print it in a formatted grid so columns are aligned.",
-          hint: "Fill the array with nested loops first, then print with nested loops using printf(\"%4d\", table[i][j]) for alignment."
+          description: "Fill a 10x10 2D array so that element [r][c] = (r+1) * (c+1), creating a multiplication table. Print it as a neatly formatted grid using %4d as the format specifier.",
+          hint: "Use nested for loops with both indices running from 0 to 9. The value is (r+1)*(c+1) because rows and columns are 1-indexed in the display but 0-indexed in the array."
         }
       ],
       challenge: {
         title: "Challenge – Matrix Multiplication",
-        description: "Write a program that multiplies two 3×3 integer matrices A and B and stores the result in a third matrix C. The formula is C[i][j] = sum over k of A[i][k] * B[k][j]. Initialize A and B with your own values, compute C, and print all three matrices.",
-        hint: "You need three nested loops: outer over i (rows of A), middle over j (columns of B), inner over k (shared dimension). Initialize each C[i][j] to 0 before the k loop."
+        description: "Write a program that multiplies two 3x3 integer matrices A and B, storing the result in matrix C. The element C[i][j] is the dot product of row i of A with column j of B: sum over k of A[i][k] * B[k][j]. Hardcode matrices A and B with interesting values, compute C, and print all three matrices neatly.",
+        hint: "You need three nested loops: i for the result row, j for the result column, and k for the dot product summation. Initialize C to all zeros before the triple loop."
       },
       quiz: [
         {
-          question: "How is a 2D array stored in memory in C?",
+          question: "How is a 3-row, 4-column 2D integer array declared in C?",
           options: [
-            "Column-major order (all of column 0 first, then column 1, etc.)",
-            "Row-major order (all of row 0 first, then row 1, etc.)",
-            "Randomly, based on the compiler",
-            "As a linked list of rows"
+            "int arr[4][3];",
+            "int arr[3][4];",
+            "int arr[3,4];",
+            "int arr[12];"
           ],
           correctIndex: 1,
-          explanation: "C uses row-major storage: elements of row 0 are contiguous, followed immediately by elements of row 1, and so on."
+          explanation: "The declaration is type name[rows][cols], so a 3-row, 4-column array is int arr[3][4]."
         },
         {
-          question: "How do you access the element in the second row, third column of matrix?",
-          options: ["matrix[3][2]", "matrix[2][3]", "matrix[1][2]", "matrix[2][1]"],
-          correctIndex: 2,
-          explanation: "Rows and columns are zero-indexed. Second row is index 1, third column is index 2, giving matrix[1][2]."
-        },
-        {
-          question: "What is the total number of elements in int grid[4][6]?",
-          options: ["10", "46", "24", "12"],
-          correctIndex: 2,
-          explanation: "A 4-row, 6-column array has 4 × 6 = 24 elements."
-        },
-        {
-          question: "Which loop order is more cache-efficient for a 2D array in C?",
+          question: "In what order are elements of a 2D array stored in memory in C?",
           options: [
-            "Outer loop over columns, inner loop over rows",
-            "Outer loop over rows, inner loop over columns",
-            "Both are equally efficient",
-            "Single loop with manual index arithmetic"
+            "Column-major: all elements of column 0 first, then column 1, etc.",
+            "Row-major: all elements of row 0 first, then row 1, etc.",
+            "Diagonal: from top-left to bottom-right.",
+            "Random order determined by the compiler."
           ],
           correctIndex: 1,
-          explanation: "Row-major storage means adjacent memory locations differ by one column. Varying the column in the inner loop accesses sequential addresses, maximising cache hits."
+          explanation: "C stores 2D arrays in row-major order: the entire first row is stored contiguously, followed by the entire second row, and so on."
+        },
+        {
+          question: "What is the correct function signature to receive a 3x4 int matrix?",
+          options: [
+            "void func(int m[][], int rows)",
+            "void func(int m[3][], int rows)",
+            "void func(int m[][4], int rows)",
+            "void func(int **m, int rows, int cols)"
+          ],
+          correctIndex: 2,
+          explanation: "When passing a 2D array to a function, all dimensions except the outermost (rows) must be specified. The column count of 4 must be present."
+        },
+        {
+          question: "What is the typical loop pattern for traversing a 2D array with R rows and C columns?",
+          options: [
+            "A single loop from 0 to R*C",
+            "Two independent loops, one for rows and one for columns",
+            "An outer loop for rows (0 to R-1) containing an inner loop for columns (0 to C-1)",
+            "An outer loop for columns containing an inner loop for rows"
+          ],
+          correctIndex: 2,
+          explanation: "Nested for loops are standard: the outer loop picks a row, the inner loop visits each column within that row."
+        },
+        {
+          question: "int mat[2][3] = {{1,2,3}}; What is mat[1][0]?",
+          options: ["1", "0", "Garbage", "Compile error"],
+          correctIndex: 1,
+          explanation: "The second row is not provided in the initializer, so it is zero-initialized. mat[1][0] is 0."
         }
       ]
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-6: Strings and Character Arrays
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-6",
       title: "Strings and Character Arrays",
-      estimatedReadingTime: 9,
-      explanation: `In C, there is no built-in string type. A string is simply an array of characters (type char) with a special convention: the last meaningful character is followed by a null terminator, the character with value 0 written as '\\0'. This null terminator signals the end of the string to all standard library functions. Without it, functions like printf and strlen would not know where the string ends.
+      estimatedReadingTime: 10,
+      explanation: `In C, there is no dedicated string type — strings are represented as arrays of characters (type char) with a special terminating byte: the null character, written \\0 (ASCII value 0). Every C string is terminated by this null character, which signals functions like printf and strlen where the string ends. This convention is fundamental, and forgetting the null terminator is one of the most common sources of bugs in C.
 
-A string literal in C source code is written as a sequence of characters enclosed in double quotes: "Hello". The compiler automatically appends the null terminator, so "Hello" is 6 bytes: 'H', 'e', 'l', 'l', 'o', '\\0'. String literals are stored in read-only memory (the data segment). Attempting to modify a string literal is undefined behaviour.
+There are two main ways to work with strings in C. The first is a string literal — a sequence of characters enclosed in double quotes, like "Hello". When you write a string literal, the compiler stores the characters plus an automatic null terminator and gives you a pointer to the first character. String literals are stored in read-only memory; you should not try to modify their characters through that pointer.
 
-To work with a mutable string — one you can modify — you declare a char array large enough to hold the characters plus the null terminator: char name[20]; or char greeting[6] = "Hello"; (the compiler fills in the null). You can also write the initializer element by element: char greeting[] = {'H','e','l','l','o','\\0'};, though the string literal form is cleaner.
+The second way is a character array that you declare yourself: char buffer[50]; or char name[] = "Alice";. When you initialize a char array from a string literal like char name[] = "Alice";, the compiler copies the characters including the null terminator into the array. The array is stored in writable memory (on the stack if declared locally), so you can modify its contents. This is the form you need when you want to build or change a string at runtime.
 
-Reading a string from the user with scanf and the %s format specifier is common but dangerous: it does not limit how many characters are read, so a long input overflows the buffer. The safer alternative is fgets(buffer, sizeof(buffer), stdin), which reads at most sizeof(buffer)-1 characters and always null-terminates the result.
+When reading strings from the user, use fgets(buffer, sizeof(buffer), stdin) rather than scanf("%s", buffer). The scanf approach stops at the first whitespace and, worse, does not limit how many characters it reads — it will overflow the buffer if the user types too much. fgets is safe because you tell it the maximum number of characters to read, preventing overflow.
 
-Printing a string uses printf with the %s format specifier. printf("%s\\n", greeting); scans from the pointer given until it finds '\\0' and prints each character. This is why every string buffer you pass to printf must be properly null-terminated.
+The relationship between strings and character arrays maps directly onto what you already know about arrays. Indexing works: name[0] is the first character, name[1] is the second, and name[k] is the null terminator. A loop like for (int i = 0; name[i] != '\\0'; i++) traverses every character in the string. The condition name[i] != '\\0' checks for the null terminator, stopping just before it.
 
-Strings in C require careful memory management. You must always allocate at least strlen(s)+1 bytes to store a copy of string s. Forgetting the +1 for the null terminator is one of the most common bugs in C programs.`,
+One subtle but important point: char *s = "hello"; declares a pointer to the first character of a read-only string literal. char s[] = "hello"; declares a 6-element (5 chars + '\\0') modifiable character array. These look similar but behave very differently when you try to modify the contents.`,
       codeExample: `#include <stdio.h>
 #include <string.h>
 
 int main(void) {
-    /* String literal — stored in read-only memory */
-    const char *literal = "Hello, World!";
-    printf("Literal: %s\\n", literal);
-    printf("Length:  %zu\\n", strlen(literal));
-
-    /* Character array — mutable string */
-    char greeting[20] = "Hello";
+    /* String literal — read-only pointer */
+    const char *greeting = "Hello, World!";
     printf("Greeting: %s\\n", greeting);
+    printf("First char: %c\\n", greeting[0]);
 
-    /* Modify the mutable array */
-    greeting[0] = 'J';
-    greeting[1] = 'e';
-    greeting[2] = 'l';
-    greeting[3] = 'l';
-    greeting[4] = 'o';
-    greeting[5] = '\\0';  /* ensure null termination */
-    printf("Modified: %s\\n", greeting);
+    /* Character array initialized from a literal — writable copy */
+    char name[] = "Alice";
+    name[0] = 'B';              /* change 'A' to 'B' */
+    printf("Modified name: %s\\n", name);
 
-    /* Initialize character by character */
-    char vowels[] = {'a', 'e', 'i', 'o', 'u', '\\0'};
-    printf("Vowels: %s\\n", vowels);
+    /* Manual array with explicit null terminator */
+    char word[6] = {'C', 'o', 'd', 'e', 'r', '\\0'};
+    printf("Manual word: %s\\n", word);
 
-    /* Reading a string safely with scanf width limiter */
-    char name[10] = "Alice";    /* pre-filled for demonstration */
-    printf("Name has %zu characters\\n", strlen(name));
-
-    /* Traverse a string character by character */
-    printf("Characters of greeting: ");
-    for (int i = 0; greeting[i] != '\\0'; i++) {
-        printf("'%c' ", greeting[i]);
+    /* Reading a string with fgets (safe) */
+    char line[80];
+    printf("\\nBuffer contents example (hardcoded for demo):\\n");
+    /* In a real program: fgets(line, sizeof(line), stdin); */
+    /* Here we simulate what a user might type: */
+    char *src = "Learning C is fun!";
+    int i;
+    for (i = 0; src[i] != '\\0' && i < 79; i++) {
+        line[i] = src[i];
     }
-    printf("\\n");
+    line[i] = '\\0';
+    printf("Line: %s\\n", line);
+
+    /* Traversing a string character by character */
+    printf("Characters in greeting:\\n");
+    for (int j = 0; greeting[j] != '\\0'; j++) {
+        printf("  [%d] = '%c'\\n", j, greeting[j]);
+    }
+
+    /* String length without strlen — manual count */
+    int len = 0;
+    while (word[len] != '\\0') {
+        len++;
+    }
+    printf("Length of '%s' counted manually: %d\\n", word, len);
 
     return 0;
 }`,
-      expectedOutput: `Literal: Hello, World!
-Length:  13
-Greeting: Hello
-Modified: Jello
-Vowels: aeiou
-Name has 5 characters
-Characters of greeting: 'J' 'e' 'l' 'l' 'o' `,
+      expectedOutput: `Greeting: Hello, World!
+First char: H
+Modified name: Blice
+
+Buffer contents example (hardcoded for demo):
+Line: Learning C is fun!
+Characters in greeting:
+  [0] = 'H'
+  [1] = 'e'
+  [2] = 'l'
+  [3] = 'l'
+  [4] = 'o'
+  [5] = ','
+  [6] = ' '
+  [7] = 'W'
+  [8] = 'o'
+  [9] = 'r'
+  [10] = 'l'
+  [11] = 'd'
+  [12] = '!'
+Length of 'Coder' counted manually: 5`,
       keyTakeaways: [
-        "A C string is a char array terminated by a null character '\\0'.",
-        "String literals are read-only; declare char arrays for mutable strings.",
-        "Always allocate strlen(s)+1 bytes to store a copy of string s.",
-        "Use %s with printf/scanf to print/read strings; always ensure null termination.",
-        "fgets is safer than scanf %s because it limits the number of characters read.",
-        "Traversal loops can use greeting[i] != '\\0' as the condition instead of a length counter."
+        "C strings are null-terminated character arrays — every string ends with the '\\0' byte.",
+        "String literals like \"hello\" are read-only; character arrays like char s[] = \"hello\" are writable.",
+        "Always allocate at least strlen(s) + 1 bytes to hold a string copy, reserving space for '\\0'.",
+        "Use fgets instead of scanf(\"%s\") for safe string input that prevents buffer overflows.",
+        "Traverse a string with a loop checking for '\\0' to process each character individually.",
+        "char *s = \"hi\" and char s[] = \"hi\" look similar but the first points to read-only memory."
       ],
       commonMistakes: [
-        "Forgetting the null terminator when building a string character by character.",
-        "Allocating strlen(s) bytes instead of strlen(s)+1, causing the null terminator to overwrite adjacent memory.",
-        "Trying to modify a string literal — this is undefined behaviour.",
-        "Using scanf %s without a width limit allows buffer overflow with long inputs.",
-        "Comparing strings with == instead of strcmp — == compares pointers, not string contents."
+        "Forgetting the null terminator when building a string manually — subsequent string functions will read garbage.",
+        "Trying to modify a string literal through a char * pointer — this is undefined behaviour (usually a crash).",
+        "Allocating strlen(s) bytes for a copy instead of strlen(s)+1, omitting space for '\\0'.",
+        "Using scanf(\"%s\") without a width limit — it overflows the buffer with long input.",
+        "Comparing strings with == instead of strcmp — == compares pointer addresses, not contents."
       ],
       bestPractices: [
-        "Always null-terminate character arrays that are used as strings.",
-        "Use fgets instead of scanf %s for user input to prevent buffer overflows.",
-        "Declare string buffers large enough to hold the longest expected input plus the null terminator.",
-        "Use const char * for string literals and function parameters that should not be modified.",
-        "Use the string.h library functions (strcmp, strcpy, strcat) rather than reinventing them."
+        "Always declare char arrays large enough to hold the maximum content plus the null terminator.",
+        "Use fgets(buf, sizeof(buf), stdin) for all string input from the keyboard.",
+        "Declare string literals as const char * to let the compiler catch accidental modification attempts.",
+        "After copying into a buffer, always ensure the last byte is '\\0' explicitly for safety.",
+        "Use the string library functions (strlen, strcpy, strcmp) rather than reinventing them in loops."
       ],
       exercises: [
         {
-          title: "Exercise 1 – Count Vowels",
-          description: "Write a program that reads a string (up to 99 characters) with fgets into a char array and counts the number of vowels (a, e, i, o, u — both upper and lower case). Print the count.",
-          hint: "Loop through the string with index i until you reach '\\0'. Check if each character matches any vowel using a series of || comparisons or strcmp."
+          title: "Exercise 1 – String Length",
+          description: "Write a function int my_strlen(const char *s) that counts and returns the number of characters in s (not including the null terminator) without using the standard strlen. Test it on three strings of different lengths.",
+          hint: "Use a while loop that increments a counter as long as s[counter] != '\\0'."
         },
         {
-          title: "Exercise 2 – Reverse a String In-Place",
-          description: "Write a function void reverse_string(char *s) that reverses a string in place (no extra array). Use two indices (one at the start, one at the end) and swap characters until they meet in the middle.",
-          hint: "Use strlen to find the end index. Swap s[left] and s[right], then move left forward and right backward."
+          title: "Exercise 2 – Count Vowels",
+          description: "Write a program that reads a string from the user with fgets, then counts and prints the number of vowels (a, e, i, o, u — both upper and lower case) it contains.",
+          hint: "Traverse the string character by character. Use a switch or a series of if statements comparing each character to 'a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'."
         },
         {
-          title: "Exercise 3 – Is Palindrome",
-          description: "Write a function int is_palindrome(const char *s) that returns 1 if the string is the same forwards and backwards, and 0 otherwise. Ignore case for the comparison. Test with 'racecar', 'hello', and 'madam'.",
-          hint: "Compare s[i] and s[len-1-i] using tolower() (from <ctype.h>) for case-insensitive comparison. Return 0 as soon as a mismatch is found."
+          title: "Exercise 3 – Reverse a String In Place",
+          description: "Write a function void reverse_string(char s[]) that reverses a string in place without using a second array. Use two index pointers — one starting from the left, one from the right — and swap characters until they meet in the middle.",
+          hint: "Find the length with strlen (or your my_strlen). Use left=0, right=len-1, swap s[left] and s[right] with a temp char, increment left, decrement right, loop while left < right."
         }
       ],
       challenge: {
-        title: "Challenge – Word Count",
-        description: "Write a program that reads a full line of text (up to 255 characters) with fgets and counts the number of words. A word is a maximal sequence of non-whitespace characters. Also count the total number of characters (excluding the newline) and the number of sentences (count '.', '!', and '?' as sentence terminators). Print all three counts.",
-        hint: "Track a boolean 'in_word' flag. When you transition from whitespace to non-whitespace, increment the word count and set in_word=1. When you transition back, clear in_word."
+        title: "Challenge – Word Counter",
+        description: "Write a program that reads a line of text (up to 256 characters) using fgets and counts the number of words in it. Define a word as a maximal sequence of non-whitespace characters. Handle multiple consecutive spaces, leading spaces, and trailing spaces correctly. Print the word count. Then also print each word on its own line by scanning through the string and printing characters that are not spaces.",
+        hint: "Use a boolean variable in_word (0 or 1). When you transition from whitespace to a non-space character, increment the word counter and set in_word=1. When you see whitespace, set in_word=0."
       },
       quiz: [
         {
-          question: "What marks the end of a C string?",
-          options: ["A space character", "The null character '\\0' (value 0)", "A newline '\\n'", "A semicolon"],
-          correctIndex: 1,
-          explanation: "C strings are null-terminated: the character with value 0, written '\\0', signals the end to all string functions."
+          question: "What character terminates every C string?",
+          options: ["'.'", "'\\n'", "'\\0'", "' '"],
+          correctIndex: 2,
+          explanation: "The null character '\\0' (ASCII value 0) marks the end of every C string. String functions use it to know where the string ends."
         },
         {
-          question: "How many bytes does the string literal \"cat\" occupy in memory?",
-          options: ["3", "4", "5", "2"],
+          question: "What is the size of the array created by char s[] = \"cat\";?",
+          options: ["3", "4", "5", "It depends on the compiler."],
           correctIndex: 1,
-          explanation: "'c', 'a', 't', and the null terminator '\\0' require 4 bytes total."
+          explanation: "\"cat\" has 3 characters plus the null terminator '\\0', so the array has 4 elements."
         },
         {
-          question: "What is wrong with: char *s = \"hello\"; s[0] = 'H';?",
+          question: "Why is using == to compare two C strings incorrect?",
           options: [
-            "You cannot assign a string literal to a char pointer",
-            "Modifying a string literal is undefined behaviour — they are read-only",
-            "char * is the wrong type for strings",
-            "The index 0 is invalid for strings"
+            "== is only for integers, not chars.",
+            "== compares the pointer addresses, not the string contents.",
+            "== does not work with arrays at all.",
+            "== is slower than strcmp."
           ],
           correctIndex: 1,
-          explanation: "String literals are placed in read-only memory. Attempting to modify them is undefined behaviour, typically causing a segmentation fault."
+          explanation: "Array names decay to pointers. Using == compares the memory addresses where the strings are stored, not their character contents. Use strcmp instead."
         },
         {
-          question: "Why is scanf(\"%s\", buffer) considered unsafe?",
+          question: "What does char *s = \"hello\"; allow you to do that char s[] = \"hello\"; does not?",
           options: [
-            "It cannot read strings containing letters",
-            "It stops reading at whitespace, losing the rest of the line",
-            "It reads without a length limit, allowing buffer overflow",
-            "It requires a newline at the end"
+            "Read the string character by character.",
+            "Point s to a completely different string literal later.",
+            "Modify individual characters like s[0] = 'H'.",
+            "Pass s to printf with %s."
+          ],
+          correctIndex: 1,
+          explanation: "char *s can be reassigned to point to a different string. char s[] is a fixed array; s itself cannot point elsewhere, though its contents can be modified."
+        },
+        {
+          question: "Why is fgets preferred over scanf(\"%s\") for reading user strings?",
+          options: [
+            "fgets is faster than scanf.",
+            "scanf cannot read strings at all.",
+            "fgets limits the number of characters read, preventing buffer overflow.",
+            "fgets converts characters to uppercase automatically."
           ],
           correctIndex: 2,
-          explanation: "Without a width specifier, %s reads until whitespace with no limit, potentially writing past the end of the buffer."
-        },
-        {
-          question: "How do you correctly compare two strings in C?",
-          options: [
-            "if (str1 == str2)",
-            "if (str1 = str2)",
-            "if (strcmp(str1, str2) == 0)",
-            "if (str1.equals(str2))"
-          ],
-          correctIndex: 2,
-          explanation: "== compares pointers (addresses), not contents. strcmp compares the characters of two strings and returns 0 if they are equal."
+          explanation: "fgets takes a maximum size argument and will not read more characters than the buffer can hold, preventing buffer overflow. scanf(\"%s\") without a width limit is unsafe."
         }
       ]
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-7: String Library Functions (string.h)
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-7",
       title: "String Library Functions (string.h)",
       estimatedReadingTime: 8,
-      explanation: `The C standard library provides a rich set of string manipulation functions in the <string.h> header. These functions handle the common operations you need on null-terminated char arrays: measuring length, copying, concatenating, comparing, searching, and more. Using these library functions is safer and more readable than re-implementing the same logic by hand.
+      explanation: `The C standard library provides a set of ready-made functions for working with strings, all declared in the header <string.h>. Learning these functions saves you from writing common string operations by hand and produces code that is faster, safer, and more readable. Every serious C programmer uses them routinely.
 
-The most fundamental string function is strlen(s), which returns the number of characters in string s, not counting the null terminator. The return type is size_t, an unsigned integer type. strlen is O(n) — it must scan the entire string to count characters — so avoid calling it repeatedly in the condition of a loop when the string does not change.
+The most essential function is strlen(s), which returns the number of characters in the string s, not counting the null terminator. Its return type is size_t, an unsigned integer type. Use it whenever you need to know the length of a string — but be aware that it traverses the entire string each time it is called, so avoid calling it repeatedly inside a loop; store the result in a variable instead.
 
-To copy a string, use strcpy(dest, src), which copies src (including the null terminator) into dest. You must ensure dest is large enough to hold strlen(src)+1 characters, or you will have a buffer overflow. The safer alternative is strncpy(dest, src, n), which copies at most n characters. However, strncpy does not guarantee null termination if src is at least n characters long, so many programmers follow it with dest[n-1] = '\\0'.
+strcpy(dest, src) copies the string src (including the null terminator) into the buffer dest. You must ensure dest is large enough to hold all the characters of src plus the null terminator, or the copy will overflow the destination buffer. The safer alternative in modern C is strncpy(dest, src, n), which copies at most n characters and does not overflow the destination. However, strncpy does not guarantee null termination if src is longer than n, so you often need to manually set dest[n-1] = '\\0' after calling it.
 
-Concatenation is done with strcat(dest, src), which appends src to the end of dest (starting from dest's null terminator). Again, dest must have enough space for the combined string. strncat(dest, src, n) appends at most n characters and always null-terminates.
+strcat(dest, src) appends (concatenates) the string src onto the end of dest, overwriting dest's null terminator and adding a new one at the end. Again, dest must have enough space to hold both strings plus the null terminator. strncat(dest, src, n) is the safer bounded version.
 
-String comparison uses strcmp(s1, s2). It returns 0 if the strings are equal, a negative integer if s1 comes before s2 alphabetically, and a positive integer if s1 comes after. strncmp(s1, s2, n) compares at most n characters. There is also strcasecmp (not in standard C but common on Linux) or toupper/tolower loops for case-insensitive comparison.
+strcmp(s1, s2) compares two strings lexicographically (character by character using ASCII values). It returns 0 if the strings are equal, a negative value if s1 comes before s2, and a positive value if s1 comes after s2. This is the correct way to compare C strings — never use == for string comparison.
 
-To search within a string, strchr(s, c) returns a pointer to the first occurrence of character c in s, or NULL if not found. strstr(s1, s2) finds the first occurrence of substring s2 inside s1. These search functions return pointers into the original string, not copies, so the results are valid as long as the original string is alive.`,
+strstr(haystack, needle) searches for the first occurrence of the substring needle inside the string haystack. It returns a pointer to the first character of the match, or NULL if needle is not found. strchr(s, c) finds the first occurrence of the character c in the string s and also returns a pointer or NULL. strtok(s, delimiters) tokenizes a string by splitting it at delimiter characters, returning successive tokens on repeated calls.`,
       codeExample: `#include <stdio.h>
 #include <string.h>
 
 int main(void) {
-    char src[] = "Hello";
-    char dest[30];
+    char src[] = "Hello, C!";
+    char dest[50];
 
-    /* strlen */
-    printf("Length of '%s': %zu\\n", src, strlen(src));
+    /* strlen: count characters (not including null terminator) */
+    printf("strlen(\\\"Hello, C!\\\") = %zu\\n", strlen(src));
 
-    /* strcpy */
+    /* strcpy: copy one string into another buffer */
     strcpy(dest, src);
-    printf("After strcpy: '%s'\\n", dest);
+    printf("strcpy result: %s\\n", dest);
 
-    /* strcat */
-    strcat(dest, ", World!");
-    printf("After strcat: '%s'\\n", dest);
-    printf("New length: %zu\\n", strlen(dest));
+    /* strcat: concatenate a string onto dest */
+    strcat(dest, " Welcome!");
+    printf("After strcat: %s\\n", dest);
 
-    /* strcmp */
+    /* strcmp: compare two strings */
     char a[] = "apple";
     char b[] = "banana";
     int cmp = strcmp(a, b);
-    if (cmp < 0)       printf("'%s' comes before '%s'\\n", a, b);
-    else if (cmp > 0)  printf("'%s' comes after '%s'\\n",  a, b);
-    else               printf("Strings are equal\\n");
+    if (cmp < 0) {
+        printf("strcmp: \\\"%s\\\" comes before \\\"%s\\\"\\n", a, b);
+    } else if (cmp > 0) {
+        printf("strcmp: \\\"%s\\\" comes after \\\"%s\\\"\\n", a, b);
+    } else {
+        printf("strcmp: strings are equal\\n");
+    }
+    printf("strcmp(\\\"cat\\\",\\\"cat\\\") = %d\\n", strcmp("cat", "cat"));
 
-    /* strncpy — copy at most 3 chars */
-    char partial[10];
-    strncpy(partial, "Programming", 6);
-    partial[6] = '\\0';  /* manual null termination */
-    printf("strncpy(6 chars): '%s'\\n", partial);
+    /* strstr: find a substring */
+    const char *sentence = "The quick brown fox";
+    const char *found = strstr(sentence, "brown");
+    if (found) {
+        printf("strstr found \\\"brown\\\" at position %ld\\n",
+               found - sentence);
+    }
 
-    /* strchr — find first occurrence of a character */
-    char sentence[] = "Find the needle here";
-    char *pos = strchr(sentence, 'n');
-    if (pos) printf("First 'n' at offset %ld\\n", pos - sentence);
+    /* strchr: find a character */
+    const char *pos = strchr(sentence, 'q');
+    if (pos) {
+        printf("strchr found 'q' at index %ld\\n", pos - sentence);
+    }
 
-    /* strstr — find a substring */
-    char *sub = strstr(sentence, "needle");
-    if (sub) printf("'needle' found at offset %ld\\n", sub - sentence);
+    /* strtok: split a string by delimiter */
+    char csv[] = "one,two,three,four";
+    printf("strtok tokens: ");
+    char *token = strtok(csv, ",");
+    while (token != NULL) {
+        printf("[%s] ", token);
+        token = strtok(NULL, ",");
+    }
+    printf("\\n");
 
     return 0;
 }`,
-      expectedOutput: `Length of 'Hello': 5
-After strcpy: 'Hello'
-After strcat: 'Hello, World!'
-New length: 13
-'apple' comes before 'banana'
-strncpy(6 chars): 'Progra'
-First 'n' at offset 7
-'needle' found at offset 9`,
+      expectedOutput: `strlen("Hello, C!") = 9
+strcpy result: Hello, C!
+After strcat: Hello, C! Welcome!
+strcmp: "apple" comes before "banana"
+strcmp("cat","cat") = 0
+strstr found "brown" at position 10
+strchr found 'q' at index 4
+strtok tokens: [one] [two] [three] [four] `,
       keyTakeaways: [
-        "strlen returns the character count NOT including the null terminator.",
-        "strcpy and strcat require the destination buffer to be large enough — they do not check.",
-        "strcmp returns 0 for equal strings, negative if s1 < s2, positive if s1 > s2.",
-        "strchr finds a character; strstr finds a substring — both return pointers or NULL.",
-        "strncpy copies at most n characters; manually null-terminate the result to be safe.",
-        "Always #include <string.h> to use these functions."
+        "strlen returns the number of characters in a string, not including the null terminator.",
+        "strcpy copies a string into a buffer; always ensure the destination is large enough.",
+        "strcat appends one string to another; the destination must have enough space for the combined result.",
+        "strcmp compares two strings: returns 0 for equality, negative if s1 < s2, positive if s1 > s2.",
+        "strstr finds a substring; strchr finds a single character — both return pointers or NULL.",
+        "strtok splits a string into tokens on repeated calls, passing NULL after the first call."
       ],
       commonMistakes: [
-        "Calling strcpy or strcat with a destination too small — causes a buffer overflow.",
-        "Assuming strncpy always null-terminates — it does not when the source length >= n.",
-        "Using strlen in a loop condition causing O(n²) performance when n is large.",
-        "Comparing strings with == instead of strcmp — this compares pointers, not content.",
-        "Forgetting to check whether strchr or strstr returned NULL before using the result."
+        "Using strcpy or strcat into a buffer that is too small — this overflows and corrupts memory.",
+        "Comparing strings with == instead of strcmp — == compares pointer addresses, not contents.",
+        "Calling strlen inside a loop on the same string repeatedly — each call traverses the whole string; store the length first.",
+        "Forgetting that strtok modifies the original string by inserting null bytes at delimiter positions.",
+        "Assuming strncpy always null-terminates — it does not if src is longer than n; add dest[n-1]='\\0' manually."
       ],
       bestPractices: [
-        "Always ensure destination buffers are large enough (strlen(src)+1 for strcpy; combined+1 for strcat).",
-        "Prefer strncat and strncpy over their unchecked variants, and always manually null-terminate.",
-        "Store strlen result in a variable outside a loop instead of calling it on every iteration.",
-        "Check the return value of strchr and strstr for NULL before dereferencing.",
-        "Use snprintf for building strings by formatting — it limits output and always null-terminates."
+        "Always use snprintf or strncat instead of sprintf/strcat when the destination size is bounded.",
+        "Store strlen results in a variable before loops to avoid redundant traversals.",
+        "Pass sizeof(dest) to strncpy/strncat so the bound matches the actual buffer size.",
+        "After strncpy, explicitly set dest[n-1] = '\\0' to guarantee null termination.",
+        "Prefer strcmp return value comparison (== 0, < 0, > 0) over just testing for non-zero, which improves clarity."
       ],
       exercises: [
         {
-          title: "Exercise 1 – String Utilities",
-          description: "Write a program that reads two strings from the user (each at most 49 chars). Print: the length of each, their concatenation, and whether they are equal (use strcmp). Then print which one comes first alphabetically.",
-          hint: "Use strlen, strcat (into a buffer large enough for both), and strcmp. Check if strcmp returns 0 for equality or negative/positive for order."
+          title: "Exercise 1 – String Copy and Append",
+          description: "Declare a destination buffer of 100 characters. Use strcpy to copy the string \"Hello\" into it, then use strcat to append \", World!\". Print the result and its length using strlen.",
+          hint: "Make sure the destination buffer is large enough for both strings and the null terminator before calling strcat."
         },
         {
-          title: "Exercise 2 – Count a Character",
-          description: "Write a function int count_char(const char *s, char c) that uses strchr in a loop to count how many times character c appears in string s. Do not use a plain loop — use strchr to find each occurrence and advance past it.",
-          hint: "Start with a pointer set to s. Call strchr(ptr, c). If non-NULL, increment count and advance ptr to pos+1. Repeat until strchr returns NULL."
+          title: "Exercise 2 – Case-Insensitive Compare",
+          description: "Write a function int str_equal_ignore_case(const char *a, const char *b) that returns 1 if two strings are equal ignoring case and 0 otherwise. Use a loop comparing tolower(a[i]) with tolower(b[i]) from <ctype.h> character by character.",
+          hint: "If the lengths differ, they cannot be equal. Traverse character by character with tolower on both and compare. Return 0 immediately on the first mismatch."
         },
         {
-          title: "Exercise 3 – Safe String Copy",
-          description: "Write a function void safe_copy(char *dest, size_t dest_size, const char *src) that copies at most dest_size-1 characters from src to dest and always null-terminates dest. Test it with a destination buffer smaller than the source.",
-          hint: "Use strncpy(dest, src, dest_size - 1) then set dest[dest_size - 1] = '\\0'."
+          title: "Exercise 3 – Split CSV",
+          description: "Write a program that defines a CSV string like \"Alice,30,Engineer\". Use strtok to split it by comma and print each field on its own line with a label like 'Field 1: Alice'.",
+          hint: "Call strtok(csv, \",\") for the first token, then call strtok(NULL, \",\") in a loop for subsequent tokens. Use a counter to label each field."
         }
       ],
       challenge: {
-        title: "Challenge – Simple String Tokenizer",
-        description: "Without using strtok, write a function that scans a string and extracts words separated by spaces. Store each word in a 2D char array (up to 20 words of 30 chars each). Print each word on its own line and print the total word count. Use strchr to find spaces and strncpy to copy each word.",
-        hint: "Track the start of the current word. When you find a space (or the null terminator), compute the word length as (pos - start), use strncpy to copy it, null-terminate it, then advance start past the separator."
+        title: "Challenge – String Utilities Library",
+        description: "Implement your own versions of four standard functions without using <string.h>: my_strlen, my_strcpy, my_strcat, and my_strcmp. Each must match the semantics of its standard counterpart. Then write a test harness in main that verifies each of your functions against the standard library versions on at least three different test strings, printing PASS or FAIL for each test.",
+        hint: "For my_strcmp, traverse both strings simultaneously, comparing corresponding characters. Return the difference of the first differing characters (a[i] - b[i]). Check that both hit '\\0' at the same time for equality."
       },
       quiz: [
         {
           question: "What does strlen(\"hello\") return?",
-          options: ["6", "5", "4", "7"],
+          options: ["6", "5", "4", "It depends on the platform."],
           correctIndex: 1,
-          explanation: "strlen counts characters up to but NOT including the null terminator, so 'h','e','l','l','o' = 5."
+          explanation: "strlen counts characters up to but not including the null terminator. \"hello\" has 5 characters, so strlen returns 5."
         },
         {
-          question: "What does strcmp(\"abc\", \"abd\") return?",
+          question: "What must be true about the destination buffer when calling strcpy(dest, src)?",
           options: [
-            "0 (strings are equal)",
-            "A negative value (\"abc\" comes before \"abd\")",
-            "A positive value (\"abc\" comes after \"abd\")",
-            "1 always"
+            "dest must be exactly strlen(src) bytes.",
+            "dest must be at least strlen(src) + 1 bytes to hold the string and its null terminator.",
+            "dest and src must be the same size.",
+            "dest must be NULL-initialized first."
           ],
           correctIndex: 1,
-          explanation: "Comparing character by character: 'a'='a', 'b'='b', 'c' < 'd', so \"abc\" sorts before \"abd\" and strcmp returns a negative value."
+          explanation: "strcpy writes strlen(src) characters plus a null terminator, so dest must hold at least strlen(src) + 1 bytes."
         },
         {
-          question: "What is the risk of using strcat without checking buffer size?",
-          options: [
-            "It may return NULL instead of the concatenated string",
-            "It may write past the end of the destination buffer, causing a buffer overflow",
-            "It may silently truncate the result",
-            "It may compare rather than concatenate"
-          ],
-          correctIndex: 1,
-          explanation: "strcat appends without bounds checking. If the destination is too small, it writes into adjacent memory, causing a buffer overflow."
-        },
-        {
-          question: "What does strchr(s, 'x') return if 'x' is not in the string s?",
-          options: ["0", "NULL", "-1", "An empty string"],
-          correctIndex: 1,
-          explanation: "strchr returns NULL when the character is not found. Always check for NULL before using the returned pointer."
-        },
-        {
-          question: "Which header must you include to use strlen, strcpy, and strcmp?",
-          options: ["<stdio.h>", "<stdlib.h>", "<string.h>", "<ctype.h>"],
+          question: "What does strcmp(\"abc\", \"abc\") return?",
+          options: ["1", "-1", "0", "3"],
           correctIndex: 2,
-          explanation: "All standard string manipulation functions are declared in <string.h>."
+          explanation: "strcmp returns 0 when both strings are identical character-for-character."
+        },
+        {
+          question: "What does strstr(\"abcdef\", \"cd\") return?",
+          options: [
+            "2 (the index)",
+            "A pointer to the 'c' in \"abcdef\"",
+            "A pointer to the 'd' in \"abcdef\"",
+            "NULL"
+          ],
+          correctIndex: 1,
+          explanation: "strstr returns a pointer to the first occurrence of the substring. \"cd\" starts at 'c' in \"abcdef\", so a pointer to that 'c' is returned."
+        },
+        {
+          question: "After the first call to strtok(s, \",\"), how do you get the next token?",
+          options: [
+            "Call strtok(s, \",\") again with the same string.",
+            "Call strtok(NULL, \",\") — pass NULL as the first argument.",
+            "Call strtok(s + 1, \",\") to advance by one character.",
+            "Call strstr to find the next comma manually."
+          ],
+          correctIndex: 1,
+          explanation: "strtok maintains internal state after the first call. Passing NULL as the first argument tells it to continue scanning from where it left off."
         }
       ]
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-8: Pointers
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-8",
-      title: "Pointers — Addresses, Declaration, and Basic Usage",
+      title: "Pointers — Address-of, Dereference, and Basic Usage",
       estimatedReadingTime: 12,
-      explanation: `A pointer is a variable that holds a memory address. Every variable in a C program lives at some address in memory — a numbered location where its bytes are stored. The address-of operator & retrieves that address. The dereference operator * follows a pointer to the value stored at the address it holds. These two operators are the foundation of all pointer usage in C.
+      explanation: `A pointer is a variable that holds the memory address of another variable. Every variable in a C program lives at a specific location in memory, and that location has a numeric address. Pointers let you work with those addresses directly, giving you a level of control over memory that higher-level languages hide from you. Pointers are one of C's most powerful — and most feared — features. With practice and a clear mental model, they become natural.
 
-When you write int x = 42;, the compiler assigns x some address — say, address 1000. The value 42 is stored at that address. Now if you write int *p = &x;, you declare a pointer p of type "pointer to int" and initialize it with the address of x. Now p holds 1000. Dereferencing with *p retrieves the value at address 1000, which is 42. And crucially, assigning *p = 99; stores 99 at address 1000 — modifying x through the pointer.
+The address-of operator & (a single ampersand) retrieves the memory address of a variable. If you write int x = 42; the expression &x gives you the address where x is stored. This address is typically a hexadecimal number like 0x7ffeed123abc, representing a position in your computer's memory. You can print it with the %p format specifier.
 
-Pointer declaration uses an asterisk between the type and the name: int *p; declares p as a pointer to an integer. The type before the asterisk is the pointed-to type — it tells the compiler what kind of data lives at the address, and it controls how many bytes are read/written when you dereference. char *cp; points to a single byte; double *dp; points to 8 bytes.
+The dereference operator * (a single asterisk in an expression, not a declaration) does the opposite: given a pointer (an address), * gives you the value stored at that address. So if p holds the address of x, then *p reads the value of x. Writing *p = 99; stores 99 into the memory location that p points to, which changes x directly.
 
-Pointers are the mechanism that enables a function to modify the caller's variables. Pass-by-value gives a function a copy; to give a function the ability to modify the original, you pass the address. Inside the function, dereference the pointer to read or write the original. This is the only way to "return" multiple values from a C function without using global variables.
+Declaring a pointer variable uses the * symbol in the declaration: int *p; declares p as a variable that will hold the address of an int. The type before the * matters — it tells the compiler what type of value is stored at the address, which determines how many bytes are read or written when you dereference the pointer and how pointer arithmetic works.
 
-A null pointer is a pointer set to a zero address, written NULL (defined in <stddef.h> and most standard headers). It is used to represent "no valid address". You should initialize pointers to NULL when they do not yet point to anything, and check for NULL before dereferencing.
+The relationship between & and * is that they are inverse operations: &(*p) gives back the original address, and *(&x) gives back the original value of x. You use & to get an address and * to follow an address to its value.
 
-Pointer pitfalls are among the most notorious bugs in C: uninitialized pointers (holding garbage addresses), null pointer dereferences (crashing immediately), and dangling pointers (pointing to freed or out-of-scope memory). Working carefully with initialization and lifetime prevents all of these.`,
+One of the most important uses of pointers is enabling functions to modify variables in the caller. As you saw in pass-by-value, a function cannot modify a caller's variable directly. But if you pass &x (the address of x) instead, the function can dereference the pointer to write directly to x's memory. This is how C implements "pass by reference" — by explicitly passing addresses.
+
+Always initialize pointers before dereferencing them. An uninitialized pointer contains a garbage address; dereferencing it is undefined behaviour and typically crashes. The NULL pointer (value 0) is used as a sentinel meaning "this pointer points to nothing" — dereferencing NULL is always an error.`,
       codeExample: `#include <stdio.h>
 
 /* A function that modifies the caller's variable via a pointer */
-void double_value(int *p) {
-    *p = *p * 2;   /* modify the value AT the address */
+void increment(int *p) {
+    *p = *p + 1;  /* dereference p to read and write the value at that address */
 }
 
-/* A function that "returns" two values via output pointers */
-void min_max(int a, int b, int *out_min, int *out_max) {
-    if (a < b) {
-        *out_min = a;
-        *out_max = b;
-    } else {
-        *out_min = b;
-        *out_max = a;
-    }
+/* A function that swaps two integers — the correct way using pointers */
+void swap(int *a, int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
 }
 
 int main(void) {
     int x = 10;
-    int *p = &x;   /* p points to x */
+    int y = 20;
 
-    printf("x = %d\\n", x);
-    printf("&x (address of x) = %p\\n", (void *)&x);
-    printf("p  (value of p)   = %p\\n", (void *)p);
-    printf("*p (dereferenced) = %d\\n", *p);
+    /* & operator: get the address of x */
+    printf("Value of x: %d\\n", x);
+    printf("Address of x: %p\\n", (void *)&x);
 
-    *p = 99;  /* modify x through p */
-    printf("After *p = 99: x = %d\\n", x);
+    /* Declare a pointer and point it at x */
+    int *p = &x;
+    printf("Pointer p holds address: %p\\n", (void *)p);
+    printf("Dereferencing p (*p): %d\\n", *p);
 
-    double_value(&x);
-    printf("After double_value: x = %d\\n", x);
+    /* Modify x through the pointer */
+    *p = 99;
+    printf("After *p = 99, x is now: %d\\n", x);
 
-    int lo, hi;
-    min_max(17, 4, &lo, &hi);
-    printf("min = %d, max = %d\\n", lo, hi);
+    /* Pass address to a function */
+    increment(&x);
+    printf("After increment(&x), x = %d\\n", x);
 
-    /* NULL pointer — safe to declare, NEVER dereference */
+    /* Correct swap using pointers */
+    printf("\\nBefore swap: x=%d, y=%d\\n", x, y);
+    swap(&x, &y);
+    printf("After swap:  x=%d, y=%d\\n", x, y);
+
+    /* Pointer to pointer */
+    int **pp = &p;  /* pp holds the address of the pointer p */
+    printf("\\n**pp = %d (two dereferences)\\n", **pp);
+
+    /* NULL pointer check */
     int *null_ptr = NULL;
-    printf("null_ptr is NULL: %s\\n", null_ptr == NULL ? "yes" : "no");
+    if (null_ptr == NULL) {
+        printf("null_ptr is NULL — safe to not dereference.\\n");
+    }
 
     return 0;
 }`,
-      expectedOutput: `x = 10
-&x (address of x) = 0x... (varies by run)
-p  (value of p)   = 0x... (same address)
-*p (dereferenced) = 10
-After *p = 99: x = 99
-After double_value: x = 198
-min = 4, max = 17
-null_ptr is NULL: yes`,
+      expectedOutput: `Value of x: 10
+Address of x: 0x7ffd5a1b2c3d
+Pointer p holds address: 0x7ffd5a1b2c3d
+Dereferencing p (*p): 10
+After *p = 99, x is now: 99
+After increment(&x), x = 100
+
+Before swap: x=100, y=20
+After swap:  x=20, y=100
+
+**pp = 20 (two dereferences)
+null_ptr is NULL — safe to not dereference.`,
       keyTakeaways: [
-        "A pointer stores a memory address — the location of another variable.",
-        "& (address-of) gives the address of a variable; * (dereference) gives the value at an address.",
-        "Declare a pointer with type *name; e.g., int *p; is a pointer to int.",
-        "Dereferencing (*p) lets you read or write the variable the pointer points to.",
-        "Pass a pointer to a function to allow it to modify the caller's variable.",
-        "Always initialize pointers to NULL and check for NULL before dereferencing."
+        "A pointer variable stores the memory address of another variable.",
+        "The & operator returns the address of a variable; the * operator dereferences a pointer to access its value.",
+        "Declare a pointer as type *name; the type determines how many bytes are accessed on dereference.",
+        "Passing &variable to a function lets the function modify the caller's variable through pointer dereference.",
+        "Always initialize pointers before dereferencing; an uninitialized pointer contains garbage and crashes.",
+        "NULL is the null pointer constant; always check for NULL before dereferencing a pointer that might be null."
       ],
       commonMistakes: [
-        "Dereferencing an uninitialized pointer — it holds a random address and the program will crash or corrupt memory.",
-        "Forgetting the & when passing a variable to a function that expects a pointer (e.g., scanf).",
-        "Confusing the pointer variable itself (address) with the value it points to (dereference).",
-        "Dereferencing a NULL pointer — always check before using.",
-        "Using a pointer after the variable it points to has gone out of scope (dangling pointer)."
+        "Confusing the * in a declaration (int *p — declares a pointer) with * in an expression (*p — dereferences).",
+        "Dereferencing an uninitialized pointer — it holds a garbage address; reading or writing through it is undefined behaviour.",
+        "Forgetting & when passing a variable's address to a function that expects a pointer parameter.",
+        "Dereferencing NULL — this always causes a segmentation fault crash.",
+        "Thinking that p = q copies the value at the address — it copies the address itself; use *p = *q to copy values."
       ],
       bestPractices: [
-        "Initialize every pointer to NULL at declaration if you do not have a valid address yet.",
-        "Check pointers for NULL before dereferencing them, especially return values from functions.",
-        "Use meaningful names for pointer variables (e.g., count_ptr or p_score) to distinguish them from value variables.",
-        "Be precise about the type a pointer points to — wrong-type pointer arithmetic leads to subtle bugs.",
-        "In function signatures, annotate output-only pointer parameters with a comment like /* out */ for clarity."
+        "Initialize every pointer when you declare it, either to a valid address or to NULL.",
+        "Check pointers for NULL before dereferencing them, especially pointers received from functions.",
+        "Use descriptive names for pointer variables (like ptr_x or name_ptr) to make their purpose clear.",
+        "When passing an output pointer to a function, check inside the function that the pointer is not NULL.",
+        "Cast pointers to void * when printing with %p for portability."
       ],
       exercises: [
         {
-          title: "Exercise 1 – Swap via Pointers",
-          description: "Write a function void swap(int *a, int *b) that swaps the values of the two integers pointed to by a and b (using a temp variable). In main, declare two integer variables, print them, call swap, and print them again to verify the swap worked.",
-          hint: "Inside swap: int temp = *a; *a = *b; *b = temp; Pass the addresses of your variables: swap(&x, &y)."
+          title: "Exercise 1 – Pointer Basics",
+          description: "Declare three integer variables a, b, c with different values. Declare three pointers pa, pb, pc pointing to them. Print each variable's value both directly and through its pointer. Then modify each variable through its pointer and print the new values.",
+          hint: "Use int *pa = &a; to declare and initialize each pointer. Use *pa = new_value; to modify through the pointer."
         },
         {
-          title: "Exercise 2 – scanf and Pointers",
-          description: "scanf already uses pointers under the hood. Write a program that reads three integers from the user using a single scanf call with three %d format specifiers. Then print their sum, product, and average. Explain in a comment why & is needed before each variable.",
-          hint: "scanf needs pointers to store the values it reads. Write scanf(\"%d %d %d\", &a, &b, &c)."
+          title: "Exercise 2 – Min and Max via Pointers",
+          description: "Write a function void min_max(int arr[], int n, int *out_min, int *out_max) that finds the minimum and maximum of an array and writes them to the locations pointed to by out_min and out_max. Call it from main and print the results.",
+          hint: "Initialize *out_min = arr[0] and *out_max = arr[0], then loop comparing arr[i] against them, updating with *out_min = arr[i] when a smaller value is found."
         },
         {
-          title: "Exercise 3 – Compute Quotient and Remainder",
-          description: "Write a function void div_mod(int dividend, int divisor, int *quotient, int *remainder) that computes both the integer quotient and remainder of dividend/divisor and stores them via the output pointers. Call it from main and print both results.",
-          hint: "Use *quotient = dividend / divisor; and *remainder = dividend % divisor; inside the function."
+          title: "Exercise 3 – Pointer Arithmetic Preview",
+          description: "Declare int arr[] = {10, 20, 30, 40, 50} and int *p = arr. Print *p, *(p+1), *(p+2), *(p+3), and *(p+4) to access each element via pointer arithmetic. Confirm each matches arr[0] through arr[4].",
+          hint: "*(p+i) is equivalent to arr[i] for all i in range. Just print each expression with printf(\"%d\\n\", *(p+i))."
         }
       ],
       challenge: {
-        title: "Challenge – Find Min and Max with Indices",
-        description: "Write a function void find_extremes(const int *arr, int n, int *min_val, int *max_val, int *min_idx, int *max_idx) that finds the minimum and maximum values in an array and also returns the index of each via output pointers. In main, initialize an array of 10 integers, call the function, and print all four results.",
-        hint: "Initialize min and max to arr[0] and min_idx/max_idx to 0. Loop from 1 to n-1 updating as you find smaller or larger values."
+        title: "Challenge – Implement qsort with a Comparator",
+        description: "Use the standard library qsort function (from <stdlib.h>) to sort an array of 8 doubles in ascending order. qsort requires a comparator function with signature int compare(const void *a, const void *b). Inside the comparator, cast a and b to const double * and return negative, zero, or positive based on which is larger. Print the array before and after sorting.",
+        hint: "The comparator should cast: const double *da = (const double *)a; const double *db = (const double *)b; Then return (*da > *db) - (*da < *db) for a clean three-way comparison."
       },
       quiz: [
         {
-          question: "What does the & (address-of) operator return?",
+          question: "What does the & operator do when applied to a variable?",
           options: [
-            "The value of the variable",
-            "The memory address where the variable is stored",
-            "The size of the variable in bytes",
-            "The type of the variable"
+            "It returns the value stored in the variable.",
+            "It returns the memory address of the variable.",
+            "It performs a bitwise AND on the variable.",
+            "It declares the variable as a pointer."
           ],
           correctIndex: 1,
-          explanation: "The & operator returns the memory address of its operand — the location in RAM where the variable's bytes are stored."
+          explanation: "The address-of operator & returns a pointer (memory address) to where the variable is stored."
         },
         {
-          question: "What does the * (dereference) operator do when applied to a pointer?",
+          question: "Given int x = 5; int *p = &x; what does *p refer to?",
           options: [
-            "Returns the address stored in the pointer",
-            "Multiplies the pointer by 2",
-            "Accesses the value stored at the address the pointer holds",
-            "Declares the pointer to be constant"
+            "The address of x.",
+            "The pointer variable p itself.",
+            "The value stored at the address p holds — which is x's value, 5.",
+            "An error, because p is a pointer not an int."
           ],
           correctIndex: 2,
-          explanation: "The dereference operator * follows the pointer to the memory location it holds and retrieves (or modifies) the value there."
+          explanation: "* is the dereference operator. *p follows the address stored in p and yields the value at that location, which is x = 5."
         },
         {
-          question: "What is wrong with: int *p; *p = 5;?",
+          question: "What is the purpose of the NULL pointer?",
           options: [
-            "Pointers cannot store integers",
-            "The * operator is only for arithmetic",
-            "p is uninitialized — it holds a garbage address; dereferencing it is undefined behaviour",
-            "You need to write int* p; with the asterisk next to the type"
-          ],
-          correctIndex: 2,
-          explanation: "An uninitialized pointer holds whatever random bits were in memory. Dereferencing it writes to a random address, which is undefined behaviour."
-        },
-        {
-          question: "How do you pass variable x to a function that modifies it through a pointer parameter?",
-          options: ["func(x)", "func(*x)", "func(&x)", "func(x*)"],
-          correctIndex: 2,
-          explanation: "You pass the address of x using &x. Inside the function, the pointer parameter holds that address and can dereference it to modify x."
-        },
-        {
-          question: "What is a NULL pointer?",
-          options: [
-            "A pointer to the value 0",
-            "A pointer that stores the address zero, representing 'no valid address'",
-            "A pointer that has been freed",
-            "A pointer to a void function"
+            "To represent a pointer that points to memory address 0 for reading.",
+            "To represent a pointer that does not point to any valid object — used as a sentinel meaning 'no address'.",
+            "To automatically free memory when assigned.",
+            "To indicate that a pointer has been freed."
           ],
           correctIndex: 1,
-          explanation: "NULL is a special address value (typically 0) used to indicate that a pointer does not currently point to any valid object."
+          explanation: "NULL is a pointer value meaning 'points to nothing'. It is used to mark uninitialized or invalid pointers and as a sentinel return value."
+        },
+        {
+          question: "What is the correct declaration for a pointer to an int?",
+          options: ["int &p;", "int p*;", "pointer int p;", "int *p;"],
+          correctIndex: 3,
+          explanation: "In C, pointer declarations use the * before the variable name: int *p; declares p as a variable that holds the address of an int."
+        },
+        {
+          question: "Why does passing a pointer to a function allow the function to modify the caller's variable?",
+          options: [
+            "Because the function receives a reference that automatically syncs.",
+            "Because the function receives the address of the variable and can dereference it to write to that memory directly.",
+            "Because C automatically passes all variables by reference to functions.",
+            "Because the pointer copies the variable's value into a shared location."
+          ],
+          correctIndex: 1,
+          explanation: "The function receives the address. By dereferencing with *, it writes to the exact memory location of the caller's variable, which persists after the function returns."
         }
       ]
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-9: Pointers and Arrays / Pointer Arithmetic
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-9",
       title: "Pointers and Arrays — Pointer Arithmetic",
       estimatedReadingTime: 10,
-      explanation: `In C, arrays and pointers are deeply connected. When you use an array name in most expressions, it automatically decays to a pointer to its first element. That means: given int arr[5]; the expression arr is equivalent to &arr[0] — a pointer to the first integer. This is why you can pass an array to a function that accepts a pointer, and why array indexing and pointer arithmetic produce identical results.
+      explanation: `Arrays and pointers in C are intimately connected. When you use an array name in an expression (like passing it to a function or assigning it to a pointer), the array name automatically converts — "decays" — to a pointer to its first element. Understanding this relationship demystifies many C behaviors and is essential for writing functions that operate on arrays.
 
-Pointer arithmetic is the ability to add or subtract integers from pointers. Adding 1 to a pointer does NOT add 1 byte — it adds sizeof(pointed-to-type) bytes, moving to the next element. So if p = &arr[0] and int is 4 bytes, then p+1 points to arr[1] (4 bytes forward), p+2 points to arr[2], and so on. The compiler scales the offset automatically based on the pointed-to type.
+If you declare int arr[5] = {10, 20, 30, 40, 50}; and then int *p = arr; (note: no & needed — arr already decays to &arr[0]), then p points to arr[0]. You can now use p to access the array's elements through pointer arithmetic.
 
-The equivalence of indexing and pointer arithmetic is exact: arr[i] is identical to *(arr + i) by definition. You can even write the unusual-looking i[arr] (the addition is commutative) though this is never done in practice. The index notation is almost always clearer and preferred.
+Pointer arithmetic is arithmetic performed on pointer values, where the unit is the size of the pointed-to type. Adding 1 to an int * advances the pointer by sizeof(int) bytes — typically 4 bytes — moving it to point at the next int. So p + 0 points to arr[0], p + 1 points to arr[1], p + 2 to arr[2], and so on. The dereference expressions *(p + 0), *(p + 1), *(p + 2) yield 10, 20, 30 respectively — identical to arr[0], arr[1], arr[2].
 
-Subtracting one pointer from another (when both point into the same array) gives the number of elements between them as a ptrdiff_t. This is used, for example, to compute how far into a string a substring occurs.
+This equivalence is not just coincidental: in C, arr[i] is defined as *(arr + i). The bracket notation is literally syntactic sugar for pointer arithmetic and dereference. This means you can use pointer arithmetic and bracket notation interchangeably, and understanding this equivalence explains many idioms you will encounter in real C code.
 
-Incrementing a pointer with ++ is common in low-level string and array processing. A loop that writes *p++ = value; assigns value to *p then advances p to the next element. Similarly, reading with *p++ is idiomatic in functions like strcpy implementations.
+Subtracting two pointers that point into the same array gives the number of elements between them — a value of type ptrdiff_t. This is useful for computing lengths and offsets. You can also compare pointers with <, >, ==, and != to determine relative positions within the same array.
 
-Passing arrays to functions takes advantage of this pointer-array duality: void print_array(int *arr, int n) and void print_array(int arr[], int n) are completely equivalent in C. Inside the function, the array decays to a pointer and the size information is lost — which is why you must always pass the length separately.
+Passing arrays to functions exploits this decay. When you write void func(int arr[], int n), the parameter int arr[] is exactly equivalent to int *p — arr receives a pointer to the first element. Changes made to arr[i] inside the function affect the original array. This is why functions that receive arrays can modify them without explicit pointer parameters.
 
-Be careful about pointer arithmetic outside array bounds. Computing a pointer that points more than one past the last element is undefined behaviour. Only pointers within [arr, arr+size] (inclusive on the one-past-end boundary for comparison only) are valid.`,
+The increment and decrement operators work naturally on pointers: p++ moves p forward by one element, and p-- moves it backward. A common C idiom for traversing an array is to iterate a pointer variable from the start to the end: for (int *p = arr; p < arr + SIZE; p++) { use *p; }.`,
       codeExample: `#include <stdio.h>
-#include <string.h>
 
-/* Accepts an array as a pointer — the two parameter forms are equivalent */
-void print_array(int *arr, int n) {
+#define SIZE 5
+
+/* Receives a pointer to the first element — modifies original array */
+void scale(int *arr, int n, int factor) {
     for (int i = 0; i < n; i++) {
-        printf("%d ", arr[i]);          /* index notation */
+        arr[i] *= factor;   /* equivalent to *(arr + i) *= factor */
     }
-    printf("\\n");
-}
-
-/* Uses pointer arithmetic to traverse */
-void print_array_ptr(int *arr, int n) {
-    int *end = arr + n;                 /* one past the last element */
-    for (int *p = arr; p < end; p++) {
-        printf("%d ", *p);             /* dereference the pointer */
-    }
-    printf("\\n");
 }
 
 int main(void) {
-    int nums[5] = {10, 20, 30, 40, 50};
+    int nums[SIZE] = {10, 20, 30, 40, 50};
+    int *p = nums;   /* p points to nums[0] — no & needed */
 
-    /* Array name decays to pointer to first element */
-    int *p = nums;          /* equivalent to &nums[0] */
-    printf("*p = %d (same as nums[0])\\n", *p);
-    printf("*(p+2) = %d (same as nums[2])\\n", *(p + 2));
-
-    /* Pointer arithmetic: advance through array */
-    printf("Walking with pointer: ");
-    for (int i = 0; i < 5; i++) {
-        printf("%d ", *(nums + i));
+    printf("Accessing via bracket notation:\\n");
+    for (int i = 0; i < SIZE; i++) {
+        printf("  nums[%d] = %d\\n", i, nums[i]);
     }
-    printf("\\n");
 
-    print_array(nums, 5);
-    print_array_ptr(nums, 5);
+    printf("\\nAccessing via pointer arithmetic (*(p+i)):\\n");
+    for (int i = 0; i < SIZE; i++) {
+        printf("  *(p+%d) = %d\\n", i, *(p + i));
+    }
 
-    /* Pointer difference gives element count between pointers */
-    int *first = &nums[1];
+    printf("\\nTraversing with pointer increment:\\n");
+    for (int *q = nums; q < nums + SIZE; q++) {
+        printf("  *q = %d  (address %p)\\n", *q, (void *)q);
+    }
+
+    /* Pointer subtraction to compute distance */
+    int *first = &nums[0];
     int *last  = &nums[4];
-    printf("Elements between index 1 and 4: %td\\n", last - first);
+    printf("\\nDistance between first and last: %td elements\\n",
+           last - first);
 
-    /* Strings and pointer arithmetic */
-    char str[] = "Hello";
-    char *q = str;
-    while (*q != '\\0') {
-        printf("%c", *q);
-        q++;                /* advance to next character */
+    /* Confirming arr[i] == *(arr + i) */
+    printf("\\nnums[3] = %d, *(nums+3) = %d (should be equal)\\n",
+           nums[3], *(nums + 3));
+
+    /* Passing array to function — function modifies original */
+    scale(nums, SIZE, 2);
+    printf("\\nAfter scale by 2: ");
+    for (int i = 0; i < SIZE; i++) {
+        printf("%d ", nums[i]);
     }
     printf("\\n");
 
     return 0;
 }`,
-      expectedOutput: `*p = 10 (same as nums[0])
-*(p+2) = 30 (same as nums[2])
-Walking with pointer: 10 20 30 40 50 
-10 20 30 40 50 
-10 20 30 40 50 
-Elements between index 1 and 4: 3
-Hello`,
+      expectedOutput: `Accessing via bracket notation:
+  nums[0] = 10
+  nums[1] = 20
+  nums[2] = 30
+  nums[3] = 40
+  nums[4] = 50
+
+Accessing via pointer arithmetic (*(p+i)):
+  *(p+0) = 10
+  *(p+1) = 20
+  *(p+2) = 30
+  *(p+3) = 40
+  *(p+4) = 50
+
+Traversing with pointer increment:
+  *q = 10  (address 0x7ffd...)
+  *q = 20  (address 0x7ffd...)
+  *q = 30  (address 0x7ffd...)
+  *q = 40  (address 0x7ffd...)
+  *q = 50  (address 0x7ffd...)
+
+Distance between first and last: 4 elements
+
+nums[3] = 40, *(nums+3) = 40 (should be equal)
+
+After scale by 2: 20 40 60 80 100 `,
       keyTakeaways: [
-        "An array name decays to a pointer to its first element in most expressions.",
-        "arr[i] is exactly equivalent to *(arr + i) — index notation is just syntax sugar.",
-        "Adding n to a pointer of type T* advances it by n * sizeof(T) bytes.",
-        "Subtracting two pointers (into the same array) gives the element count between them.",
-        "Pass arrays to functions as pointer + length; the array's size is not available inside the function.",
-        "Pointer arithmetic is only valid within the bounds of an array (or one past the end for comparison)."
+        "Array names decay to a pointer to the first element in most expression contexts.",
+        "arr[i] is exactly equivalent to *(arr + i) — bracket indexing is pointer arithmetic in disguise.",
+        "Adding n to a pointer advances it by n elements (n * sizeof(type) bytes), not n bytes.",
+        "Subtracting two pointers into the same array yields the element count between them.",
+        "Functions that take int arr[] parameters receive a pointer; changes to arr[i] modify the original.",
+        "The for (type *p = arr; p < arr + SIZE; p++) idiom iterates an array cleanly using pointer arithmetic."
       ],
       commonMistakes: [
-        "Assuming pointer+1 moves one byte — it moves by sizeof(pointed-to-type) bytes.",
-        "Performing arithmetic on pointers to different arrays — comparing or subtracting such pointers is undefined behaviour.",
-        "Treating a pointer as if it still 'knows' the original array size after decaying — it does not.",
-        "Using a pointer after it has gone past the end of the array without checking bounds.",
-        "Confusing the address of the array (int (*)[N]) with a pointer to its first element (int *)."
+        "Writing &arr when passing to a function — arr already decays to &arr[0]; &arr is a pointer to the array, not to the first element.",
+        "Adding byte counts to a pointer instead of element counts — p + 4 for an int* moves 16 bytes, not 4.",
+        "Comparing or subtracting pointers that do not point into the same array — undefined behaviour.",
+        "Advancing a pointer past the end of an array (beyond arr + SIZE) and then dereferencing it — out of bounds.",
+        "Confusing *(p + i) and (*p) + i — the first dereferences p+i, the second adds i to the value at p."
       ],
       bestPractices: [
-        "Use index notation arr[i] by default — it is clearer than *(arr+i) for most code.",
-        "Always pass the array length alongside the pointer — never assume the callee can recover it.",
-        "Reserve pointer-arithmetic traversal for performance-critical or string-processing code where it is idiomatic.",
-        "Use const int *arr in function parameters when the function does not modify the array.",
-        "Compute one-past-end pointers (arr + n) for loop bounds, but never dereference the one-past-end address."
+        "Prefer arr[i] over *(arr+i) for clarity unless you are traversing with a pointer variable.",
+        "Use a named SIZE constant in the loop bound (q < arr + SIZE) so it is always in sync with the declaration.",
+        "When a function should not modify its array argument, declare the parameter as const int arr[].",
+        "Use ptrdiff_t (from <stddef.h>) for pointer differences, not int, to ensure correctness on 64-bit platforms.",
+        "After advancing a pointer past the array end, do not dereference it — this is out-of-bounds even if no swap happened."
       ],
       exercises: [
         {
-          title: "Exercise 1 – Sum Using Pointer Arithmetic",
-          description: "Write a function int sum_ptr(const int *arr, int n) that uses a pointer (not indices) to compute the sum. Use a loop with a pointer variable that you advance with ++ and dereference with *. Call it from main with an array of 6 integers.",
-          hint: "Initialize int *p = arr; and a sum variable. Loop while p < arr + n, add *p to sum, then p++."
+          title: "Exercise 1 – Pointer Traversal",
+          description: "Declare an array of 6 floats. Use a pointer variable (not array indexing) to traverse the array, printing each element's value and its memory address. Then use pointer arithmetic to compute and print the total sum.",
+          hint: "Initialize float *p = arr; then in the loop use *p for the value and (void*)p for the address. Advance with p++."
         },
         {
-          title: "Exercise 2 – Find a Value",
-          description: "Write a function int *find(int *arr, int n, int target) that uses pointer arithmetic to search the array for target. Return a pointer to the first matching element, or NULL if not found. In main, use the returned pointer to print the found element and its index (pointer - arr).",
-          hint: "Walk p from arr to arr+n. When *p == target, return p. After the loop, return NULL."
+          title: "Exercise 2 – Find in Array",
+          description: "Write a function int *find(int *arr, int n, int target) that returns a pointer to the first occurrence of target in the array, or NULL if not found. In main, call it and print the index of the found element using pointer subtraction (result - arr).",
+          hint: "Loop through the array; when arr[i] == target, return &arr[i]. If the loop ends without finding it, return NULL."
         },
         {
-          title: "Exercise 3 – String Copy with Pointers",
-          description: "Without using strcpy, write void my_strcpy(char *dest, const char *src) that copies src to dest using only pointer arithmetic (no indices). Use the idiom *dest++ = *src++; in a loop until you copy the null terminator.",
-          hint: "Loop while (*src != '\\0') copying each character, then copy the null terminator after the loop."
+          title: "Exercise 3 – Pointer-Based String Length",
+          description: "Write a function int ptr_strlen(const char *s) that returns the length of a string using only pointer arithmetic — no array indexing with brackets. Start with a pointer at s and advance it until you reach '\\0', counting steps.",
+          hint: "Use a pointer variable char *end = s; and increment end++ in a while loop while *end != '\\0'. Then return end - s."
         }
       ],
       challenge: {
-        title: "Challenge – Pointer-Based String Reverse",
-        description: "Write a function void reverse_ptr(char *s) that reverses a string in place using only pointer arithmetic — no index variables. Use two pointers: one starting at s, one starting at s + strlen(s) - 1. Swap characters and move the pointers toward each other until they meet. Test with several strings.",
-        hint: "Use char *left = s; and char *right = s + strlen(s) - 1; Swap *left and *right, then left++ and right--. Stop when left >= right."
+        title: "Challenge – Pointer-Based Array Utilities",
+        description: "Write three functions using pointer arithmetic (no bracket indexing allowed in the function bodies): void ptr_reverse(int *arr, int n) that reverses an array in place, int *ptr_max(int *arr, int n) that returns a pointer to the maximum element, and void ptr_copy(int *dest, const int *src, int n) that copies n elements from src to dest. Test all three in main with a 7-element array and verify the results.",
+        hint: "For ptr_reverse, use two pointers left and right starting at arr and arr+n-1, swapping *left and *right and moving inward. For ptr_max, initialize max_ptr = arr and advance through the array."
       },
       quiz: [
         {
-          question: "What does an array name evaluate to in most C expressions?",
+          question: "When an array name like arr is used in most expressions, what does it become?",
           options: [
-            "The number of elements in the array",
-            "A pointer to the first element of the array",
-            "A copy of all the array's elements",
-            "The size in bytes of the entire array"
+            "A copy of the entire array.",
+            "A pointer to the first element of the array.",
+            "A pointer to the last element.",
+            "The size of the array."
           ],
           correctIndex: 1,
-          explanation: "In most contexts, an array name decays to a pointer to its first element (type T* for an array of T)."
+          explanation: "In most expression contexts, an array name decays to a pointer to its first element (type *), not a copy of the array."
         },
         {
-          question: "If int *p = &arr[0] and sizeof(int) is 4, what address does p+3 hold?",
+          question: "If int *p = arr, what does *(p + 3) give you?",
           options: [
-            "Address of arr[0] plus 3 bytes",
-            "Address of arr[0] plus 12 bytes (3 * 4)",
-            "Address of arr[0] plus 1 byte",
-            "NULL"
+            "The address of arr[3].",
+            "The value of arr[3].",
+            "The value of arr[0] plus 3.",
+            "The size of arr divided by 3."
           ],
           correctIndex: 1,
-          explanation: "Pointer arithmetic scales by the pointed-to type size. p+3 adds 3 * sizeof(int) = 12 bytes to the base address."
+          explanation: "*(p + 3) dereferences the pointer at offset 3, yielding arr[3]. This is exactly equivalent to arr[3]."
         },
         {
-          question: "What is arr[i] equivalent to in C?",
-          options: ["arr + i", "*(arr + i)", "&arr[i]", "arr * i"],
-          correctIndex: 1,
-          explanation: "By definition in C, arr[i] is exactly *(arr + i): add i (scaled by element size) to the base pointer, then dereference."
-        },
-        {
-          question: "How do you pass an array of ints to a function that should not modify it?",
+          question: "For an int *p, what does p + 1 actually add to the address in bytes?",
           options: [
-            "void f(int arr[])",
-            "void f(const int *arr, int n)",
-            "void f(int &arr)",
-            "void f(int arr[const])"
+            "1 byte",
+            "2 bytes",
+            "sizeof(int) bytes (typically 4)",
+            "8 bytes always"
+          ],
+          correctIndex: 2,
+          explanation: "Pointer arithmetic scales by the size of the pointed-to type. Adding 1 to int * advances the address by sizeof(int) bytes."
+        },
+        {
+          question: "What is the result of subtracting two pointers into the same array?",
+          options: [
+            "The difference of their addresses in bytes.",
+            "The number of elements between them.",
+            "A new pointer halfway between them.",
+            "Always zero."
           ],
           correctIndex: 1,
-          explanation: "const int *arr declares a pointer to read-only int, preventing modification. Passing n separately provides the array size."
+          explanation: "Pointer subtraction on same-array pointers gives the number of elements (not bytes) between them — the result type is ptrdiff_t."
         },
         {
-          question: "What does (ptr2 - ptr1) return when both pointers point into the same array?",
+          question: "What does a function receive when you pass an array name to it?",
           options: [
-            "The byte difference between the two addresses",
-            "The number of elements between the two pointers",
-            "The sum of the two pointer values",
-            "Always zero"
+            "A copy of all array elements.",
+            "A pointer to the first element — changes inside the function affect the original.",
+            "The size of the array.",
+            "A read-only view of the array."
           ],
           correctIndex: 1,
-          explanation: "Pointer subtraction of two pointers into the same array gives the number of elements (not bytes) between them, as a ptrdiff_t."
+          explanation: "Arrays decay to pointers when passed to functions. The function gets the address of the first element and can modify the original elements through it."
         }
       ]
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // TOPIC 4-10: Structs
-    // ─────────────────────────────────────────────────────────────────────────
     {
       id: "topic-4-10",
-      title: "Structs — Defining and Using Compound Data Types",
+      title: "Structs — Defining and Using Custom Data Types",
       estimatedReadingTime: 11,
-      explanation: `Real programs deal with entities that have multiple attributes. A student has a name, ID, and GPA. A point in 2D space has an x coordinate and a y coordinate. A calendar date has a year, month, and day. In C, you group related fields together into a struct — a compound data type that holds multiple named members of potentially different types.
+      explanation: `A struct (short for structure) is a user-defined data type that groups together variables of different types under a single name. While an array holds many values of the same type, a struct holds a fixed set of named fields that can each be a different type. Structs let you model real-world entities naturally in code: a Person has a name (char array), an age (int), and a height (double). Instead of managing three separate variables for every person, you group them into one struct Person entity.
 
-You define a struct with the struct keyword followed by an optional tag name and a list of member declarations in curly braces: struct Point { double x; double y; };. This definition creates a new type called struct Point. To declare a variable of this type, you write: struct Point p1;. You can then access its members with the dot (.) operator: p1.x = 3.0; p1.y = 4.0;.
+Defining a struct uses the keyword struct followed by a tag name and a brace-enclosed list of member declarations: struct Point { int x; int y; }; This definition is like a blueprint — it describes the shape of the data but does not allocate any memory. To actually create a variable of that struct type, you write struct Point p1; which reserves space for both x and y.
 
-You can initialize a struct at declaration using a brace-enclosed list matching the order of members: struct Point p2 = {1.5, 2.5};. In C99 and later, you can also use designated initializers, naming each field explicitly: struct Point p3 = {.x = 5.0, .y = 0.0};. Designated initializers are less error-prone because the meaning of each value is clear even if you add new fields later.
+Accessing struct members uses the dot operator (.) for regular struct variables: p1.x = 3; p1.y = 4; printf("%d %d\\n", p1.x, p1.y);. The dot operator reads like "p1 dot x" — you are reaching into p1 and accessing its x member.
 
-Structs can be passed to functions just like any other type. Because C uses pass-by-value, the function receives a complete copy of the struct. This is fine for small structs but wasteful for large ones — in that case you pass a pointer to the struct. When you have a pointer to a struct, you access members with the arrow operator (->) instead of the dot: ptr->x is shorthand for (*ptr).x.
+Structs can be initialized at declaration using a brace-enclosed list of values in the order the members are declared: struct Point origin = {0, 0}; or with designated initializers (C99) that name each field: struct Point p2 = {.x = 5, .y = 10};. Designated initializers are clearer for structs with many members.
 
-Structs can be nested: a struct Rectangle can contain two struct Point members for its corners. They can also contain arrays: a struct Student can have a char array for the name. Structs are the primitive building block for all compound data organization in C — everything from complex numbers to linked list nodes to file headers is expressed as a struct.
+You can also assign one struct variable to another with a simple = — this copies all the member values, unlike arrays which cannot be directly assigned. This makes struct assignment convenient when you want a copy of a structured value.
 
-Compared to separate global or local variables, grouping related data into structs makes code cleaner: you can pass one struct to a function instead of five separate parameters, return a struct to deliver multiple related results, and store an array of structs to represent a collection of records.`,
+When you pass a struct to a function, it is passed by value — the entire struct is copied. If the struct is large or you want the function to modify the original, you pass a pointer to the struct instead. In that case, you use the arrow operator (->) to access members through the pointer: ptr->x is shorthand for (*ptr).x. The arrow operator is one of the most frequently used operators in C programs that work with structs and linked data structures.
+
+Structs can be nested: a struct Rectangle might contain two struct Point members for its top-left and bottom-right corners. They can also be used in arrays — an array of structs is a natural way to represent a collection of related records, like a class roster of Student structs.`,
       codeExample: `#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
-/* --- Struct definitions --- */
+/* Struct definition — a blueprint, not yet any memory */
 struct Point {
     double x;
     double y;
 };
 
 struct Student {
-    char   name[50];
-    int    id;
+    char name[50];
+    int  age;
     double gpa;
 };
 
-/* --- Functions using structs --- */
-
-/* Pass by value — receives a copy */
+/* Function that takes a struct by value — gets a copy */
 double distance(struct Point a, struct Point b) {
     double dx = a.x - b.x;
     double dy = a.y - b.y;
     return sqrt(dx * dx + dy * dy);
 }
 
-/* Pass by pointer — modifies the original */
-void set_gpa(struct Student *s, double new_gpa) {
-    s->gpa = new_gpa;          /* arrow operator for pointer-to-struct */
-}
-
-void print_student(const struct Student *s) {
-    printf("Name: %s | ID: %d | GPA: %.2f\\n", s->name, s->id, s->gpa);
+/* Function that takes a struct by pointer — modifies original */
+void birthday(struct Student *s) {
+    s->age += 1;   /* arrow operator: equivalent to (*s).age += 1 */
 }
 
 int main(void) {
-    /* Initialize structs */
+    /* Declare and initialize using brace syntax */
     struct Point p1 = {0.0, 0.0};
     struct Point p2 = {3.0, 4.0};
 
-    printf("Distance from (0,0) to (3,4): %.2f\\n", distance(p1, p2));
+    printf("p1: (%.1f, %.1f)\\n", p1.x, p1.y);
+    printf("p2: (%.1f, %.1f)\\n", p2.x, p2.y);
+    printf("Distance p1 to p2: %.2f\\n", distance(p1, p2));
 
-    /* Dot operator to access members */
-    struct Student alice;
-    strcpy(alice.name, "Alice");
-    alice.id  = 1001;
-    alice.gpa = 3.5;
-    print_student(&alice);
+    /* Designated initializers (C99) */
+    struct Student alice = {.name = "Alice", .age = 20, .gpa = 3.75};
+    printf("\\nStudent: %s, age %d, GPA %.2f\\n",
+           alice.name, alice.age, alice.gpa);
 
-    /* Designated initializer (C99) */
-    struct Student bob = {.name = "Bob", .id = 1002, .gpa = 3.8};
-    print_student(&bob);
+    /* Modify via pointer — uses arrow operator */
+    birthday(&alice);
+    printf("After birthday: %s is now %d\\n", alice.name, alice.age);
 
-    /* Modify via pointer */
-    set_gpa(&alice, 3.9);
-    printf("After promotion: ");
-    print_student(&alice);
+    /* Struct assignment — copies all fields */
+    struct Student bob = alice;
+    strcpy(bob.name, "Bob");
+    bob.gpa = 3.50;
+    printf("Bob: %s, age %d, GPA %.2f\\n", bob.name, bob.age, bob.gpa);
+    printf("Alice unchanged: %s, age %d\\n", alice.name, alice.age);
 
     /* Array of structs */
-    struct Point polygon[3] = {{0,0}, {4,0}, {2,3}};
-    printf("Triangle vertices:\\n");
+    struct Point points[3] = {{1, 2}, {4, 6}, {0, 0}};
+    printf("\\nArray of points:\\n");
     for (int i = 0; i < 3; i++) {
-        printf("  (%.1f, %.1f)\\n", polygon[i].x, polygon[i].y);
+        printf("  points[%d] = (%.0f, %.0f)\\n",
+               i, points[i].x, points[i].y);
     }
+
+    /* Nested struct */
+    struct Rectangle {
+        struct Point top_left;
+        struct Point bottom_right;
+    };
+    struct Rectangle rect = {{0, 10}, {20, 0}};
+    printf("\\nRect top-left: (%.0f, %.0f)\\n",
+           rect.top_left.x, rect.top_left.y);
 
     return 0;
 }`,
-      expectedOutput: `Distance from (0,0) to (3,4): 5.00
-Name: Alice | ID: 1001 | GPA: 3.50
-Name: Bob | ID: 1002 | GPA: 3.80
-After promotion: Name: Alice | ID: 1001 | GPA: 3.90
-Triangle vertices:
-  (0.0, 0.0)
-  (4.0, 0.0)
-  (2.0, 3.0)`,
+      expectedOutput: `p1: (0.0, 0.0)
+p2: (3.0, 4.0)
+Distance p1 to p2: 5.00
+
+Student: Alice, age 20, GPA 3.75
+After birthday: Alice is now 21
+Bob: Bob, age 21, GPA 3.50
+Alice unchanged: Alice, age 21
+
+Array of points:
+  points[0] = (1, 2)
+  points[1] = (4, 6)
+  points[2] = (0, 0)
+
+Rect top-left: (0, 10)`,
       keyTakeaways: [
-        "A struct groups named members of different types into a single compound type.",
-        "Access struct members with the dot operator (.) for value variables and arrow (->) for pointers.",
-        "Structs are passed by value (full copy) by default; pass a pointer to avoid copying and to allow modification.",
-        "Initialize structs with brace lists or, in C99+, with designated initializers (.field = value).",
-        "Arrays of structs are a natural way to store records or collections of related entities.",
-        "The arrow operator s->member is shorthand for (*s).member."
+        "A struct groups variables of different types into a single named entity — like a record or object.",
+        "struct definition is a type blueprint; you then declare variables of that struct type to allocate memory.",
+        "Access members of a struct variable with the dot operator (s.member).",
+        "Access members through a pointer with the arrow operator (ptr->member), equivalent to (*ptr).member.",
+        "Structs are passed by value to functions (entire copy); pass a pointer for large structs or to allow modification.",
+        "Struct assignment with = copies all members; unlike arrays, this works directly."
       ],
       commonMistakes: [
-        "Using the dot operator on a pointer-to-struct instead of the arrow operator, causing a compile error.",
-        "Forgetting that struct assignment copies all members — modifying the copy does not affect the original.",
-        "Not null-terminating char array members used as strings when filling them manually.",
-        "Comparing structs with == — C does not support struct equality comparison; compare member by member.",
-        "Omitting the semicolon after the closing brace of a struct definition — this is a syntax error."
+        "Forgetting the semicolon after the closing brace of a struct definition — struct { ... }; requires it.",
+        "Using the dot operator on a struct pointer — you must use -> or dereference first: (*ptr).member.",
+        "Passing a large struct by value to a function that should modify the original — use a pointer instead.",
+        "Forgetting that struct assignment copies the fields, so modifying the copy does not affect the original.",
+        "Naming a local struct variable the same as the struct tag, causing confusion: struct Point Point; is confusing."
       ],
       bestPractices: [
-        "Use typedef to create a shorter alias: typedef struct Point Point; so you can write Point p instead of struct Point p.",
-        "Pass large structs by pointer to functions to avoid unnecessary copying.",
-        "Use const struct MyType *ptr for pointer parameters that should not modify the struct.",
-        "Initialize all members at declaration using designated initializers to avoid reading garbage values.",
-        "Group all struct definitions in a header file when working with multiple source files."
+        "Use typedef to give structs a shorter alias: typedef struct Point { double x; double y; } Point; lets you write Point p instead of struct Point p.",
+        "Use designated initializers (.field = value) for clarity when a struct has many members.",
+        "Pass structs by pointer to functions that need to modify them or that receive large structs.",
+        "Group closely related data into a struct to make function signatures shorter and more meaningful.",
+        "Zero-initialize a struct with = {0} to ensure all members start at a known value."
       ],
       exercises: [
         {
-          title: "Exercise 1 – Rectangle",
-          description: "Define a struct Rectangle with members width and height (both doubles). Write a function double area(struct Rectangle r) that returns width*height, and double perimeter(struct Rectangle r) that returns 2*(width+height). In main, initialize a rectangle and print its area and perimeter.",
-          hint: "Access members with the dot operator. Return the computed value from each function."
+          title: "Exercise 1 – Student Records",
+          description: "Define a struct Student with fields: name (char array of 50), student_id (int), and grade (double). Create an array of 3 Student structs, initialize them with data, and write a function void print_student(struct Student s) that prints a student's details. Call it for each student.",
+          hint: "Use strcpy to copy a string into the name field. Call print_student(students[i]) in a loop."
         },
         {
-          title: "Exercise 2 – Student Grade Book",
-          description: "Define a struct Student with a char name[40], int score, and char grade. Declare an array of 4 students, filling name and score manually. Write a loop that computes the grade (A>=90, B>=80, C>=70, D>=60, F otherwise) and stores it in the grade field. Print all students.",
-          hint: "Use strcpy to set the name. Access array elements with students[i].name, students[i].score, etc."
+          title: "Exercise 2 – Rectangle Area and Perimeter",
+          description: "Define a struct Rectangle with fields width and height (both double). Write two functions: double area(struct Rectangle r) and double perimeter(struct Rectangle r). In main, read width and height from the user, create a Rectangle struct, and call both functions, printing the results.",
+          hint: "area returns r.width * r.height. perimeter returns 2 * (r.width + r.height). Pass by value is fine for this small struct."
         },
         {
-          title: "Exercise 3 – Modify via Pointer",
-          description: "Define a struct Counter with a single int value field. Write functions void increment(struct Counter *c) and void reset(struct Counter *c). In main, create a Counter, call increment several times and print the value each time, then call reset and print again.",
-          hint: "Inside increment, use c->value++; Inside reset, use c->value = 0;"
+          title: "Exercise 3 – Struct Pointer Modification",
+          description: "Define a struct Counter with a single int field called count. Write two functions: void reset(struct Counter *c) that sets count to 0, and void tick(struct Counter *c) that increments count by 1. In main, create a Counter, call tick five times, print count, call reset, and print again.",
+          hint: "Use c->count = 0 in reset and c->count++ in tick. Pass &my_counter to both functions."
         }
       ],
       challenge: {
-        title: "Challenge – Simple Contact Book",
-        description: "Define a struct Contact with fields: char name[50], char phone[15], and int age. Declare an array of 5 Contacts and fill them with hard-coded data. Write functions: void print_contact(const struct Contact *c) to print one contact, and void find_by_name(const struct Contact *contacts, int n, const char *target) that searches for a name using strcmp and prints the matching contact or 'Not found'. Call both functions from main.",
-        hint: "In find_by_name, loop over the array and call strcmp(contacts[i].name, target) == 0 to check for a match."
+        title: "Challenge – Contact Book",
+        description: "Define a struct Contact with fields: name (char[60]), phone (char[20]), and email (char[80]). Create an array of 5 Contacts. Write functions: void add_contact(struct Contact book[], int *count, const char *name, const char *phone, const char *email) that adds a contact, void print_all(struct Contact book[], int count) that prints all contacts, and struct Contact *find_by_name(struct Contact book[], int count, const char *name) that returns a pointer to the matching contact or NULL. Populate the book with 3 contacts and test all functions.",
+        hint: "add_contact uses strcpy to fill each field and increments *count via the pointer. find_by_name uses strcmp to compare names and returns &book[i] on a match."
       },
       quiz: [
         {
-          question: "Which operator accesses a struct member through a pointer to the struct?",
-          options: [".", "::", "->", "*"],
+          question: "What is the purpose of a struct in C?",
+          options: [
+            "To store multiple values of the same type, like an array.",
+            "To group variables of potentially different types under a single name.",
+            "To allocate memory on the heap.",
+            "To define a function prototype."
+          ],
+          correctIndex: 1,
+          explanation: "A struct groups named fields that can be of different types, modeling a single entity with multiple attributes."
+        },
+        {
+          question: "How do you access the field 'x' of a struct Point variable named p?",
+          options: ["p->x", "p::x", "p[x]", "p.x"],
+          correctIndex: 3,
+          explanation: "The dot operator accesses a struct field through a variable: p.x. The arrow -> is used when you have a pointer to a struct."
+        },
+        {
+          question: "If ptr is a struct Point *, which expression accesses its x field?",
+          options: ["ptr.x", "ptr[x]", "ptr->x", "*ptr.x"],
           correctIndex: 2,
-          explanation: "The arrow operator -> dereferences the pointer and accesses the member in one step: ptr->member is (*ptr).member."
+          explanation: "The arrow operator -> dereferences a struct pointer and accesses a field in one step: ptr->x is equivalent to (*ptr).x."
         },
         {
-          question: "What does struct Point p2 = p1; do when p1 is a struct Point?",
+          question: "What does struct assignment (b = a) do for two struct variables?",
           options: [
-            "Creates a reference so p2 and p1 share the same data",
-            "Creates a shallow copy — all members of p1 are copied into p2",
-            "Makes p2 a pointer to p1",
-            "Is a compile error — structs cannot be assigned"
+            "Makes b an alias for a — both names refer to the same memory.",
+            "Copies all field values from a into b independently.",
+            "Causes a compile error because structs cannot be assigned.",
+            "Copies only the first field."
           ],
           correctIndex: 1,
-          explanation: "Struct assignment copies all members. p2 gets its own copy; modifying p2 does not affect p1."
+          explanation: "Struct assignment copies all member values from the right-hand side to the left-hand side. The two variables are independent after the copy."
         },
         {
-          question: "Given struct Student s; what is the correct way to read a score into s.score?",
+          question: "When should you pass a struct to a function by pointer rather than by value?",
           options: [
-            "scanf(\"%d\", s.score)",
-            "scanf(\"%d\", &s.score)",
-            "scanf(\"%d\", &s->score)",
-            "scanf(\"%d\", *s.score)"
-          ],
-          correctIndex: 1,
-          explanation: "scanf needs a pointer: &s.score gives the address of the score member inside the struct s."
-        },
-        {
-          question: "How do you pass a struct to a function so the function can modify the original?",
-          options: [
-            "Pass the struct by value: func(myStruct)",
-            "Pass a copy and return the modified copy",
-            "Pass a pointer to the struct: func(&myStruct)",
-            "Use a global variable instead"
+            "Always, because pointers are faster.",
+            "Never, structs should always be passed by value.",
+            "When the function needs to modify the original struct or the struct is large and copying it is expensive.",
+            "Only when the struct contains arrays."
           ],
           correctIndex: 2,
-          explanation: "Passing &myStruct gives the function a pointer to the original. Using -> inside the function modifies the original, not a copy."
+          explanation: "Pass by value copies the entire struct; for large structs this is wasteful. Pass a pointer when the function must modify the original or when avoiding a large copy."
         },
         {
-          question: "Which of the following correctly uses a designated initializer?",
+          question: "What is wrong with the following: struct Foo { int x; int y; } (missing semicolon after closing brace)?",
           options: [
-            "struct Point p = {x: 1.0, y: 2.0};",
-            "struct Point p = {.x = 1.0, .y = 2.0};",
-            "struct Point p = (x=1.0, y=2.0);",
-            "struct Point p; p = {1.0, 2.0};"
+            "Nothing — the semicolon is optional.",
+            "It is a syntax error; struct definitions must end with a semicolon.",
+            "It causes a linker error.",
+            "It declares x and y as global variables."
           ],
           correctIndex: 1,
-          explanation: "C99 designated initializers use the syntax .fieldName = value inside braces. This is the standard and portable form."
-        },
-        {
-          question: "What is the result of comparing two structs with ==?",
-          options: [
-            "True if all their members are equal",
-            "A compile error — C does not support struct == comparison",
-            "Always false",
-            "Compares only the first member"
-          ],
-          correctIndex: 1,
-          explanation: "C does not define == for struct types. Attempting to use == on structs produces a compile error. You must compare members individually."
+          explanation: "Struct definitions are declarations and must end with a semicolon: struct Foo { int x; int y; };"
         }
       ]
     }
