@@ -264,8 +264,10 @@ export default function MultiplayerQuiz() {
           // Strip the ?join param from the URL so refresh doesn't re-join
           navigate(`/quiz/${courseId}/multiplayer`, { replace: true });
         },
-        onError: () => {
+        onError: (err) => {
           autoJoinFiredRef.current = false; // allow retry
+          const msg = (err as Error).message || "Could not join the room. Check the code and try again.";
+          toast.error(msg, { duration: 5000 });
         },
       }
     );
@@ -419,6 +421,16 @@ export default function MultiplayerQuiz() {
 
   // ── Entry screen ─────────────────────────────────────────────────────────────
   if (!sessionCode) {
+    // Show a spinner while the auto-join from the Competitions page is in flight
+    if (pendingJoin && joinSession.isPending) {
+      return (
+        <div className="flex h-[60vh] items-center justify-center flex-col gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Joining competition…</p>
+        </div>
+      );
+    }
+
     return (
       <div className="p-8 max-w-md mx-auto mt-16">
         <div className="mb-10 text-center">

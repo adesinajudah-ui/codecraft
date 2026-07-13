@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,8 +36,7 @@ const leaderboard = [
   { rank: 5, name: "You", wins: 3, xp: 395, badge: "🎯" },
 ];
 
-function RoomCard({ room }: { room: typeof activeRooms[0] }) {
-  const { toast } = useToast();
+function RoomCard({ room, onJoin }: { room: typeof activeRooms[0]; onJoin: (code: string) => void }) {
   const isFull = room.players === room.maxPlayers;
   const isInProgress = room.status === "in-progress";
 
@@ -69,7 +68,7 @@ function RoomCard({ room }: { room: typeof activeRooms[0] }) {
         </div>
 
         <Button size="sm" className="w-full h-8 text-xs" disabled={isFull || isInProgress}
-          onClick={() => toast({ title: "Joining...", description: `Connecting to ${room.language} room` })}>
+          onClick={() => onJoin(room.code)}>
           {isInProgress ? "Already Started" : isFull ? "Room Full" : "Join Room"}
         </Button>
       </CardContent>
@@ -298,11 +297,16 @@ function CreateRoomDialog({ open, onClose }: { open: boolean; onClose: () => voi
   );
 }
 
-function JoinRoomDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [code, setCode] = useState("");
+function JoinRoomDialog({ open, onClose, initialCode = "" }: { open: boolean; onClose: () => void; initialCode?: string }) {
+  const [code, setCode] = useState(initialCode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [, navigate] = useLocation();
+
+  // Sync initialCode when the dialog opens with a pre-filled code
+  useEffect(() => {
+    if (open) setCode(initialCode);
+  }, [open, initialCode]);
 
   const handleJoin = async () => {
     const trimmed = code.trim().toUpperCase();
@@ -362,6 +366,12 @@ function JoinRoomDialog({ open, onClose }: { open: boolean; onClose: () => void 
 export default function Competitions() {
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+  const [joinInitialCode, setJoinInitialCode] = useState("");
+
+  const openJoinWithCode = (code: string) => {
+    setJoinInitialCode(code);
+    setShowJoin(true);
+  };
 
   return (
     <div className="p-4">
@@ -373,7 +383,7 @@ export default function Competitions() {
           <p className="text-muted-foreground text-xs mt-0.5">Real-time quiz battles.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowJoin(true)} className="gap-1.5 h-8 text-xs">
+          <Button variant="outline" size="sm" onClick={() => openJoinWithCode("")} className="gap-1.5 h-8 text-xs">
             <Users className="w-3.5 h-3.5" /> Join
           </Button>
           <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5 h-8 text-xs">
@@ -422,7 +432,7 @@ export default function Competitions() {
           <div className="space-y-3">
             {activeRooms.map((room, i) => (
               <motion.div key={room.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <RoomCard room={room} />
+                <RoomCard room={room} onJoin={openJoinWithCode} />
               </motion.div>
             ))}
             <Card className="border-dashed border-2 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setShowCreate(true)}>
@@ -489,7 +499,7 @@ export default function Competitions() {
       </Tabs>
 
       <CreateRoomDialog open={showCreate} onClose={() => setShowCreate(false)} />
-      <JoinRoomDialog open={showJoin} onClose={() => setShowJoin(false)} />
+      <JoinRoomDialog open={showJoin} onClose={() => { setShowJoin(false); setJoinInitialCode(""); }} initialCode={joinInitialCode} />
     </div>
   );
 }
