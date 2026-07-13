@@ -21,11 +21,11 @@ One-off commands:
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes to Replit's built-in Postgres (dev only)
 
-Required env (auto-managed by Replit):
-- `DATABASE_URL` — Replit-managed Postgres (postgresql-16 module)
-- `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Replit-managed Clerk
+Required env:
+- `DATABASE_URL` — Replit-managed Postgres (postgresql-16 module, auto-managed)
+- `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — **External Clerk** account (user-managed; set these in Replit Secrets from your Clerk dashboard → API Keys)
 
-**Setup status (2026-07-12):** Re-imported from GitHub into a fresh environment. Installed dependencies, provisioned Replit-managed Clerk (dev keys: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`), pushed Drizzle schema to Replit-managed Postgres, and registered/started all 6 artifact workflows. DB seeded with 6 languages, 45 lessons, 120 quiz questions, and 606 competition questions. Web app confirmed loading correctly. `codecraft-mobile` (Expo) is still unregistered as an artifact and does not run in this environment.
+**Setup status (2026-07-13):** Re-imported from GitHub into a fresh environment. Installed dependencies, configured external Clerk keys, pushed Drizzle schema to Replit-managed Postgres, and registered/started all 6 artifact workflows. DB seeded with 6 languages, 45 lessons, 120 quiz questions, and 606 competition questions. Web app confirmed loading correctly. `codecraft-mobile` (Expo) is still unregistered as an artifact and does not run in this environment. ClerkProvider wiring updated to use `VITE_CLERK_PUBLISHABLE_KEY` directly (not `publishableKeyFromHost`) since this project uses an external Clerk account.
 
 ## Stack
 
