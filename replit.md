@@ -25,7 +25,7 @@ Required env:
 - `DATABASE_URL` — Replit-managed Postgres (postgresql-16 module, auto-managed)
 - `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — **External Clerk** account (user-managed; set these in Replit Secrets from your Clerk dashboard → API Keys)
 
-**Setup status (2026-07-13):** Re-imported from GitHub into a fresh environment. Installed dependencies, configured external Clerk keys, pushed Drizzle schema to Replit-managed Postgres, and registered/started all 6 artifact workflows. DB seeded with 6 languages, 45 lessons, 120 quiz questions, and 606 competition questions. Web app confirmed loading correctly. `codecraft-mobile` (Expo) is still unregistered as an artifact and does not run in this environment. ClerkProvider wiring updated to use `VITE_CLERK_PUBLISHABLE_KEY` directly (not `publishableKeyFromHost`) since this project uses an external Clerk account.
+**Setup status (2026-07-13):** Re-imported from GitHub into a fresh environment. Installed dependencies, confirmed the Replit-managed Postgres database, requested external Clerk keys from the user, pushed the Drizzle schema, and started all 6 artifact workflows. DB auto-seeded with 6 languages, 45 lessons, 120 quiz questions, and 606 competition questions. Web app confirmed loading correctly with Clerk auth active. `codecraft-mobile` (Expo) is still unregistered as an artifact and does not run in this environment.
 
 ## Stack
 
