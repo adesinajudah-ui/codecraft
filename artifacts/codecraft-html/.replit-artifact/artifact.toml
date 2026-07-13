@@ -5,10 +5,6 @@ version = "1.0.0"
 id = "artifacts/codecraft-html"
 router = "path"
 
-[[integratedSkills]]
-name = "react-vite"
-version = "1.0.0"
-
 [[services]]
 name = "web"
 paths = [ "/html-course/" ]
@@ -19,8 +15,8 @@ run = "pnpm --filter @workspace/codecraft-html run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/codecraft-html", "run", "build" ]
-publicDir = "artifacts/codecraft-html/dist/public"
 serve = "static"
+publicDir = "artifacts/codecraft-html/dist/public"
 
 [[services.production.rewrites]]
 from = "/*"
