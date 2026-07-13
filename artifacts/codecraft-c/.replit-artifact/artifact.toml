@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/c-course/"
+title = "CodeCraft – C Course"
+version = "1.0.0"
+id = "artifacts/codecraft-c"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/c-course/" ]
+localPort = 22653
+
+[services.development]
+run = "pnpm --filter @workspace/codecraft-c run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/codecraft-c", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/codecraft-c/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22653"
+BASE_PATH = "/c-course/"
