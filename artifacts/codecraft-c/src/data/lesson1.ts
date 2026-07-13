@@ -1901,7 +1901,7 @@ x--     -> 14
             "Negates a single boolean value"
           ],
           correctIndex: 1,
-          explanation "|| is logical OR. The expression (A || B) is 1 (true) if at least one of A or B is non-zero. It is only 0 (false) if both A and B are zero."
+          explanation: "|| is logical OR. The expression (A || B) is 1 (true) if at least one of A or B is non-zero. It is only 0 (false) if both A and B are zero."
         },
         {
           question: "What is 'short-circuit evaluation' in the context of logical operators?",
