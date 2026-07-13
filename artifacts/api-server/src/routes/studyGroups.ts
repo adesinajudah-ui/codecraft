@@ -293,6 +293,8 @@ router.get("/", requireApiAuth(), async (req, res) => {
   res.json(summaries);
 });
 
+const STUDY_GROUP_CREATE_COST = 10;
+
 router.post("/", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
@@ -304,21 +306,47 @@ router.post("/", requireApiAuth(), async (req, res) => {
   };
   if (!name || !name.trim()) { res.status(400).json({ error: "Name is required" }); return; }
 
-  const [group] = await db
-    .insert(studyGroupsTable)
-    .values({ name: name.trim(), description: description ?? null, avatarObjectPath: avatarObjectPath ?? null, ownerId: userId })
-    .returning();
+  try {
+    const result = await db.transaction(async (tx) => {
+      const debited = await tx
+        .update(userStatsTable)
+        .set({ coinBalance: sql`${userStatsTable.coinBalance} - ${STUDY_GROUP_CREATE_COST}` })
+        .where(and(
+          eq(userStatsTable.userId, userId),
+          sql`${userStatsTable.coinBalance} >= ${STUDY_GROUP_CREATE_COST}`,
+        ))
+        .returning();
 
-  await db.insert(studyGroupMembersTable).values({
-    groupId: group.id,
-    userId,
-    role: "owner",
-    status: "accepted",
-    invitedBy: userId,
-    respondedAt: new Date(),
-  });
+      if (debited.length === 0) {
+        return { insufficientFunds: true as const, group: null };
+      }
 
-  res.json(await serializeGroupSummary(group, "owner"));
+      const [group] = await tx
+        .insert(studyGroupsTable)
+        .values({ name: name.trim(), description: description ?? null, avatarObjectPath: avatarObjectPath ?? null, ownerId: userId })
+        .returning();
+
+      await tx.insert(studyGroupMembersTable).values({
+        groupId: group.id,
+        userId,
+        role: "owner",
+        status: "accepted",
+        invitedBy: userId,
+        respondedAt: new Date(),
+      });
+
+      return { insufficientFunds: false as const, group };
+    });
+
+    if (result.insufficientFunds) {
+      res.status(402).json({ error: "Insufficient balance. You need 10 coins to create a study group." });
+      return;
+    }
+
+    res.json(await serializeGroupSummary(result.group, "owner"));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create study group" });
+  }
 });
 
 router.get("/invites/pending", requireApiAuth(), async (req, res) => {

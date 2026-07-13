@@ -12,6 +12,7 @@ import {
   getListStudyGroupsQueryKey,
   getListPendingInvitesQueryKey,
   getPreviewGroupByCodeQueryKey,
+  getGetWalletBalanceQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,12 +43,20 @@ function CreateGroupDialog() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListStudyGroupsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetWalletBalanceQueryKey() });
         setOpen(false);
         setName("");
         setDescription("");
-        toast({ title: "Study group created" });
+        toast({ title: "Study group created", description: "10 coins have been deducted from your balance." });
       },
-      onError: () => toast({ title: "Couldn't create group", variant: "destructive" }),
+      onError: (err) => {
+        const status = err instanceof ApiError ? err.status : null;
+        if (status === 402) {
+          toast({ title: "Insufficient balance", description: "You need 10 coins to create a study group.", variant: "destructive" });
+        } else {
+          toast({ title: "Couldn't create group", variant: "destructive" });
+        }
+      },
     },
   });
 
