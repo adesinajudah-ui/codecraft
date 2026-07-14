@@ -92,6 +92,41 @@ function asParticipants(raw: unknown[]): Participant[] {
   }));
 }
 
+// ── Active session persistence ────────────────────────────────────────────────
+// `sessionCode` used to live only in React state. Sharing a room code takes
+// the host out of the browser (WhatsApp, SMS, etc.); on many mobile browsers
+// that backgrounding reloads the tab, wiping the state and dropping them back
+// on the "Host a Competition" entry screen — even though the room is still
+// open and waiting in the database. Persisting the code (URL + localStorage)
+// lets a reload or app-switch resume the exact same room instead of losing it.
+function activeSessionKey(courseId: string | undefined, userId: string | null | undefined) {
+  return `codecraft_active_quiz_session_${courseId ?? "0"}_${userId ?? "anon"}`;
+}
+
+function saveActiveSession(courseId: string | undefined, userId: string | null | undefined, code: string) {
+  try {
+    localStorage.setItem(activeSessionKey(courseId, userId), code);
+  } catch {
+    // Storage unavailable — the URL query param below is the primary mechanism.
+  }
+}
+
+function loadActiveSession(courseId: string | undefined, userId: string | null | undefined): string {
+  try {
+    return localStorage.getItem(activeSessionKey(courseId, userId)) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function clearActiveSession(courseId: string | undefined, userId: string | null | undefined) {
+  try {
+    localStorage.removeItem(activeSessionKey(courseId, userId));
+  } catch {
+    /* ignore */
+  }
+}
+
 // ── Level helpers ─────────────────────────────────────────────────────────────
 
 function getPlayerLevel(xp: number) {
@@ -158,15 +193,29 @@ export default function MultiplayerQuiz() {
   // Pre-fill join code from ?join=CODE param (set by JoinRoomDialog)
   const searchParams = new URLSearchParams(search);
   const pendingJoin = searchParams.get("join") ?? "";
+  // ?code=CODE marks a room the current user already created/joined — set
+  // right after create/join and kept in the URL so a reload restores it.
+  const codeParam = searchParams.get("code") ?? "";
   // Competition settings passed from Competitions.tsx when hosting a new room
   const langSlug = searchParams.get("lang") ?? "javascript";
   const questionCountParam = parseInt(searchParams.get("count") || "20", 10);
   const difficultyParam = searchParams.get("difficulty") ?? "mixed";
 
-  const [sessionCode, setSessionCode] = useState<string>("");
+  const [sessionCode, setSessionCode] = useState<string>(codeParam);
   const [joinCode, setJoinCode] = useState(pendingJoin);
   const [answeredUpTo, setAnsweredUpTo] = useState(-1);
   const [copied, setCopied] = useState(false);
+
+  // Sets the active session in every place it's tracked: React state, the
+  // URL (so a reload survives), and localStorage (so an app-switch/kill
+  // survives even if the browser drops the query string).
+  const activateSession = (code: string, opts: { replaceUrl?: boolean } = { replaceUrl: true }) => {
+    setSessionCode(code);
+    saveActiveSession(courseId, user?.id, code);
+    if (opts.replaceUrl !== false) {
+      navigate(`/quiz/${courseId}/multiplayer?code=${code}`, { replace: true });
+    }
+  };
 
   const displayName =
     user?.fullName ||
@@ -249,6 +298,19 @@ export default function MultiplayerQuiz() {
     }
   );
 
+  // ── Restore an in-progress room on reload/app-switch ─────────────────────────
+  // Runs once the user is known; only kicks in when there's no ?code= and no
+  // pending join already supplying a code. Covers the case where sharing the
+  // room code (WhatsApp, SMS, etc.) backgrounded/reloaded the tab and the URL
+  // query string didn't survive.
+  const restoreAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (restoreAttemptedRef.current || sessionCode || pendingJoin || !user) return;
+    restoreAttemptedRef.current = true;
+    const saved = loadActiveSession(courseId, user.id);
+    if (saved) activateSession(saved);
+  }, [user, sessionCode, pendingJoin]);
+
   // ── Auto-join when navigated from Competitions page with ?join=CODE ──────────
   const autoJoinFiredRef = useRef(false);
   useEffect(() => {
@@ -259,10 +321,10 @@ export default function MultiplayerQuiz() {
       {
         onSuccess: (data) => {
           queryClient.setQueryData(getGetQuizSessionQueryKey(pendingJoin), data);
-          setSessionCode(pendingJoin);
           setAnsweredUpTo(-1);
-          // Strip the ?join param from the URL so refresh doesn't re-join
-          navigate(`/quiz/${courseId}/multiplayer`, { replace: true });
+          // Swap the ?join param for ?code= so a reload resumes this room
+          // instead of re-running the join mutation or losing it entirely.
+          activateSession(pendingJoin);
         },
         onError: (err) => {
           autoJoinFiredRef.current = false; // allow retry
@@ -342,6 +404,12 @@ export default function MultiplayerQuiz() {
     }
   }, [session?.status]);
 
+  // Once a competition finishes, stop treating it as "resumable" — a reload
+  // after this point should show a fresh entry screen, not replay the result.
+  useEffect(() => {
+    if (session?.status === "finished") clearActiveSession(courseId, user?.id);
+  }, [session?.status, courseId, user?.id]);
+
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleCreate = () => {
@@ -356,8 +424,10 @@ export default function MultiplayerQuiz() {
       },
       {
         onSuccess: (data) => {
-          setSessionCode(data.code);
           setAnsweredUpTo(-1);
+          // Persist immediately, before the host does anything else (like
+          // opening a share sheet) — the room must survive that detour.
+          activateSession(data.code);
         },
       }
     );
@@ -373,8 +443,8 @@ export default function MultiplayerQuiz() {
             getGetQuizSessionQueryKey(joinCode.toUpperCase()),
             data
           );
-          setSessionCode(joinCode.toUpperCase());
           setAnsweredUpTo(-1);
+          activateSession(joinCode.toUpperCase());
         },
         onError: (err) => alert("Failed to join: " + (err as Error).message),
       }
@@ -751,9 +821,11 @@ export default function MultiplayerQuiz() {
             variant="outline"
             className="flex-1"
             onClick={() => {
+              clearActiveSession(courseId, user?.id);
               setSessionCode("");
               setJoinCode("");
               setAnsweredUpTo(-1);
+              navigate(`/quiz/${courseId}/multiplayer`, { replace: true });
             }}
           >
             Play Again
