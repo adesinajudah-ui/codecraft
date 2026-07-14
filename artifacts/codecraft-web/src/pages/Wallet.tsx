@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
+import { useUser } from "@clerk/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +14,57 @@ import {
   getVerifyCoinPurchaseQueryKey,
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
-import { Coins, ArrowLeft, History, Loader2, CheckCircle2, XCircle, Sparkles, Gift } from "lucide-react";
+import { Coins, ArrowLeft, History, Loader2, CheckCircle2, XCircle, Sparkles, Gift, Banknote } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// Pending top-up payments are persisted to localStorage the moment a Paystack
+// transaction is initialized (before redirecting away). Bank transfer takes
+// the user out of the browser entirely — into their banking app — and when
+// they return the hosted Paystack checkout page often can't be reloaded
+// ("could not start this transaction"). Persisting the reference lets us
+// restore a "payment in progress" banner and offer manual verification
+// instead of treating the reload/app-switch as a cancelled purchase.
+interface PendingTopUp {
+  reference: string;
+  packageId: string;
+  coins: number;
+  amountNaira: number;
+  createdAt: number;
+}
+
+function pendingTopUpKey(userId: string | null | undefined) {
+  return `codecraft_pending_wallet_topup_${userId ?? "anon"}`;
+}
+
+function loadPendingTopUp(userId: string | null | undefined): PendingTopUp | null {
+  try {
+    const raw = localStorage.getItem(pendingTopUpKey(userId));
+    return raw ? (JSON.parse(raw) as PendingTopUp) : null;
+  } catch {
+    return null;
+  }
+}
+
+function savePendingTopUp(userId: string | null | undefined, payment: PendingTopUp) {
+  try {
+    localStorage.setItem(pendingTopUpKey(userId), JSON.stringify(payment));
+  } catch {
+    // Storage unavailable (private browsing, quota) — the backend webhook
+    // still credits the wallet even if we can't show the resume banner.
+  }
+}
+
+function clearPendingTopUp(userId: string | null | undefined) {
+  try {
+    localStorage.removeItem(pendingTopUpKey(userId));
+  } catch {
+    /* ignore */
+  }
+}
 
 function FirstPrizeBanner() {
   const { toast } = useToast();
@@ -147,13 +193,110 @@ function VerifyBanner({ reference, onDone }: { reference: string; onDone: () => 
   );
 }
 
+/**
+ * Shown whenever a top-up was started but never confirmed on this page —
+ * whether because the user is mid bank-transfer in their banking app, the
+ * browser reloaded, or Paystack's hosted checkout page failed to reopen.
+ * Verification is user-initiated via "I've Sent the Money" (never automatic
+ * polling), backed by the same server-side reference check used everywhere
+ * else, plus the webhook as a silent backstop if they never come back at all.
+ */
+function PendingTopUpBanner({ payment, onResolved }: { payment: PendingTopUp; onResolved: (status: "success" | "failed") => void }) {
+  const { toast } = useToast();
+  const [checking, setChecking] = useState(false);
+  const [lastCheckedPending, setLastCheckedPending] = useState(false);
+
+  const handleCheck = async () => {
+    setChecking(true);
+    setLastCheckedPending(false);
+    try {
+      const res = await fetch(`${basePath}/api/wallet/paystack/verify/${encodeURIComponent(payment.reference)}`);
+      const body = await res.json() as { status?: "success" | "failed" | "pending"; coinBalance?: number | null; error?: string };
+
+      if (!res.ok) {
+        toast({ title: "Couldn't check payment", description: body.error ?? "Please try again in a moment.", variant: "destructive" });
+        return;
+      }
+
+      if (body.status === "success") {
+        if (typeof body.coinBalance === "number") {
+          queryClient.setQueryData(getGetWalletBalanceQueryKey(), { coinBalance: body.coinBalance });
+        }
+        queryClient.invalidateQueries({ queryKey: getGetWalletBalanceQueryKey() });
+        toast({ title: "Payment confirmed! 🎉", description: `${payment.coins} coins have been credited to your wallet.` });
+        onResolved("success");
+      } else if (body.status === "failed") {
+        toast({ title: "Payment failed", description: "Paystack couldn't confirm this payment. No coins were credited.", variant: "destructive" });
+        onResolved("failed");
+      } else {
+        setLastCheckedPending(true);
+        toast({ title: "Still verifying", description: "Paystack hasn't confirmed this payment yet. If you've sent the money, this can take a minute — try again shortly." });
+      }
+    } catch {
+      toast({ title: "Connection error", description: "Please check your connection and try again.", variant: "destructive" });
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+      <Card className="border-blue-500/30 bg-blue-500/5">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <Banknote className="w-5 h-5 text-blue-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm">Payment in progress</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {payment.coins} coins for ₦{payment.amountNaira.toLocaleString()} — reference {payment.reference}
+              </p>
+              {lastCheckedPending && (
+                <p className="text-xs text-blue-500 mt-1">Still waiting for Paystack to confirm — this updates automatically once it does.</p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" className="flex-1 gap-1.5" disabled={checking} onClick={handleCheck}>
+              {checking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+              I've Sent the Money
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-muted-foreground"
+              disabled={checking}
+              onClick={() => onResolved("failed")}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 export default function Wallet() {
   const { toast } = useToast();
+  const { user } = useUser();
   const [, setLocation] = useLocation();
   const search = useSearch();
   const reference = new URLSearchParams(search).get("reference");
   const [verifyingRef, setVerifyingRef] = useState<string | null>(reference);
   const [buyingId, setBuyingId] = useState<string | null>(null);
+  const [pendingTopUp, setPendingTopUp] = useState<PendingTopUp | null>(null);
+
+  // Restore any payment left in progress — e.g. the user picked bank
+  // transfer, switched to their banking app, and the browser reloaded (or
+  // Paystack's hosted page failed to reopen) before they could return here
+  // via the normal redirect. We never treat this as a cancelled purchase.
+  useEffect(() => {
+    if (reference) return; // the redirect-callback path below already covers this reference
+    const stored = loadPendingTopUp(user?.id);
+    if (stored) setPendingTopUp(stored);
+  }, [user?.id, reference]);
 
   const { data: packages, isLoading: loadingPackages } = useListCoinPackages();
   const { data: balance } = useGetWalletBalance();
@@ -165,10 +308,26 @@ export default function Wallet() {
       toast({ title: "Payments not available yet", description: "Coin purchases will open once payments are configured.", variant: "destructive" });
       return;
     }
+    const pkg = packages?.find((p) => p.id === packageId);
     setBuyingId(packageId);
     const returnUrl = `${window.location.origin}${basePath}/wallet`;
+    // Always request a brand-new Paystack transaction — never reuse a
+    // previous authorization_url, which Paystack invalidates once opened.
     initialize.mutate({ data: { packageId: packageId as any, returnUrl } }, {
       onSuccess: (res) => {
+        if (pkg) {
+          const payment: PendingTopUp = {
+            reference: res.reference,
+            packageId,
+            coins: pkg.coins,
+            amountNaira: pkg.priceNaira,
+            createdAt: Date.now(),
+          };
+          // Persisted *before* navigating away, so a reload or app-switch
+          // during bank transfer can restore this exact pending payment.
+          savePendingTopUp(user?.id, payment);
+          setPendingTopUp(payment);
+        }
         window.location.href = res.authorizationUrl;
       },
       onError: (err: any) => {
@@ -190,8 +349,20 @@ export default function Wallet() {
         <VerifyBanner
           reference={verifyingRef}
           onDone={() => {
+            clearPendingTopUp(user?.id);
+            setPendingTopUp(null);
             setVerifyingRef(null);
             setLocation("/wallet", { replace: true });
+          }}
+        />
+      )}
+
+      {!verifyingRef && pendingTopUp && (
+        <PendingTopUpBanner
+          payment={pendingTopUp}
+          onResolved={() => {
+            clearPendingTopUp(user?.id);
+            setPendingTopUp(null);
           }}
         />
       )}

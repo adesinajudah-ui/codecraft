@@ -34,7 +34,16 @@ app.use(
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 app.use(cors({ credentials: true, origin: true }));
-app.use(express.json());
+// Capture the exact raw request body bytes alongside the parsed JSON so the
+// Paystack webhook handler can verify the `x-paystack-signature` HMAC, which
+// must be computed over the untouched raw payload, not a re-serialized copy.
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as unknown as { rawBody: Buffer }).rawBody = Buffer.from(buf);
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true }));
 
 // Use env vars directly — publishableKeyFromHost is for multi-tenant apps where

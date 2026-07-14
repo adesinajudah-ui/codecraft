@@ -3,6 +3,7 @@
 // to the browser), send the user to Paystack's hosted authorization_url, and
 // verify the transaction reference on the backend when they return. No
 // public key or Paystack.js is required for this flow.
+import crypto from "node:crypto";
 import { logger } from "./logger";
 
 const PAYSTACK_BASE_URL = "https://api.paystack.co";
@@ -109,4 +110,23 @@ export async function verifyTransaction(reference: string): Promise<VerifyTransa
     reference: body.data?.reference ?? reference,
     currency: body.data?.currency ?? "NGN",
   };
+}
+
+/**
+ * Verifies the `x-paystack-signature` header on an incoming webhook request.
+ * Paystack signs the exact raw request body with HMAC-SHA512 using the
+ * secret key; we must compare against the raw bytes, not a re-serialized copy.
+ */
+export function verifyWebhookSignature(rawBody: Buffer, signature: string | undefined): boolean {
+  if (!signature) return false;
+  let secretKey: string;
+  try {
+    secretKey = getSecretKey();
+  } catch {
+    return false;
+  }
+  const expected = crypto.createHmac("sha512", secretKey).update(rawBody).digest("hex");
+  // Constant-time comparison to avoid timing attacks; lengths must match first.
+  if (expected.length !== signature.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }

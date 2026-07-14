@@ -16,6 +16,7 @@ import crypto from "node:crypto";
 import {
   initializeTransaction,
   verifyTransaction,
+  verifyWebhookSignature,
   isPaystackConfigured,
   PaystackNotConfiguredError,
   PaystackApiError,
@@ -84,6 +85,101 @@ router.get("/unlocked", requireApiAuth(), async (req, res) => {
   res.json(rows.map((r) => ({ contentType: r.contentType, contentId: r.contentId })));
 });
 
+type CreditResult =
+  | { outcome: "success"; coinBalance: number }
+  | { outcome: "already_credited"; coinBalance: number }
+  | { outcome: "pending" }
+  | { outcome: "failed" }
+  | { outcome: "not_found" }
+  | { outcome: "amount_mismatch" };
+
+/**
+ * Verifies a Paystack reference directly with Paystack and, if it succeeded,
+ * atomically credits the wallet exactly once. Shared by the user-initiated
+ * "verify" endpoint and the Paystack webhook so both paths funnel through the
+ * same idempotent, amount-checked credit logic — whichever fires first wins,
+ * and the other becomes a no-op via the `status = 'pending'` guard below.
+ */
+async function resolveAndCreditPaystackReference(reference: string): Promise<CreditResult> {
+  const existingTx = await db
+    .select()
+    .from(walletTransactionsTable)
+    .where(eq(walletTransactionsTable.paystackReference, reference))
+    .limit(1);
+
+  const tx = existingTx[0];
+  if (!tx) return { outcome: "not_found" };
+
+  if (tx.status === "success") {
+    const stats = await db.select().from(userStatsTable).where(eq(userStatsTable.userId, tx.userId)).limit(1);
+    return { outcome: "already_credited", coinBalance: stats[0]?.coinBalance ?? 0 };
+  }
+  if (tx.status === "failed") {
+    return { outcome: "failed" };
+  }
+
+  const verified = await verifyTransaction(reference);
+
+  if (verified.status === "success") {
+    // Never trust the reported amount blindly — confirm it matches what we
+    // initialized for this reference before crediting any coins.
+    if (verified.amountKobo !== tx.amountNaira * 100) {
+      logger.error(
+        { reference, expectedKobo: tx.amountNaira * 100, actualKobo: verified.amountKobo },
+        "Paystack amount mismatch — refusing to credit wallet",
+      );
+      await db
+        .update(walletTransactionsTable)
+        .set({ status: "failed", verifiedAt: new Date() })
+        .where(and(eq(walletTransactionsTable.paystackReference, reference), eq(walletTransactionsTable.status, "pending")));
+      return { outcome: "amount_mismatch" };
+    }
+
+    const result = await db.transaction(async (tx2) => {
+      const updated = await tx2
+        .update(walletTransactionsTable)
+        .set({ status: "success", verifiedAt: new Date() })
+        .where(and(eq(walletTransactionsTable.paystackReference, reference), eq(walletTransactionsTable.status, "pending")))
+        .returning();
+
+      // If nothing was updated, another request (webhook or manual verify)
+      // already processed this reference — never credit twice.
+      if (updated.length === 0) {
+        const stats = await tx2.select().from(userStatsTable).where(eq(userStatsTable.userId, tx.userId)).limit(1);
+        return { alreadyCredited: true, coinBalance: stats[0]?.coinBalance ?? 0 };
+      }
+
+      await tx2
+        .insert(userStatsTable)
+        .values({ userId: tx.userId, displayName: "User", email: "", coinBalance: tx.coins })
+        .onConflictDoUpdate({
+          target: userStatsTable.userId,
+          set: {
+            coinBalance: sql`${userStatsTable.coinBalance} + ${tx.coins}`,
+            lastActive: new Date(),
+          },
+        });
+
+      const stats = await tx2.select().from(userStatsTable).where(eq(userStatsTable.userId, tx.userId)).limit(1);
+      return { alreadyCredited: false, coinBalance: stats[0]?.coinBalance ?? 0 };
+    });
+
+    return result.alreadyCredited
+      ? { outcome: "already_credited", coinBalance: result.coinBalance }
+      : { outcome: "success", coinBalance: result.coinBalance };
+  }
+
+  if (verified.status === "failed" || verified.status === "abandoned") {
+    await db
+      .update(walletTransactionsTable)
+      .set({ status: "failed", verifiedAt: new Date() })
+      .where(and(eq(walletTransactionsTable.paystackReference, reference), eq(walletTransactionsTable.status, "pending")));
+    return { outcome: "failed" };
+  }
+
+  return { outcome: "pending" };
+}
+
 router.post("/paystack/initialize", requireApiAuth(), async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
@@ -144,77 +240,38 @@ router.get("/paystack/verify/:reference", requireApiAuth(), async (req, res) => 
 
   const reference = String(req.params.reference);
 
+  // Ownership check happens here (not inside the shared helper, which is also
+  // called by the unauthenticated webhook) — a user may only verify their own reference.
   const existingTx = await db
     .select()
     .from(walletTransactionsTable)
     .where(eq(walletTransactionsTable.paystackReference, reference))
     .limit(1);
 
-  const tx = existingTx[0];
-  if (!tx || tx.userId !== userId) {
+  if (!existingTx[0] || existingTx[0].userId !== userId) {
     res.status(404).json({ error: "Transaction not found" });
     return;
   }
 
-  // Already resolved — never re-credit a reference twice.
-  if (tx.status === "success") {
-    const stats = await db.select().from(userStatsTable).where(eq(userStatsTable.userId, userId)).limit(1);
-    res.json({ status: "success", coinBalance: stats[0]?.coinBalance ?? 0 });
-    return;
-  }
-  if (tx.status === "failed") {
-    res.json({ status: "failed", coinBalance: null });
-    return;
-  }
-
   try {
-    const verified = await verifyTransaction(reference);
+    const result = await resolveAndCreditPaystackReference(reference);
 
-    if (verified.status === "success") {
-      // Credit coins and mark the transaction successful atomically so a
-      // retried/duplicate verify call can never double-credit the user.
-      const result = await db.transaction(async (tx2) => {
-        const updated = await tx2
-          .update(walletTransactionsTable)
-          .set({ status: "success", verifiedAt: new Date() })
-          .where(and(eq(walletTransactionsTable.paystackReference, reference), eq(walletTransactionsTable.status, "pending")))
-          .returning();
-
-        // If nothing was updated, another request already processed this reference.
-        if (updated.length === 0) {
-          const stats = await tx2.select().from(userStatsTable).where(eq(userStatsTable.userId, userId)).limit(1);
-          return { alreadyCredited: true, coinBalance: stats[0]?.coinBalance ?? 0 };
-        }
-
-        await tx2
-          .insert(userStatsTable)
-          .values({ userId, displayName: "User", email: "", coinBalance: tx.coins })
-          .onConflictDoUpdate({
-            target: userStatsTable.userId,
-            set: {
-              coinBalance: sql`${userStatsTable.coinBalance} + ${tx.coins}`,
-              lastActive: new Date(),
-            },
-          });
-
-        const stats = await tx2.select().from(userStatsTable).where(eq(userStatsTable.userId, userId)).limit(1);
-        return { alreadyCredited: false, coinBalance: stats[0]?.coinBalance ?? 0 };
-      });
-
-      res.json({ status: "success", coinBalance: result.coinBalance });
-      return;
+    switch (result.outcome) {
+      case "success":
+      case "already_credited":
+        res.json({ status: "success", coinBalance: result.coinBalance });
+        return;
+      case "failed":
+      case "amount_mismatch":
+        res.json({ status: "failed", coinBalance: null });
+        return;
+      case "not_found":
+        res.status(404).json({ error: "Transaction not found" });
+        return;
+      case "pending":
+        res.json({ status: "pending", coinBalance: null });
+        return;
     }
-
-    if (verified.status === "failed" || verified.status === "abandoned") {
-      await db
-        .update(walletTransactionsTable)
-        .set({ status: "failed", verifiedAt: new Date() })
-        .where(and(eq(walletTransactionsTable.paystackReference, reference), eq(walletTransactionsTable.status, "pending")));
-      res.json({ status: "failed", coinBalance: null });
-      return;
-    }
-
-    res.json({ status: "pending", coinBalance: null });
   } catch (err) {
     if (err instanceof PaystackNotConfiguredError) {
       res.status(503).json({ error: err.message });
@@ -226,6 +283,40 @@ router.get("/paystack/verify/:reference", requireApiAuth(), async (req, res) => 
     }
     logger.error({ err }, "Failed to verify wallet purchase");
     res.status(500).json({ error: "Failed to verify payment" });
+  }
+});
+
+// Paystack webhook — the reliable, server-to-server backstop that credits the
+// wallet even if the user never returns to the site (e.g. bank transfer where
+// they close the browser after paying). Verified via HMAC signature, not auth.
+router.post("/paystack/webhook", async (req, res) => {
+  const signature = req.header("x-paystack-signature");
+  const rawBody = (req as unknown as { rawBody?: Buffer }).rawBody;
+
+  if (!rawBody || !verifyWebhookSignature(rawBody, signature)) {
+    logger.error("Rejected Paystack webhook with invalid signature");
+    res.status(401).json({ error: "Invalid signature" });
+    return;
+  }
+
+  const event = req.body as { event?: string; data?: { reference?: string } };
+  const reference = event?.data?.reference;
+
+  // Acknowledge events we don't act on (e.g. charge.failed) so Paystack
+  // doesn't keep retrying them; we only need to react to successful charges.
+  if (event?.event !== "charge.success" || !reference) {
+    res.status(200).json({ received: true });
+    return;
+  }
+
+  try {
+    const result = await resolveAndCreditPaystackReference(reference);
+    logger.info({ reference, outcome: result.outcome }, "Processed Paystack webhook");
+    res.status(200).json({ received: true });
+  } catch (err) {
+    logger.error({ err, reference }, "Failed to process Paystack webhook");
+    // 500 so Paystack retries the webhook later.
+    res.status(500).json({ error: "Failed to process webhook" });
   }
 });
 
