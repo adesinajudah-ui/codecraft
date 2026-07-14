@@ -35,7 +35,7 @@ export default function Home() {
 
       {/* Top navigation bar */}
       <header className="sticky top-0 z-10 bg-card/90 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
-        <a href="/" className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors">
+        <a href="/learn" aria-label="Back to course selection" className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors">
           <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </a>
         <span className="font-semibold text-sm tracking-wide">CSS Course</span>

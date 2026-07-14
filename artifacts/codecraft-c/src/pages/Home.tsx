@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useTheme } from "next-themes";
-import { ChevronDown, ChevronRight, BookOpen, Sun, Moon, CheckCircle2, Award, Cpu } from "lucide-react";
+import { ChevronDown, ChevronRight, BookOpen, Sun, Moon, CheckCircle2, Award, Cpu, ArrowLeft } from "lucide-react";
 import { courseData, totalTopicCount } from "@/data/courseData";
 import { getCompletedTopicIds } from "@/data/progress";
 
@@ -38,7 +38,14 @@ export default function Home() {
     <div className="min-h-[100dvh] w-full bg-background text-foreground pb-20">
       <header className="bg-card border-b border-border py-12 px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex justify-end mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <a
+              href="/learn"
+              aria-label="Back to course selection"
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Courses
+            </a>
             <ThemeToggle />
           </div>
           <div className="text-center space-y-4">
