@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, ChevronDown, Bell, MoreVertical,
   Play, Lock, Zap, Award, ChevronRight,
-  BookOpen, Bot, Flame,
+  BookOpen, Bot, Flame, CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,13 +17,14 @@ interface TrackCourse {
   icon_color: string;
 }
 
-type LessonType = "lesson" | "practice" | "booster";
+type LessonType = "lesson" | "booster" | "practice";
+type LessonStatus = "completed" | "unlocked" | "locked";
 
 interface Lesson {
   title: string;
   type: LessonType;
   xp: number;
-  locked: boolean;
+  status: LessonStatus;
 }
 
 interface Module {
@@ -53,25 +54,55 @@ const WEB_DEV_TRACK: TrackCourse[] = [
   { title: "TypeScript for Beginners",    slug: "typescript-for-beginners", icon_label: "TS",   icon_color: "#3178C6" },
 ];
 
-const COURSE_DATA: Record<string, CourseData> = {
+// Base course data — lessons use initial statuses (deep-cloned on mount into state)
+const COURSE_DATA_INITIAL: Record<string, CourseData> = {
   "introduction-to-html": {
     title: "Introduction to HTML",
     category: "Web Development",
-    progress_percent: 5,
+    progress_percent: 0,
     modules: [
       {
         title: "Getting Started with HTML",
         locked: false,
         lessons: [
-          { title: "AI-generated practice", type: "practice", xp: 20, locked: false },
-          { title: "Headings",              type: "lesson",   xp: 10, locked: false },
-          { title: "Images",               type: "lesson",   xp: 10, locked: true  },
-          { title: "Booster",              type: "booster",  xp: 15, locked: true  },
+          { title: "The Core Web Technology", type: "lesson",   xp: 10, status: "unlocked" },
+          { title: "HTML Code",               type: "lesson",   xp: 10, status: "locked"   },
+          { title: "AI-generated practice",   type: "booster",  xp: 20, status: "locked"   },
+          { title: "Headings",                type: "lesson",   xp: 10, status: "locked"   },
+          { title: "Images",                  type: "lesson",   xp: 10, status: "locked"   },
         ],
       },
-      { title: "Going Deeper with HTML", locked: true, lessons: [] },
-      { title: "Using Attributes",       locked: true, lessons: [] },
-      { title: "Mastering HTML",         locked: true, lessons: [] },
+      {
+        title: "Going Deeper with HTML",
+        locked: true,
+        lessons: [
+          { title: "Paragraphs & Text",       type: "lesson",   xp: 10, status: "locked"   },
+          { title: "Links",                   type: "lesson",   xp: 10, status: "locked"   },
+          { title: "AI-generated practice",   type: "booster",  xp: 20, status: "locked"   },
+          { title: "Lists",                   type: "lesson",   xp: 10, status: "locked"   },
+          { title: "Tables",                  type: "lesson",   xp: 15, status: "locked"   },
+        ],
+      },
+      {
+        title: "Using Attributes",
+        locked: true,
+        lessons: [
+          { title: "What are Attributes?",    type: "lesson",   xp: 10, status: "locked"   },
+          { title: "Global Attributes",       type: "lesson",   xp: 10, status: "locked"   },
+          { title: "AI-generated practice",   type: "booster",  xp: 20, status: "locked"   },
+          { title: "Forms & Inputs",          type: "lesson",   xp: 10, status: "locked"   },
+        ],
+      },
+      {
+        title: "Mastering HTML",
+        locked: true,
+        lessons: [
+          { title: "Semantic HTML",           type: "lesson",   xp: 10, status: "locked"   },
+          { title: "Accessibility Basics",    type: "lesson",   xp: 10, status: "locked"   },
+          { title: "AI-generated practice",   type: "booster",  xp: 20, status: "locked"   },
+          { title: "Final Project",           type: "lesson",   xp: 25, status: "locked"   },
+        ],
+      },
     ],
     certificate_unlocked: false,
   },
@@ -89,6 +120,10 @@ function isColorDark(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 < 140;
 }
 
+function deepClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 function CourseIcon({ label, color, size = "md" }: { label: string; color: string; size?: "sm" | "md" }) {
   const dark = isColorDark(color);
   const dim = size === "sm" ? "w-10 h-10 text-[10px]" : "w-12 h-12 text-[11px]";
@@ -101,57 +136,103 @@ function CourseIcon({ label, color, size = "md" }: { label: string; color: strin
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function LessonIcon({ type, locked }: { type: LessonType; locked: boolean }) {
-  if (locked) return <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><Lock className="w-3.5 h-3.5 text-muted-foreground" /></div>;
-  if (type === "practice") return <div className="w-8 h-8 rounded-full bg-violet-500/15 flex items-center justify-center flex-shrink-0"><Bot className="w-3.5 h-3.5 text-violet-500" /></div>;
-  if (type === "booster")  return <div className="w-8 h-8 rounded-full bg-orange-500/15 flex items-center justify-center flex-shrink-0"><Flame className="w-3.5 h-3.5 text-orange-500" /></div>;
-  return <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0"><BookOpen className="w-3.5 h-3.5 text-primary" /></div>;
-}
-
-function LessonCard({ lesson }: { lesson: Lesson }) {
-  return (
-    <div className={cn(
-      "flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors",
-      lesson.locked
-        ? "bg-muted/40 border-border opacity-60"
-        : "bg-card border-border hover:border-primary/30 cursor-pointer"
-    )}>
-      <LessonIcon type={lesson.type} locked={lesson.locked} />
-      <div className="flex-1 min-w-0">
-        <p className={cn("text-sm font-medium truncate", lesson.locked ? "text-muted-foreground" : "text-foreground")}>
-          {lesson.title}
-        </p>
-        <div className="flex items-center gap-1 mt-0.5">
-          <Zap className="w-3 h-3 text-yellow-500" />
-          <span className="text-xs text-muted-foreground">+{lesson.xp} XP</span>
-          {lesson.type === "lesson" && <span className="text-xs text-muted-foreground ml-1">· Lesson</span>}
-          {lesson.type === "practice" && <span className="text-xs text-muted-foreground ml-1">· Practice</span>}
-          {lesson.type === "booster" && <span className="text-xs text-muted-foreground ml-1">· Booster</span>}
-        </div>
+function LessonIcon({ type, status }: { type: LessonType; status: LessonStatus }) {
+  const locked = status === "locked";
+  if (locked) {
+    return (
+      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+        <Lock className="w-3.5 h-3.5 text-muted-foreground" />
       </div>
-      {!lesson.locked && lesson.type === "lesson" && (
-        <button className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-bold tracking-wide hover:bg-emerald-600 transition-colors flex-shrink-0">
-          LEARN
-        </button>
-      )}
-      {!lesson.locked && lesson.type === "practice" && (
-        <button className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center hover:bg-primary/25 transition-colors flex-shrink-0">
-          <Play className="w-3.5 h-3.5 text-primary fill-primary" />
-        </button>
-      )}
-      {lesson.locked && <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />}
+    );
+  }
+  if (type === "practice" || type === "booster") {
+    return (
+      <div className="w-9 h-9 rounded-full bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+        {type === "booster"
+          ? <Flame className="w-4 h-4 text-orange-500" />
+          : <Bot className="w-4 h-4 text-violet-500" />}
+      </div>
+    );
+  }
+  return (
+    <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+      <BookOpen className="w-4 h-4 text-primary" />
     </div>
   );
 }
 
-function ModuleAccordion({
-  module,
-  defaultOpen = false,
-}: {
+interface LessonCardProps {
+  lesson: Lesson;
+  onComplete: () => void;
+}
+
+function LessonCard({ lesson, onComplete }: LessonCardProps) {
+  const isLocked    = lesson.status === "locked";
+  const isCompleted = lesson.status === "completed";
+  const isUnlocked  = lesson.status === "unlocked";
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border transition-colors",
+        isLocked    && "bg-muted/30 border-border opacity-50",
+        isCompleted && "bg-card border-emerald-500/30",
+        isUnlocked  && "bg-card border-border hover:border-primary/30",
+        !isLocked   && "cursor-pointer"
+      )}
+    >
+      {/* Top row: icon · title+xp · status badge */}
+      <div className="flex items-center gap-3 px-4 pt-3 pb-2">
+        <LessonIcon type={lesson.type} status={lesson.status} />
+
+        <div className="flex-1 min-w-0">
+          <p className={cn(
+            "text-sm font-semibold leading-snug truncate",
+            isLocked    ? "text-muted-foreground" : "text-foreground"
+          )}>
+            {lesson.title}
+          </p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <Zap className={cn("w-3 h-3", isLocked ? "text-muted-foreground" : "text-yellow-500")} />
+            <span className={cn("text-xs", isLocked ? "text-muted-foreground" : "text-muted-foreground")}>
+              +{lesson.xp} XP
+            </span>
+            <span className="text-xs text-muted-foreground ml-1 capitalize">
+              · {lesson.type}
+            </span>
+          </div>
+        </div>
+
+        {/* Status badge — top-right */}
+        {isLocked    && <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
+        {isCompleted && <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />}
+      </div>
+
+      {/* LEARN button — full-width, shown only when unlocked */}
+      {isUnlocked && (
+        <div className="px-4 pb-3">
+          <button
+            onClick={onComplete}
+            className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold tracking-widest transition-colors"
+          >
+            LEARN
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ModuleAccordionProps {
   module: Module;
   defaultOpen?: boolean;
-}) {
+  onLessonComplete: (lessonIdx: number) => void;
+}
+
+function ModuleAccordion({ module, defaultOpen = false, onLessonComplete }: ModuleAccordionProps) {
   const [open, setOpen] = useState(defaultOpen && !module.locked);
+
+  const completedCount = module.lessons.filter((l) => l.status === "completed").length;
 
   return (
     <div className={cn("rounded-2xl border overflow-hidden", module.locked ? "border-border" : "border-primary/30")}>
@@ -163,7 +244,6 @@ function ModuleAccordion({
           module.locked ? "cursor-default" : "hover:bg-secondary/50 cursor-pointer"
         )}
       >
-        {/* Play / Lock icon */}
         <div className={cn(
           "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
           module.locked ? "bg-muted" : "bg-emerald-500/15"
@@ -176,8 +256,13 @@ function ModuleAccordion({
           <p className={cn("text-sm font-semibold", module.locked ? "text-muted-foreground" : "text-foreground")}>
             {module.title}
           </p>
-          {!module.locked && (
-            <p className="text-xs text-muted-foreground mt-0.5">{module.lessons.length} activities</p>
+          {!module.locked && module.lessons.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {completedCount}/{module.lessons.length} completed
+            </p>
+          )}
+          {module.locked && (
+            <p className="text-xs text-muted-foreground mt-0.5">Complete previous module to unlock</p>
           )}
         </div>
         {!module.locked && (
@@ -197,8 +282,12 @@ function ModuleAccordion({
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 flex flex-col gap-2">
-              {module.lessons.map((lesson) => (
-                <LessonCard key={lesson.title} lesson={lesson} />
+              {module.lessons.map((lesson, idx) => (
+                <LessonCard
+                  key={`${lesson.title}-${idx}`}
+                  lesson={lesson}
+                  onComplete={() => onLessonComplete(idx)}
+                />
               ))}
             </div>
           </motion.div>
@@ -226,7 +315,6 @@ function CertificateTeaser() {
 
 function TrackCarousel({ currentSlug, onSelect }: { currentSlug: string; onSelect: (slug: string) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-
   return (
     <div
       ref={scrollRef}
@@ -259,6 +347,48 @@ function TrackCarousel({ currentSlug, onSelect }: { currentSlug: string; onSelec
   );
 }
 
+// ── Progression logic ─────────────────────────────────────────────────────────
+
+/**
+ * Immutably completes lesson at (modIdx, lessonIdx) and unlocks the next one.
+ * If the lesson was the last in its module, unlocks the next module and its first lesson.
+ */
+function applyLessonComplete(modules: Module[], modIdx: number, lessonIdx: number): Module[] {
+  const next = deepClone(modules);
+  const mod = next[modIdx];
+
+  // Mark this lesson completed
+  mod.lessons[lessonIdx].status = "completed";
+
+  const nextLessonIdx = lessonIdx + 1;
+  if (nextLessonIdx < mod.lessons.length) {
+    // Unlock next lesson within same module
+    mod.lessons[nextLessonIdx].status = "unlocked";
+  } else {
+    // This was the last lesson — unlock next module
+    const nextModIdx = modIdx + 1;
+    if (nextModIdx < next.length) {
+      next[nextModIdx].locked = false;
+      if (next[nextModIdx].lessons.length > 0) {
+        next[nextModIdx].lessons[0].status = "unlocked";
+      }
+    }
+  }
+
+  return next;
+}
+
+/** Recompute overall progress as % of all lessons completed across all modules */
+function computeProgress(modules: Module[]): number {
+  let total = 0;
+  let done = 0;
+  for (const mod of modules) {
+    total += mod.lessons.length;
+    done  += mod.lessons.filter((l) => l.status === "completed").length;
+  }
+  return total === 0 ? 0 : Math.round((done / total) * 100);
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function CourseDetail() {
@@ -268,13 +398,24 @@ export default function CourseDetail() {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const slug = courseId ?? "";
-  const course = COURSE_DATA[slug];
+  const initialData = COURSE_DATA_INITIAL[slug];
+
+  // Stateful modules — deep-cloned from initial data once per slug
+  const [modules, setModules] = useState<Module[]>(() =>
+    initialData ? deepClone(initialData.modules) : []
+  );
+
+  // Only Introduction to HTML has content — all other courses are blank for now
+  if (!initialData) return null;
+
   const trackCourse = WEB_DEV_TRACK.find((t) => t.slug === slug);
   const iconColor = trackCourse?.icon_color ?? "#E34C26";
   const iconLabel = trackCourse?.icon_label ?? "?";
+  const progress   = computeProgress(modules);
 
-  // Only Introduction to HTML has content — all other courses are blank for now
-  if (!course) return null;
+  function handleLessonComplete(modIdx: number, lessonIdx: number) {
+    setModules((prev) => applyLessonComplete(prev, modIdx, lessonIdx));
+  }
 
   return (
     <div className="flex flex-col min-h-full">
@@ -282,7 +423,6 @@ export default function CourseDetail() {
       {/* ── Sticky page header ── */}
       <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2 px-3 py-3">
-          {/* Hamburger */}
           <button
             onClick={() => setLocation("/learn")}
             className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors flex-shrink-0"
@@ -291,27 +431,25 @@ export default function CourseDetail() {
             <Menu className="w-5 h-5 text-foreground" />
           </button>
 
-          {/* Title + chevron */}
           <button
             onClick={() => setDropdownOpen((o) => !o)}
             className="flex-1 flex items-center justify-center gap-1.5 min-w-0 py-1"
           >
-            <span className="text-sm font-bold text-foreground truncate max-w-[180px]">{course.title}</span>
+            <span className="text-sm font-bold text-foreground truncate max-w-[180px]">{initialData.title}</span>
             <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform duration-250 flex-shrink-0", dropdownOpen && "rotate-180")} />
           </button>
 
-          {/* Right icons */}
           <div className="flex items-center gap-1 flex-shrink-0">
             <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors">
-              <Bell className="w-4.5 h-4.5 text-foreground" style={{ width: 18, height: 18 }} />
+              <Bell style={{ width: 18, height: 18 }} className="text-foreground" />
             </button>
             <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors">
-              <MoreVertical className="w-4.5 h-4.5 text-foreground" style={{ width: 18, height: 18 }} />
+              <MoreVertical style={{ width: 18, height: 18 }} className="text-foreground" />
             </button>
           </div>
         </div>
 
-        {/* ── Dropdown panel ── */}
+        {/* Dropdown panel */}
         <AnimatePresence>
           {dropdownOpen && (
             <motion.div
@@ -350,8 +488,8 @@ export default function CourseDetail() {
         <div className="flex items-center gap-3">
           <CourseIcon label={iconLabel} color={iconColor} />
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{course.category}</p>
-            <h1 className="text-lg font-bold text-foreground leading-tight">{course.title}</h1>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{initialData.category}</p>
+            <h1 className="text-lg font-bold text-foreground leading-tight">{initialData.title}</h1>
           </div>
         </div>
 
@@ -359,22 +497,26 @@ export default function CourseDetail() {
         <div>
           <div className="flex justify-between items-center mb-1.5">
             <span className="text-xs font-medium text-muted-foreground">Overall Progress</span>
-            <span className="text-xs font-bold text-emerald-500">{course.progress_percent}%</span>
+            <span className="text-xs font-bold text-emerald-500">{progress}%</span>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-emerald-500"
-              initial={{ width: 0 }}
-              animate={{ width: `${course.progress_percent}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
             />
           </div>
         </div>
 
         {/* Module list */}
         <div className="flex flex-col gap-3">
-          {course.modules.map((mod, i) => (
-            <ModuleAccordion key={mod.title} module={mod} defaultOpen={i === 0} />
+          {modules.map((mod, modIdx) => (
+            <ModuleAccordion
+              key={mod.title}
+              module={mod}
+              defaultOpen={modIdx === 0}
+              onLessonComplete={(lessonIdx) => handleLessonComplete(modIdx, lessonIdx)}
+            />
           ))}
         </div>
 
