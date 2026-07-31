@@ -77,23 +77,7 @@ const COURSE_DATA: Record<string, CourseData> = {
   },
 };
 
-// Fill in minimal data for all other Web Dev track courses
-WEB_DEV_TRACK.forEach((tc) => {
-  if (!COURSE_DATA[tc.slug]) {
-    COURSE_DATA[tc.slug] = {
-      title: tc.title,
-      category: "Web Development",
-      progress_percent: 0,
-      modules: [
-        { title: "Introduction",    locked: false, lessons: [{ title: "Getting Started", type: "lesson", xp: 10, locked: false }] },
-        { title: "Core Concepts",   locked: true,  lessons: [] },
-        { title: "Advanced Topics", locked: true,  lessons: [] },
-        { title: "Final Project",   locked: true,  lessons: [] },
-      ],
-      certificate_unlocked: false,
-    };
-  }
-});
+// Only "introduction-to-html" has full content; all other slugs are intentionally blank.
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -283,11 +267,14 @@ export default function CourseDetail() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const slug = courseId ?? "introduction-to-html";
-  const course = COURSE_DATA[slug] ?? COURSE_DATA["introduction-to-html"];
+  const slug = courseId ?? "";
+  const course = COURSE_DATA[slug];
   const trackCourse = WEB_DEV_TRACK.find((t) => t.slug === slug);
   const iconColor = trackCourse?.icon_color ?? "#E34C26";
   const iconLabel = trackCourse?.icon_label ?? "?";
+
+  // Only Introduction to HTML has content — all other courses are blank for now
+  if (!course) return null;
 
   return (
     <div className="flex flex-col min-h-full">
