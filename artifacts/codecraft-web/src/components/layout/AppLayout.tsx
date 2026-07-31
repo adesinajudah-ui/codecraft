@@ -33,7 +33,7 @@ import { useIsDesktop } from "@/hooks/use-desktop";
 const drawerNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/account", label: "Account", icon: UserCircle },
-  { href: "/learn", label: "Learn", icon: BookOpen },
+  { href: "/learn", label: "All Courses", icon: BookOpen },
   { href: "/my-courses", label: "My Courses", icon: BookMarked },
   { href: "/editor", label: "Practice", icon: TerminalSquare },
   { href: "/study-groups", label: "Study Groups", icon: UsersRound },
@@ -57,7 +57,7 @@ function CoinBalanceBadge() {
 
 const bottomNavItems = [
   { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/learn", label: "Learn", icon: BookOpen },
+  { href: "/learn", label: "All Courses", icon: BookOpen },
   { href: "/community", label: "Community", icon: Users },
   { href: "/competitions", label: "Compete", icon: Swords },
   { href: "/leaderboard", label: "Rank", icon: Trophy },
