@@ -137,6 +137,21 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   );
 }
 
+/** Like ProtectedRoute but renders without the AppLayout chrome (no sidebar/top-bar).
+ *  Used for full-screen pages that provide their own navigation (e.g. LessonPage). */
+function ProtectedRouteNoLayout({ component: Component }: { component: React.ComponentType }) {
+  return (
+    <>
+      <Show when="signed-in">
+        <Component />
+      </Show>
+      <Show when="signed-out">
+        <Redirect to="/sign-in" />
+      </Show>
+    </>
+  );
+}
+
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { user } = useUser();
   const isAdmin = user?.publicMetadata?.role === "admin";
@@ -171,7 +186,7 @@ function Router() {
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/learn" component={() => <ProtectedRoute component={Learn} />} />
       <Route path="/learn/:courseId" component={() => <ProtectedRoute component={CourseDetail} />} />
-      <Route path="/learn/:courseId/lesson/:lessonId" component={() => <ProtectedRoute component={LessonPage} />} />
+      <Route path="/learn/:courseId/lesson/:lessonId" component={() => <ProtectedRouteNoLayout component={LessonPage} />} />
       <Route path="/quiz/:courseId" component={() => <ProtectedRoute component={QuizPage} />} />
       <Route path="/quiz/:courseId/multiplayer" component={() => <ProtectedRoute component={MultiplayerQuiz} />} />
       <Route path="/editor" component={() => <ProtectedRoute component={Editor} />} />
