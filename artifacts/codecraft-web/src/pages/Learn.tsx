@@ -38,9 +38,11 @@ const CATEGORIES: Category[] = [
     name: "Advanced Programming",
     description: "Sharpen your skills with algorithms, patterns, and system design",
     courses: [
-      { title: "Data Structures & Algorithms", icon_label: "DS", icon_color: "#8B5CF6", learner_count: "612.4K", progress_percent: 0 },
-      { title: "Design Patterns",              icon_label: "DP", icon_color: "#EC4899", learner_count: "298.7K", progress_percent: 0 },
-      { title: "System Design",               icon_label: "SD", icon_color: "#F59E0B", learner_count: "387.1K", progress_percent: 0 },
+      { title: "C# Intermediate",     icon_label: "C#",   icon_color: "#9333EA", learner_count: "341.2K", progress_percent: 0 },
+      { title: "Python Intermediate", icon_label: "PY",   icon_color: "#3572A5", learner_count: "528.7K", progress_percent: 0 },
+      { title: "Java Intermediate",   icon_label: "Java", icon_color: "#E76F00", learner_count: "412.4K", progress_percent: 0 },
+      { title: "C Programming",       icon_label: "C",    icon_color: "#00599C", learner_count: "287.9K", progress_percent: 0 },
+      { title: "PHP",                 icon_label: "PHP",  icon_color: "#4F5B93", learner_count: "319.6K", progress_percent: 0 },
     ],
   },
   {
